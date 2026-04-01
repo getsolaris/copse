@@ -1,0 +1,220 @@
+import { createSignal, For, createMemo, Show } from "solid-js";
+import { useApp } from "../context/AppContext.tsx";
+import { useGit } from "../context/GitContext.tsx";
+import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
+import {
+  theme,
+  setCurrentThemeName,
+  THEME_NAMES,
+  THEME_LABELS,
+  type ThemeName,
+} from "../themes.ts";
+import { loadConfig, getConfigPath, writeAtomically } from "../../core/config.ts";
+
+interface Command {
+  id: string;
+  label: string;
+  description: string;
+  action: () => void;
+}
+
+export function CommandPalette() {
+  const app = useApp();
+  const git = useGit();
+  const dims = useTerminalDimensions();
+  const [query, setQuery] = createSignal("");
+  const [selectedIdx, setSelectedIdx] = createSignal(0);
+
+  const commands = createMemo<Command[]>(() => [
+    {
+      id: "add",
+      label: "Add Worktree",
+      description: "Create a new git worktree",
+      action: () => {
+        app.setActiveTab("add");
+        app.setShowCommandPalette(false);
+      },
+    },
+    {
+      id: "delete",
+      label: "Delete Worktree",
+      description: "Remove the selected worktree",
+      action: () => {
+        app.setShowRemove(true);
+        app.setShowCommandPalette(false);
+      },
+    },
+    {
+      id: "refresh",
+      label: "Refresh",
+      description: "Reload worktree list",
+      action: () => {
+        git.refetch();
+        app.setShowCommandPalette(false);
+      },
+    },
+    {
+      id: "config",
+      label: "Open Config",
+      description: "View configuration",
+      action: () => {
+        app.setActiveTab("config");
+        app.setShowCommandPalette(false);
+      },
+    },
+    {
+      id: "doctor",
+      label: "Run Doctor",
+      description: "Check worktree health",
+      action: () => {
+        app.setActiveTab("doctor");
+        app.setShowCommandPalette(false);
+      },
+    },
+    ...THEME_NAMES.map((name) => ({
+      id: `theme:${name}`,
+      label: `Theme: ${THEME_LABELS[name]}`,
+      description: "Switch color theme",
+      action: () => {
+        setCurrentThemeName(name);
+        try {
+          const configPath = getConfigPath();
+          const cfg: Record<string, unknown> = { ...loadConfig() };
+          cfg.theme = name;
+          writeAtomically(configPath, JSON.stringify(cfg, null, 2));
+        } catch {}
+        app.setShowCommandPalette(false);
+      },
+    })),
+    {
+      id: "quit",
+      label: "Quit",
+      description: "Exit oh-my-worktree",
+      action: () => process.exit(0),
+    },
+  ]);
+
+  const filtered = createMemo(() => {
+    const q = query().toLowerCase();
+    if (!q) return commands();
+    return commands().filter(
+      (c) => c.label.toLowerCase().includes(q) || c.description.toLowerCase().includes(q),
+    );
+  });
+
+  useKeyboard((event: any) => {
+    if (!app.showCommandPalette()) return;
+    const key = event.name;
+
+    if (key === "escape") {
+      app.setShowCommandPalette(false);
+      setQuery("");
+      setSelectedIdx(0);
+      return;
+    }
+    if (key === "return" || key === "enter") {
+      const cmd = filtered()[selectedIdx()];
+      if (cmd) cmd.action();
+      setQuery("");
+      setSelectedIdx(0);
+      return;
+    }
+    if (key === "down" || key === "j") {
+      setSelectedIdx((i) => Math.min(i + 1, filtered().length - 1));
+      return;
+    }
+    if (key === "up" || key === "k") {
+      setSelectedIdx((i) => Math.max(i - 1, 0));
+      return;
+    }
+    if (key === "backspace") {
+      setQuery((s) => s.slice(0, -1));
+      setSelectedIdx(0);
+      return;
+    }
+    if (event.sequence && event.sequence.length === 1 && event.sequence.charCodeAt(0) >= 32) {
+      setQuery((s) => s + event.sequence);
+      setSelectedIdx(0);
+    }
+  });
+
+  const w = () => dims().width;
+  const h = () => dims().height;
+
+  return (
+    <box x={0} y={0} width={w()} height={h()} backgroundColor={theme.bg.base}>
+      <box
+        x={1} y={0}
+        width={w() - 2} height={h() - 1}
+        border={true} borderStyle="single"
+        borderColor={theme.border.active}
+        backgroundColor={theme.bg.elevated}
+        title=" Command Palette "
+        titleAlignment="left"
+      >
+        <box
+          x={1} y={1}
+          width={w() - 6} height={1}
+          backgroundColor={theme.bg.overlay}
+        >
+          <text x={1} y={0} fg={theme.text.secondary}>{">"}</text>
+          <text x={3} y={0} fg={theme.text.primary}>{query()}</text>
+          <text x={3 + query().length} y={0} fg={theme.text.accent}>{"\u2588"}</text>
+        </box>
+
+        <text x={1} y={2} fg={theme.border.subtle}>
+          {"\u2500".repeat(Math.max(w() - 6, 1))}
+        </text>
+
+        <box
+          x={1} y={3}
+          width={w() - 6} height={h() - 7}
+          backgroundColor={theme.bg.elevated}
+          flexDirection="column"
+        >
+          <For each={filtered().slice(0, h() - 7)}>
+            {(cmd, i) => {
+              const isSelected = () => i() === selectedIdx();
+              return (
+                <box
+                  height={1}
+                  width={w() - 6}
+                  backgroundColor={isSelected() ? theme.select.focusedBg : theme.bg.elevated}
+                  onMouseDown={() => {
+                    setSelectedIdx(i());
+                    cmd.action();
+                  }}
+                >
+                  <text
+                    x={2} y={0}
+                    fg={isSelected() ? theme.tab.active : theme.text.primary}
+                  >
+                    {cmd.label}
+                  </text>
+                  <text
+                    x={Math.max(25, cmd.label.length + 4)} y={0}
+                    fg={theme.text.secondary}
+                  >
+                    {cmd.description}
+                  </text>
+                </box>
+              );
+            }}
+          </For>
+          <Show when={filtered().length === 0}>
+            <box height={1}>
+              <text x={2} y={0} fg={theme.text.secondary}>No commands found</text>
+            </box>
+          </Show>
+        </box>
+
+        <text x={1} y={h() - 4} fg={theme.border.subtle}>
+          {"\u2500".repeat(Math.max(w() - 6, 1))}
+        </text>
+        <text x={2} y={h() - 3} fg={theme.text.secondary}>
+          {"\u2191\u2193:navigate  Enter:run  Esc:close"}
+        </text>
+      </box>
+    </box>
+  );
+}

@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "oh-my-worktree config",
+  "type": "object",
+  "required": ["version"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1,
+      "description": "Config schema version"
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "worktreeDir": {
+          "type": "string",
+          "default": "~/.omw/worktrees/{repo}-{branch}",
+          "description": "Directory pattern. Supports ~ (home), {repo} and {branch} variables."
+        },
+        "copyFiles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "linkFiles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "postCreate": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "postRemove": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        }
+      }
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "worktreeDir": { "type": "string" },
+          "copyFiles": { "type": "array", "items": { "type": "string" } },
+          "linkFiles": { "type": "array", "items": { "type": "string" } },
+          "postCreate": { "type": "array", "items": { "type": "string" } },
+          "postRemove": { "type": "array", "items": { "type": "string" } },
+          "monorepo": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "autoDetect": {
+                "type": "boolean",
+                "default": true,
+                "description": "Automatically detect monorepo tools (pnpm, turbo, nx, lerna, npm workspaces)"
+              },
+              "extraPatterns": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Additional glob patterns to discover packages not caught by auto-detection"
+              },
+              "hooks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["glob"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "glob": {
+                      "type": "string",
+                      "description": "Glob pattern to match focus paths"
+                    },
+                    "copyFiles": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "Files to copy from main repo's package path to worktree's package path"
+                    },
+                    "linkFiles": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "Files/dirs to symlink from main repo's package path to worktree's package path"
+                    },
+                    "postCreate": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "postRemove": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
