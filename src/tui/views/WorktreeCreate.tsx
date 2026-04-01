@@ -7,6 +7,7 @@ import { copyFiles, linkFiles } from "../../core/files.ts";
 import { executeHooks } from "../../core/hooks.ts";
 import { writeFocus } from "../../core/focus.ts";
 import { validateFocusPaths } from "../../core/monorepo.ts";
+import { matchHooksForFocus, executeGlobHooks } from "../../core/glob-hooks.ts";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { basename, resolve } from "node:path";
 import { theme } from "../themes.ts";
@@ -140,14 +141,33 @@ export function WorktreeCreate() {
           }
 
           const rawFocus = focusInput();
+          let focusPaths: string[] = [];
           if (rawFocus) {
             setStatusMsg("Setting focus...");
-            const focusPaths = rawFocus.split(/[,\s]+/).map(f => f.trim()).filter(Boolean);
+            focusPaths = rawFocus.split(/[,\s]+/).map(f => f.trim()).filter(Boolean);
             if (focusPaths.length > 0) {
               const { valid } = validateFocusPaths(wtPath, focusPaths);
+              focusPaths = valid;
               if (valid.length > 0) {
                 writeFocus(wtPath, valid);
+                hookEnv.OMW_FOCUS_PATHS = valid.join(",");
               }
+            }
+          }
+
+          if (focusPaths.length > 0 && repoConfig.monorepo?.hooks && repoConfig.monorepo.hooks.length > 0) {
+            const matches = matchHooksForFocus(repoConfig.monorepo.hooks, focusPaths);
+            if (matches.length > 0) {
+              setStatusMsg("Running monorepo hooks...");
+              await executeGlobHooks(matches, "postCreate", {
+                cwd: wtPath,
+                env: hookEnv,
+                repo: repoName,
+                branch,
+                focusPaths,
+                mainRepoPath: repoPath,
+                onOutput: (line) => setStatusMsg(line),
+              });
             }
           }
 
