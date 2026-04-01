@@ -23,6 +23,7 @@ if (process.argv.length === 2) {
     ]);
 
   yargs(hideBin(process.argv))
+    .locale("en")
     .scriptName("omw")
     .version(`oh-my-worktree v${pkg.version}`)
     .alias("version", "v")
