@@ -1,31 +1,39 @@
 class OhMyWorktree < Formula
   desc "Oh My Worktree - Git worktree manager with a TUI"
   homepage "https://github.com/getsolaris/oh-my-worktree"
-  url "https://github.com/getsolaris/oh-my-worktree/archive/refs/tags/v0.2.0.tar.gz"
-  sha256 "PLACEHOLDER_SHA256"
+  url "https://github.com/getsolaris/oh-my-worktree.git",
+      tag:      "v0.4.0",
+      revision: "6ad2270454d41ea598864e445660064e64316b91"
   license "MIT"
-  version "0.2.0"
 
   depends_on "oven-sh/bun/bun"
 
-  def install
-    # Install deps into libexec to isolate node_modules from Homebrew's
-    # dylib relinking. @opentui/core-darwin-arm64 ships a native .dylib
-    # whose Mach-O header is too small for Homebrew's install_name_tool
-    # rewrite (the Cellar path exceeds the header padding).
-    libexec.install Dir["*"]
-    cd libexec do
-      system "bun", "install", "--frozen-lockfile"
-    end
+  # Prevent Homebrew from cleaning files inside libexec
+  skip_clean "libexec"
 
+  def install
+    system "bun", "install"
+
+    # Gzip native dylibs so Homebrew's Mach-O relinking skips them.
+    # @opentui ships dylibs whose headers are too small for install_name_tool.
+    Dir.glob("node_modules/**/*.dylib").each { |f| system "gzip", f }
+
+    libexec.install Dir["*"]
+
+    # Launcher script decompresses gzipped dylibs on first run
     (bin/"omw").write <<~SH
       #!/bin/bash
-      exec "#{Formula["oven-sh/bun/bun"].opt_bin}/bun" run "#{libexec}/src/index.ts" "$@"
+      OMW_LIBEXEC="#{libexec}"
+      [ -f "$OMW_LIBEXEC/.dylibs_ready" ] || {
+        find "$OMW_LIBEXEC/node_modules" -name '*.dylib.gz' -exec gunzip -f {} + 2>/dev/null
+        touch "$OMW_LIBEXEC/.dylibs_ready"
+      }
+      exec "#{Formula["oven-sh/bun/bun"].opt_bin}/bun" run "$OMW_LIBEXEC/src/index.ts" "$@"
     SH
     chmod 0755, bin/"omw"
   end
 
   test do
-    system "#{bin}/omw", "--version"
+    assert_match "oh-my-worktree", shell_output("#{bin}/omw --version")
   end
 end
