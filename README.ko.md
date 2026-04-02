@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./banner.png" alt="oh-my-worktree" />
+</p>
+
 # 🌳 oh-my-worktree
 
 [English](./README.md) | **한국어**
