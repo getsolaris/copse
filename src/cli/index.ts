@@ -11,7 +11,7 @@ if (process.argv.length === 2) {
   const { launchTUI } = await import("../tui/App.tsx");
   await launchTUI();
 } else {
-  const [addCmd, listCmd, removeCmd, switchCmd, cleanCmd, configCmd, doctorCmd] =
+  const [addCmd, listCmd, removeCmd, switchCmd, cleanCmd, configCmd, doctorCmd, shellInitCmd, statusCmd, openCmd] =
     await Promise.all([
       import("./cmd/add.ts"),
       import("./cmd/list.ts"),
@@ -20,6 +20,9 @@ if (process.argv.length === 2) {
       import("./cmd/clean.ts"),
       import("./cmd/config.ts"),
       import("./cmd/doctor.ts"),
+      import("./cmd/shell-init.ts"),
+      import("./cmd/status.ts"),
+      import("./cmd/open.ts"),
     ]);
 
   yargs(hideBin(process.argv))
@@ -40,6 +43,10 @@ if (process.argv.length === 2) {
     .command(cleanCmd.default)
     .command(configCmd.default)
     .command(doctorCmd.default)
+    .command(shellInitCmd.default)
+    .command(statusCmd.default)
+    .command(openCmd.default)
+    .completion("completion", "Generate shell completion script")
     .demandCommand(
       1,
       "Please specify a command. Run --help to see available commands.",

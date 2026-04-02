@@ -1,5 +1,5 @@
 import { createContext, createResource, createMemo, useContext, type JSX } from "solid-js";
-import { GitWorktree } from "../../core/git.ts";
+import { GitWorktree, invalidateGitCache } from "../../core/git.ts";
 import type { Worktree } from "../../core/types.ts";
 
 interface GitState {
@@ -14,7 +14,7 @@ interface GitState {
 const GitContext = createContext<GitState>();
 
 export function GitProvider(props: { children: JSX.Element; repoPaths: string[] }) {
-  const [worktrees, { refetch }] = createResource(async () => {
+  const [worktrees, { refetch: rawRefetch }] = createResource(async () => {
     try {
       if (props.repoPaths.length <= 1) {
         return await GitWorktree.list(props.repoPaths[0]);
@@ -24,6 +24,11 @@ export function GitProvider(props: { children: JSX.Element; repoPaths: string[] 
       throw err;
     }
   });
+
+  const refetch = () => {
+    invalidateGitCache();
+    rawRefetch();
+  };
 
   const repoNames = createMemo(() => {
     const wts = worktrees() ?? [];

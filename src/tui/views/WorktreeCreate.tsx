@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { useApp } from "../context/AppContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
 import { GitWorktree } from "../../core/git.ts";
@@ -12,6 +12,9 @@ import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { basename, resolve } from "node:path";
 import { theme } from "../themes.ts";
 
+type StepStatus = "pending" | "running" | "done" | "error";
+interface ProgressStep { label: string; status: StepStatus; message?: string; }
+
 type Step = "input" | "preview" | "creating" | "done" | "error";
 
 export function WorktreeCreate() {
@@ -23,7 +26,12 @@ export function WorktreeCreate() {
   const [focusInput, setFocusInput] = createSignal("");
   const [focusField, setFocusField] = createSignal<"branch" | "focus">("branch");
   const [resolvedPath, setResolvedPath] = createSignal("");
+  const [progressSteps, setProgressSteps] = createSignal<ProgressStep[]>([]);
   const [statusMsg, setStatusMsg] = createSignal("");
+
+  const updateStep = (index: number, updates: Partial<ProgressStep>) => {
+    setProgressSteps(steps => steps.map((s, i) => i === index ? { ...s, ...updates } : s));
+  };
 
   const activeRepoPath = () => {
     const wts = git.worktrees() ?? [];
@@ -106,23 +114,85 @@ export function WorktreeCreate() {
         const wtPath = resolvedPath();
         const repoPath = activeRepoPath();
         const repoName = basename(repoPath);
-        const safeBranch = branch.replace(/\//g, "-");
 
         try {
-          setStatusMsg("Creating worktree...");
-          await GitWorktree.add(branch, wtPath, { createBranch: true }, repoPath);
-
           const config = loadConfig();
           const repoConfig = getRepoConfig(config, repoPath);
 
+          const steps: ProgressStep[] = [
+            { label: "Creating worktree", status: "pending" },
+          ];
+          if (repoConfig.autoUpstream) {
+            steps.push({ label: "Setting upstream", status: "pending" });
+          }
           if (repoConfig.copyFiles.length > 0) {
-            setStatusMsg("Copying files...");
-            copyFiles(repoPath, wtPath, repoConfig.copyFiles);
+            steps.push({ label: "Copying files", status: "pending" });
+          }
+          if (repoConfig.linkFiles.length > 0) {
+            steps.push({ label: "Creating symlinks", status: "pending" });
+          }
+          if (repoConfig.postCreate.length > 0) {
+            steps.push({ label: "Running hooks", status: "pending" });
           }
 
+          const rawFocus = focusInput();
+          let focusPaths: string[] = [];
+          if (rawFocus) {
+            focusPaths = rawFocus.split(/[,\s]+/).map(f => f.trim()).filter(Boolean);
+          }
+
+          if (focusPaths.length > 0) {
+            steps.push({ label: "Setting focus", status: "pending" });
+          }
+          if (focusPaths.length > 0 && repoConfig.monorepo?.hooks && repoConfig.monorepo.hooks.length > 0) {
+            const preMatches = matchHooksForFocus(repoConfig.monorepo.hooks, focusPaths);
+            if (preMatches.length > 0) {
+              steps.push({ label: "Running monorepo hooks", status: "pending" });
+            }
+          }
+
+          setProgressSteps(steps);
+
+          let stepIdx = 0;
+
+          // Creating worktree
+          updateStep(stepIdx, { status: "running" });
+          await GitWorktree.add(branch, wtPath, { createBranch: true }, repoPath);
+          updateStep(stepIdx, { status: "done" });
+          stepIdx++;
+
+          // Setting upstream
+          if (repoConfig.autoUpstream) {
+            updateStep(stepIdx, { status: "running" });
+            try {
+              const remote = await GitWorktree.getDefaultRemote(repoPath);
+              const exists = await GitWorktree.remoteBranchExists(branch, remote, repoPath);
+              if (exists) {
+                await GitWorktree.setUpstream(branch, remote, repoPath);
+                updateStep(stepIdx, { status: "done", message: `→ ${remote}/${branch}` });
+              } else {
+                updateStep(stepIdx, { status: "done", message: "no remote branch" });
+              }
+            } catch (err) {
+              updateStep(stepIdx, { status: "error", message: (err as Error).message });
+            }
+            stepIdx++;
+          }
+
+          // Copying files
+          if (repoConfig.copyFiles.length > 0) {
+            updateStep(stepIdx, { status: "running" });
+            copyFiles(repoPath, wtPath, repoConfig.copyFiles);
+            updateStep(stepIdx, { status: "done" });
+            stepIdx++;
+          }
+
+          // Creating symlinks
           if (repoConfig.linkFiles.length > 0) {
-            setStatusMsg("Creating symlinks...");
+            updateStep(stepIdx, { status: "running" });
             linkFiles(repoPath, wtPath, repoConfig.linkFiles);
+            updateStep(stepIdx, { status: "done" });
+            stepIdx++;
           }
 
           const hookEnv: Record<string, string> = {
@@ -131,34 +201,36 @@ export function WorktreeCreate() {
             OMW_REPO_PATH: repoPath,
           };
 
+          // Running hooks
           if (repoConfig.postCreate.length > 0) {
-            setStatusMsg(`Running: ${repoConfig.postCreate[0]}...`);
+            updateStep(stepIdx, { status: "running" });
             await executeHooks(repoConfig.postCreate, {
               cwd: wtPath,
               env: hookEnv,
-              onOutput: (line) => setStatusMsg(line),
+              onOutput: (line) => updateStep(stepIdx, { message: line }),
             });
+            updateStep(stepIdx, { status: "done" });
+            stepIdx++;
           }
 
-          const rawFocus = focusInput();
-          let focusPaths: string[] = [];
-          if (rawFocus) {
-            setStatusMsg("Setting focus...");
-            focusPaths = rawFocus.split(/[,\s]+/).map(f => f.trim()).filter(Boolean);
-            if (focusPaths.length > 0) {
-              const { valid } = validateFocusPaths(wtPath, focusPaths);
-              focusPaths = valid;
-              if (valid.length > 0) {
-                writeFocus(wtPath, valid);
-                hookEnv.OMW_FOCUS_PATHS = valid.join(",");
-              }
+          // Setting focus
+          if (focusPaths.length > 0) {
+            updateStep(stepIdx, { status: "running" });
+            const { valid } = validateFocusPaths(wtPath, focusPaths);
+            focusPaths = valid;
+            if (valid.length > 0) {
+              writeFocus(wtPath, valid);
+              hookEnv.OMW_FOCUS_PATHS = valid.join(",");
             }
+            updateStep(stepIdx, { status: "done" });
+            stepIdx++;
           }
 
+          // Running monorepo hooks
           if (focusPaths.length > 0 && repoConfig.monorepo?.hooks && repoConfig.monorepo.hooks.length > 0) {
+            updateStep(stepIdx, { status: "running" });
             const matches = matchHooksForFocus(repoConfig.monorepo.hooks, focusPaths);
             if (matches.length > 0) {
-              setStatusMsg("Running monorepo hooks...");
               await executeGlobHooks(matches, "postCreate", {
                 cwd: wtPath,
                 env: hookEnv,
@@ -166,9 +238,11 @@ export function WorktreeCreate() {
                 branch,
                 focusPaths,
                 mainRepoPath: repoPath,
-                onOutput: (line) => setStatusMsg(line),
+                onOutput: (line) => updateStep(stepIdx, { message: line }),
               });
             }
+            updateStep(stepIdx, { status: "done" });
+            stepIdx++;
           }
 
           setStatusMsg("Worktree created successfully!");
@@ -182,6 +256,11 @@ export function WorktreeCreate() {
             setStep("input");
           }, 1500);
         } catch (err) {
+          const currentSteps = progressSteps();
+          const runningIdx = currentSteps.findIndex(s => s.status === "running");
+          if (runningIdx >= 0) {
+            updateStep(runningIdx, { status: "error", message: (err as Error).message });
+          }
           setStatusMsg(`${(err as Error).message}`);
           setStep("error");
         }
@@ -375,11 +454,28 @@ export function WorktreeCreate() {
 
           <box height={1} />
 
-          <box height={1}>
-            <text x={3} y={0} fg={theme.text.warning}>
-              {"\u29D7 "}{statusMsg()}
-            </text>
-          </box>
+          <For each={progressSteps()}>
+            {(step) => (
+              <box height={1}>
+                <text x={3} y={0} fg={
+                  step.status === "done" ? theme.text.success :
+                  step.status === "running" ? theme.text.accent :
+                  step.status === "error" ? theme.text.error :
+                  theme.text.secondary
+                }>
+                  {step.status === "done" ? "\u2713" :
+                   step.status === "running" ? "\u27F3" :
+                   step.status === "error" ? "\u2717" :
+                   "\u25CB"}{" "}{step.label}
+                </text>
+                <Show when={step.message}>
+                  <text x={3 + step.label.length + 4} y={0} fg={theme.text.secondary}>
+                    {step.message}
+                  </text>
+                </Show>
+              </box>
+            )}
+          </For>
         </Show>
 
         <Show when={step() === "done"}>

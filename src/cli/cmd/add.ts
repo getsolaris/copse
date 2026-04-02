@@ -93,6 +93,21 @@ const cmd: CommandModule = {
       process.exit(1);
     }
 
+    if (repoConfig.autoUpstream) {
+      try {
+        const remote = await GitWorktree.getDefaultRemote(mainRepoPath);
+        const exists = await GitWorktree.remoteBranchExists(branch, remote, mainRepoPath);
+        if (exists) {
+          await GitWorktree.setUpstream(branch, remote, mainRepoPath);
+          console.log(`  ✓ Upstream tracking set → ${remote}/${branch}`);
+        } else {
+          console.log("  ℹ No remote branch found — upstream tracking skipped");
+        }
+      } catch (err) {
+        console.warn(`  ⚠ Could not set upstream tracking: ${(err as Error).message}`);
+      }
+    }
+
     try {
       if (repoConfig.copyFiles.length > 0) {
         console.log(`  Copying files: ${repoConfig.copyFiles.join(", ")}`);

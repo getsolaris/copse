@@ -1,8 +1,8 @@
-import { existsSync, readdirSync } from "fs";
+import { existsSync, readdirSync, rmSync } from "fs";
 import { join, resolve } from "path";
 import { loadConfig } from "./config";
 import { GitWorktree } from "./git";
-import { GitVersionError } from "./types";
+import { GitVersionError, type Worktree } from "./types";
 
 export type DoctorSeverity = "pass" | "warn" | "fail";
 
@@ -16,6 +16,12 @@ export interface DoctorCheckResult {
 export interface DoctorReport {
   checks: DoctorCheckResult[];
   healthy: boolean;
+}
+
+export interface FixResult {
+  action: string;
+  success: boolean;
+  detail?: string;
 }
 
 async function getGitVersionString(): Promise<string | null> {
@@ -85,29 +91,23 @@ export async function checkConfig(): Promise<DoctorCheckResult> {
   }
 }
 
-export async function checkStaleWorktrees(cwd?: string): Promise<DoctorCheckResult> {
+export function checkStaleWorktrees(worktrees: Worktree[]): DoctorCheckResult {
   const name = "Stale worktrees";
+  const missingPaths = worktrees.map((wt) => wt.path).filter((worktreePath) => !existsSync(worktreePath));
 
-  try {
-    const worktrees = await GitWorktree.list(cwd);
-    const missingPaths = worktrees.map((wt) => wt.path).filter((worktreePath) => !existsSync(worktreePath));
-
-    if (missingPaths.length > 0) {
-      return {
-        name,
-        status: "warn",
-        message: "missing worktree paths",
-        detail: missingPaths,
-      };
-    }
-
-    return { name, status: "pass", message: "none" };
-  } catch {
-    return { name, status: "pass", message: "not in a git repository" };
+  if (missingPaths.length > 0) {
+    return {
+      name,
+      status: "warn",
+      message: "missing worktree paths",
+      detail: missingPaths,
+    };
   }
+
+  return { name, status: "pass", message: "none" };
 }
 
-export async function checkOrphanedDirectories(cwd?: string): Promise<DoctorCheckResult> {
+export function checkOrphanedDirectories(worktrees: Worktree[]): DoctorCheckResult {
   const name = "Orphaned directories";
 
   try {
@@ -122,7 +122,7 @@ export async function checkOrphanedDirectories(cwd?: string): Promise<DoctorChec
       .filter((entry) => entry.isDirectory())
       .map((entry) => resolve(join(worktreeBase, entry.name)));
 
-    const trackedPaths = new Set((await GitWorktree.list(cwd)).map((wt) => resolve(wt.path)));
+    const trackedPaths = new Set(worktrees.map((wt) => resolve(wt.path)));
     const orphaned = localDirs.filter((dirPath) => !trackedPaths.has(dirPath));
 
     if (orphaned.length > 0) {
@@ -140,94 +140,166 @@ export async function checkOrphanedDirectories(cwd?: string): Promise<DoctorChec
   }
 }
 
-export async function checkLockStatus(cwd?: string): Promise<DoctorCheckResult> {
+export function checkLockStatus(worktrees: Worktree[]): DoctorCheckResult {
   const name = "Worktree locks";
+  const locked = worktrees.filter((wt) => wt.isLocked);
 
-  try {
-    const worktrees = await GitWorktree.list(cwd);
-    const locked = worktrees.filter((wt) => wt.isLocked);
+  if (locked.length === 0) {
+    return { name, status: "pass", message: "all clear" };
+  }
 
-    if (locked.length === 0) {
-      return { name, status: "pass", message: "all clear" };
+  const detail = locked.map((wt) => {
+    const branch = wt.branch ?? "detached";
+    if (!wt.lockReason) {
+      return `${branch} - ${wt.path} (potential stale lock: no reason)`;
     }
 
-    const detail = locked.map((wt) => {
-      const branch = wt.branch ?? "detached";
-      if (!wt.lockReason) {
-        return `${branch} - ${wt.path} (potential stale lock: no reason)`;
-      }
+    return `${branch} - ${wt.path} (reason: ${wt.lockReason})`;
+  });
 
-      return `${branch} - ${wt.path} (reason: ${wt.lockReason})`;
-    });
-
-    return {
-      name,
-      status: "warn",
-      message: "locked worktrees present",
-      detail,
-    };
-  } catch (err) {
-    return { name, status: "fail", message: `Check failed: ${(err as Error).message}` };
-  }
+  return {
+    name,
+    status: "warn",
+    message: "locked worktrees present",
+    detail,
+  };
 }
 
-export async function checkDirtyWorktrees(cwd?: string): Promise<DoctorCheckResult> {
+export function checkDirtyWorktrees(worktrees: Worktree[]): DoctorCheckResult {
   const name = "Dirty worktrees";
+  const dirtyNonMain = worktrees.filter((wt) => wt.isDirty && !wt.isMain);
 
-  try {
-    const worktrees = await GitWorktree.list(cwd);
-    const dirtyNonMain = worktrees.filter((wt) => wt.isDirty && !wt.isMain);
-
-    if (dirtyNonMain.length === 0) {
-      return { name, status: "pass", message: "none" };
-    }
-
-    return {
-      name,
-      status: "warn",
-      message: "dirty non-main worktrees found",
-      detail: dirtyNonMain.map((wt) => `${wt.branch ?? "detached"} - ${wt.path}`),
-    };
-  } catch (err) {
-    return { name, status: "fail", message: `Check failed: ${(err as Error).message}` };
+  if (dirtyNonMain.length === 0) {
+    return { name, status: "pass", message: "none" };
   }
+
+  return {
+    name,
+    status: "warn",
+    message: "dirty non-main worktrees found",
+    detail: dirtyNonMain.map((wt) => `${wt.branch ?? "detached"} - ${wt.path}`),
+  };
 }
 
 export async function runAllChecks(cwd?: string): Promise<DoctorReport> {
-  const checksToRun: Array<() => Promise<DoctorCheckResult>> = [
-    () => checkGitVersion(),
-    () => checkConfig(),
-    () => checkStaleWorktrees(cwd),
-    () => checkOrphanedDirectories(cwd),
-    () => checkLockStatus(cwd),
-    () => checkDirtyWorktrees(cwd),
+  const worktrees = await GitWorktree.list(cwd).catch((): Worktree[] => []);
+
+  const checks: DoctorCheckResult[] = [
+    await checkGitVersion(),
+    await checkConfig(),
+    checkStaleWorktrees(worktrees),
+    checkOrphanedDirectories(worktrees),
+    checkLockStatus(worktrees),
+    checkDirtyWorktrees(worktrees),
   ];
-
-  const checks = await Promise.all(
-    checksToRun.map(async (runCheck, index) => {
-      try {
-        return await runCheck();
-      } catch (err) {
-        const fallbackNames = [
-          "Git version",
-          "Configuration",
-          "Stale worktrees",
-          "Orphaned directories",
-          "Worktree locks",
-          "Dirty worktrees",
-        ];
-
-        return {
-          name: fallbackNames[index] ?? "Unknown check",
-          status: "fail" as const,
-          message: `Check failed: ${(err as Error).message}`,
-        };
-      }
-    }),
-  );
 
   return {
     checks,
     healthy: checks.every((check) => check.status === "pass"),
   };
+}
+
+export async function fixStaleWorktrees(cwd?: string): Promise<FixResult> {
+  try {
+    await GitWorktree.prune(cwd);
+    return { action: "Prune stale worktrees", success: true };
+  } catch (err) {
+    return {
+      action: "Prune stale worktrees",
+      success: false,
+      detail: (err as Error).message,
+    };
+  }
+}
+
+export async function fixOrphanedDirectories(cwd?: string): Promise<FixResult[]> {
+  const results: FixResult[] = [];
+
+  try {
+    const home = Bun.env.HOME ?? "~";
+    const worktreeBase = join(home, ".omw", "worktrees");
+
+    if (!existsSync(worktreeBase)) {
+      return results;
+    }
+
+    const localDirs = readdirSync(worktreeBase, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => resolve(join(worktreeBase, entry.name)));
+
+    const trackedPaths = new Set(
+      (await GitWorktree.list(cwd).catch(() => [])).map((wt) => resolve(wt.path)),
+    );
+
+    const orphaned = localDirs.filter((dirPath) => !trackedPaths.has(dirPath));
+
+    for (const dirPath of orphaned) {
+      try {
+        rmSync(dirPath, { recursive: true, force: true });
+        results.push({
+          action: `Remove orphaned directory`,
+          success: true,
+          detail: dirPath,
+        });
+      } catch (err) {
+        results.push({
+          action: `Remove orphaned directory`,
+          success: false,
+          detail: `${dirPath}: ${(err as Error).message}`,
+        });
+      }
+    }
+  } catch (err) {
+    results.push({
+      action: "Remove orphaned directories",
+      success: false,
+      detail: (err as Error).message,
+    });
+  }
+
+  return results;
+}
+
+export async function fixStaleLocks(cwd?: string): Promise<FixResult[]> {
+  const results: FixResult[] = [];
+
+  try {
+    const worktrees = await GitWorktree.list(cwd);
+    const staleLocked = worktrees.filter((wt) => wt.isLocked && !wt.lockReason);
+
+    for (const wt of staleLocked) {
+      try {
+        await GitWorktree.unlock(wt.path, cwd);
+        results.push({
+          action: `Unlock stale lock`,
+          success: true,
+          detail: `${wt.branch ?? "detached"} - ${wt.path}`,
+        });
+      } catch (err) {
+        results.push({
+          action: `Unlock stale lock`,
+          success: false,
+          detail: `${wt.path}: ${(err as Error).message}`,
+        });
+      }
+    }
+  } catch (err) {
+    results.push({
+      action: "Fix stale locks",
+      success: false,
+      detail: (err as Error).message,
+    });
+  }
+
+  return results;
+}
+
+export async function runFixes(cwd?: string): Promise<FixResult[]> {
+  const results: FixResult[] = [];
+
+  results.push(await fixStaleWorktrees(cwd));
+  results.push(...(await fixOrphanedDirectories(cwd)));
+  results.push(...(await fixStaleLocks(cwd)));
+
+  return results;
 }

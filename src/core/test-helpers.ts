@@ -53,3 +53,16 @@ export async function createTempRepo(prefix = "omw-test-"): Promise<string> {
 
   return dir;
 }
+
+export async function createTempRepoWithRemote(
+  prefix = "omw-test-",
+): Promise<{ repoPath: string; remotePath: string }> {
+  const repoPath = await createTempRepo(prefix);
+  const remotePath = createTempDir(`${prefix}remote-`);
+
+  await runGit(["init", "--bare"], remotePath);
+  await runGit(["remote", "add", "origin", remotePath], repoPath);
+  await runGit(["push", "origin", "HEAD"], repoPath);
+
+  return { repoPath, remotePath };
+}

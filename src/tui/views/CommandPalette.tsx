@@ -25,6 +25,20 @@ export function CommandPalette() {
   const [query, setQuery] = createSignal("");
   const [selectedIdx, setSelectedIdx] = createSignal(0);
 
+  const detectEditor = (): string | null => {
+    const envEditor = process.env.VISUAL || process.env.EDITOR;
+    if (envEditor) return envEditor;
+    const editors = ["code", "cursor", "vim", "nvim", "zed", "subl", "idea", "webstorm"] as const;
+    for (const e of editors) {
+      try {
+        const proc = Bun.spawnSync(["which", e], { stdout: "pipe", stderr: "pipe" });
+        if (proc.exitCode === 0) return e;
+      } catch {
+      }
+    }
+    return null;
+  };
+
   const commands = createMemo<Command[]>(() => [
     {
       id: "add",
@@ -42,6 +56,20 @@ export function CommandPalette() {
       action: () => {
         app.setShowRemove(true);
         app.setShowCommandPalette(false);
+      },
+    },
+    {
+      id: "open-editor",
+      label: "Open in Editor",
+      description: "Open selected worktree in IDE",
+      action: () => {
+        const wts = git.worktrees() ?? [];
+        const selected = wts[app.selectedWorktreeIndex()];
+        if (!selected) return;
+        const editor = detectEditor();
+        if (!editor) return;
+        app.setShowCommandPalette(false);
+        Bun.spawn([editor, selected.path], { stdout: "inherit", stderr: "inherit" });
       },
     },
     {

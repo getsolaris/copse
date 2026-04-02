@@ -27,6 +27,18 @@ declare module "solid-js" {
   }
 }
 
+function detectEditorBin(): string | null {
+  const editors = ["code", "cursor", "vim", "nvim", "zed", "subl", "idea", "webstorm"] as const;
+  for (const e of editors) {
+    try {
+      const proc = Bun.spawnSync(["which", e], { stdout: "pipe", stderr: "pipe" });
+      if (proc.exitCode === 0) return e;
+    } catch {
+    }
+  }
+  return null;
+}
+
 const SIDEBAR_W = 28;
 
 function AppShell(props: { repoPath: string }) {
@@ -58,6 +70,17 @@ function AppShell(props: { repoPath: string }) {
         const selected = wts[app.selectedWorktreeIndex()];
         if (selected && !selected.isMain) {
           app.setShowRemove(true);
+        }
+        return;
+      }
+      if (key === "o") {
+        const wts = git.worktrees() ?? [];
+        const selected = wts[app.selectedWorktreeIndex()];
+        if (selected) {
+          const editor = process.env.VISUAL || process.env.EDITOR || detectEditorBin();
+          if (editor) {
+            Bun.spawn([editor, selected.path], { stdout: "inherit", stderr: "inherit" });
+          }
         }
         return;
       }
@@ -170,17 +193,20 @@ function AppShell(props: { repoPath: string }) {
         <text x={12} y={0} fg={theme.text.secondary}>{"a"}</text>
         <text x={13} y={0} fg={theme.text.primary}>{":add"}</text>
         <text x={18} y={0} fg={theme.border.subtle}>{"\u2502"}</text>
-        <text x={20} y={0} fg={theme.text.secondary}>{"r"}</text>
-        <text x={21} y={0} fg={theme.text.primary}>{":refresh"}</text>
-        <text x={30} y={0} fg={theme.border.subtle}>{"\u2502"}</text>
-        <text x={32} y={0} fg={theme.text.secondary}>{"^P"}</text>
-        <text x={34} y={0} fg={theme.text.primary}>{":commands"}</text>
-        <text x={44} y={0} fg={theme.border.subtle}>{"\u2502"}</text>
-        <text x={46} y={0} fg={theme.text.secondary}>{"h"}</text>
-        <text x={47} y={0} fg={theme.text.primary}>{":health"}</text>
-        <text x={54} y={0} fg={theme.border.subtle}>{"\u2502"}</text>
-        <text x={56} y={0} fg={theme.text.secondary}>{"q"}</text>
-        <text x={57} y={0} fg={theme.text.primary}>{":quit"}</text>
+        <text x={20} y={0} fg={theme.text.secondary}>{"o"}</text>
+        <text x={21} y={0} fg={theme.text.primary}>{":open"}</text>
+        <text x={27} y={0} fg={theme.border.subtle}>{"\u2502"}</text>
+        <text x={29} y={0} fg={theme.text.secondary}>{"r"}</text>
+        <text x={30} y={0} fg={theme.text.primary}>{":refresh"}</text>
+        <text x={39} y={0} fg={theme.border.subtle}>{"\u2502"}</text>
+        <text x={41} y={0} fg={theme.text.secondary}>{"^P"}</text>
+        <text x={43} y={0} fg={theme.text.primary}>{":cmd"}</text>
+        <text x={48} y={0} fg={theme.border.subtle}>{"\u2502"}</text>
+        <text x={50} y={0} fg={theme.text.secondary}>{"h"}</text>
+        <text x={51} y={0} fg={theme.text.primary}>{":health"}</text>
+        <text x={58} y={0} fg={theme.border.subtle}>{"\u2502"}</text>
+        <text x={60} y={0} fg={theme.text.secondary}>{"q"}</text>
+        <text x={61} y={0} fg={theme.text.primary}>{":quit"}</text>
       </box>
 
 

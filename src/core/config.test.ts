@@ -59,6 +59,34 @@ describe("validateConfig", () => {
   });
 });
 
+describe("validateConfig - autoUpstream", () => {
+  it("defaults.autoUpstream true passes validation", () => {
+    expect(validateConfig({ version: 1, defaults: { autoUpstream: true } })).toEqual([]);
+  });
+
+  it("defaults.autoUpstream false passes validation", () => {
+    expect(validateConfig({ version: 1, defaults: { autoUpstream: false } })).toEqual([]);
+  });
+
+  it("defaults.autoUpstream string fails validation", () => {
+    const result = validateConfig({ version: 1, defaults: { autoUpstream: "true" } });
+
+    expect(result.some((error) => error.field === "defaults.autoUpstream" && error.message === "Must be a boolean")).toBeTrue();
+  });
+
+  it("defaults.autoUpstream number fails validation", () => {
+    const result = validateConfig({ version: 1, defaults: { autoUpstream: 1 } });
+
+    expect(result.some((error) => error.field === "defaults.autoUpstream" && error.message === "Must be a boolean")).toBeTrue();
+  });
+
+  it("unknown defaults field still detected with autoUpstream present", () => {
+    const result = validateConfig({ version: 1, defaults: { autoUpstream: true, unknownField: true } });
+
+    expect(result.some((error) => error.field === "defaults.unknownField")).toBeTrue();
+  });
+});
+
 describe("getRepoConfig", () => {
   it("returns defaults when no repo match", () => {
     const config: OmwConfig = {
@@ -135,6 +163,44 @@ describe("getRepoConfig", () => {
   });
 });
 
+describe("getRepoConfig - autoUpstream", () => {
+  it("defaults to true when autoUpstream is missing", () => {
+    const config: OmwConfig = { version: 1, repos: [{ path: "/tmp/repo" }] };
+
+    expect(getRepoConfig(config, "/tmp/repo").autoUpstream).toBeTrue();
+  });
+
+  it("defaults.autoUpstream false resolves to false", () => {
+    const config: OmwConfig = {
+      version: 1,
+      defaults: { autoUpstream: false },
+      repos: [{ path: "/tmp/repo" }],
+    };
+
+    expect(getRepoConfig(config, "/tmp/repo").autoUpstream).toBeFalse();
+  });
+
+  it("repo override false beats defaults true", () => {
+    const config: OmwConfig = {
+      version: 1,
+      defaults: { autoUpstream: true },
+      repos: [{ path: "/tmp/repo", autoUpstream: false }],
+    };
+
+    expect(getRepoConfig(config, "/tmp/repo").autoUpstream).toBeFalse();
+  });
+
+  it("repo inherits defaults when autoUpstream missing", () => {
+    const config: OmwConfig = {
+      version: 1,
+      defaults: { autoUpstream: false },
+      repos: [{ path: "/tmp/repo", worktreeDir: "/tmp/wt" }],
+    };
+
+    expect(getRepoConfig(config, "/tmp/repo").autoUpstream).toBeFalse();
+  });
+});
+
 describe("expandTemplate", () => {
   it("replaces {repo} and {branch}", () => {
     const result = expandTemplate("../{repo}-{branch}", {
@@ -203,6 +269,7 @@ describe("loadConfig", () => {
         linkFiles: [],
         postCreate: [],
         postRemove: [],
+        autoUpstream: true,
       },
       repos: [],
     });

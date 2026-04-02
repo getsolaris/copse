@@ -375,22 +375,28 @@ Available: `opencode`, `tokyo-night`, `dracula`, `nord`, `catppuccin`, `github-d
 
 ## Shell Integration
 
-For `omw switch` to change your current directory, add this to `~/.zshrc` or `~/.bashrc`:
+Use `omw shell-init` to install shell integration for `omw switch`.
+
+### Examples
 
 ```bash
-omw() {
-  if [ "$1" = "switch" ] || [ "$1" = "sw" ]; then
-    local output
-    output=$(command omw "$@" 2>/dev/null)
-    if [[ "$output" == cd\ * ]]; then
-      eval "$output"
-    else
-      command omw "$@"
-    fi
-  else
-    command omw "$@"
-  fi
-}
+# zsh
+echo 'eval "$(omw shell-init zsh)"' >> ~/.zshrc
+source ~/.zshrc
+
+# bash
+echo 'eval "$(omw shell-init bash)"' >> ~/.bashrc
+source ~/.bashrc
+
+# fish
+omw shell-init fish >> ~/.config/fish/config.fish
+source ~/.config/fish/config.fish
+```
+
+You can also preview the generated wrapper before saving it:
+
+```bash
+omw shell-init zsh
 ```
 
 ## License

@@ -11,8 +11,13 @@ import {
   checkStaleWorktrees,
   runAllChecks,
 } from "./doctor";
+import { GitWorktree } from "./git";
+import { invalidateGitCache } from "./git";
 
-afterEach(cleanupTempDirs);
+afterEach(() => {
+  invalidateGitCache();
+  cleanupTempDirs();
+});
 
 describe("checkGitVersion", () => {
   it("passes with installed git version", async () => {
@@ -33,17 +38,17 @@ describe("checkConfig", () => {
 });
 
 describe("checkStaleWorktrees", () => {
-  it("passes when outside a git repo", async () => {
-    const nonGitDir = createTempDir("omw-non-git-");
-    const result = await checkStaleWorktrees(nonGitDir);
+  it("passes with empty worktree list", () => {
+    const result = checkStaleWorktrees([]);
     expect(result.name).toBe("Stale worktrees");
     expect(result.status).toBe("pass");
-    expect(result.message).toContain("not in a git repository");
+    expect(result.message).toBe("none");
   });
 
   it("passes when all worktree paths exist", async () => {
     const repoPath = await createTempRepo();
-    const result = await checkStaleWorktrees(repoPath);
+    const worktrees = await GitWorktree.list(repoPath);
+    const result = checkStaleWorktrees(worktrees);
     expect(result.name).toBe("Stale worktrees");
     expect(result.status).toBe("pass");
     expect(result.message).toBe("none");
@@ -55,7 +60,9 @@ describe("checkStaleWorktrees", () => {
     await runGit(["worktree", "add", wtPath, "-b", "test-stale"], repoPath);
     rmSync(wtPath, { recursive: true, force: true });
 
-    const result = await checkStaleWorktrees(repoPath);
+    invalidateGitCache();
+    const worktrees = await GitWorktree.list(repoPath);
+    const result = checkStaleWorktrees(worktrees);
     expect(result.status).toBe("warn");
     expect(result.message).toBe("missing worktree paths");
     expect(result.detail).toBeDefined();
@@ -66,7 +73,8 @@ describe("checkStaleWorktrees", () => {
 describe("checkDirtyWorktrees", () => {
   it("passes when all worktrees are clean", async () => {
     const repoPath = await createTempRepo();
-    const result = await checkDirtyWorktrees(repoPath);
+    const worktrees = await GitWorktree.list(repoPath);
+    const result = checkDirtyWorktrees(worktrees);
     expect(result.name).toBe("Dirty worktrees");
     expect(result.status).toBe("pass");
     expect(result.message).toBe("none");
@@ -78,7 +86,9 @@ describe("checkDirtyWorktrees", () => {
     await runGit(["worktree", "add", wtPath, "-b", "test-dirty"], repoPath);
     writeFileSync(join(wtPath, "dirty.txt"), "dirty content");
 
-    const result = await checkDirtyWorktrees(repoPath);
+    invalidateGitCache();
+    const worktrees = await GitWorktree.list(repoPath);
+    const result = checkDirtyWorktrees(worktrees);
     expect(result.status).toBe("warn");
     expect(result.message).toBe("dirty non-main worktrees found");
     expect(result.detail).toBeDefined();
@@ -89,7 +99,8 @@ describe("checkDirtyWorktrees", () => {
 describe("checkLockStatus", () => {
   it("passes when no worktrees are locked", async () => {
     const repoPath = await createTempRepo();
-    const result = await checkLockStatus(repoPath);
+    const worktrees = await GitWorktree.list(repoPath);
+    const result = checkLockStatus(worktrees);
     expect(result.name).toBe("Worktree locks");
     expect(result.status).toBe("pass");
     expect(result.message).toBe("all clear");
@@ -101,7 +112,9 @@ describe("checkLockStatus", () => {
     await runGit(["worktree", "add", wtPath, "-b", "test-lock"], repoPath);
     await runGit(["worktree", "lock", wtPath], repoPath);
 
-    const result = await checkLockStatus(repoPath);
+    invalidateGitCache();
+    const worktrees = await GitWorktree.list(repoPath);
+    const result = checkLockStatus(worktrees);
     expect(result.status).toBe("warn");
     expect(result.message).toBe("locked worktrees present");
     expect(result.detail).toBeDefined();
@@ -112,7 +125,8 @@ describe("checkLockStatus", () => {
 describe("checkOrphanedDirectories", () => {
   it("passes when no orphaned directories exist", async () => {
     const repoPath = await createTempRepo();
-    const result = await checkOrphanedDirectories(repoPath);
+    const worktrees = await GitWorktree.list(repoPath);
+    const result = checkOrphanedDirectories(worktrees);
     expect(result.name).toBe("Orphaned directories");
     expect(result.status).toBe("pass");
   });

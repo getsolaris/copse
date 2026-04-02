@@ -16,6 +16,7 @@ export interface RepoDefaults {
   linkFiles?: string[];
   postCreate?: string[];
   postRemove?: string[];
+  autoUpstream?: boolean;
 }
 
 export interface MonorepoHookConfig {
@@ -63,6 +64,7 @@ const DEFAULT_CONFIG: OmwConfig = {
     linkFiles: [],
     postCreate: [],
     postRemove: [],
+    autoUpstream: true,
   },
   repos: [],
 };
@@ -73,6 +75,7 @@ const DEFAULT_RESOLVED: ResolvedRepoConfig = {
   linkFiles: [],
   postCreate: [],
   postRemove: [],
+  autoUpstream: true,
 };
 
 function validateStringArray(
@@ -132,6 +135,7 @@ export function validateConfig(data: unknown): ValidationError[] {
         "linkFiles",
         "postCreate",
         "postRemove",
+        "autoUpstream",
       ]);
 
       for (const key of Object.keys(d)) {
@@ -142,6 +146,10 @@ export function validateConfig(data: unknown): ValidationError[] {
 
       if ("worktreeDir" in d && typeof d.worktreeDir !== "string") {
         errors.push({ field: "defaults.worktreeDir", message: "Must be a string" });
+      }
+
+      if ("autoUpstream" in d && typeof d.autoUpstream !== "boolean") {
+        errors.push({ field: "defaults.autoUpstream", message: "Must be a boolean" });
       }
 
       for (const arrayKey of [
@@ -178,6 +186,7 @@ export function validateConfig(data: unknown): ValidationError[] {
           "linkFiles",
           "postCreate",
           "postRemove",
+          "autoUpstream",
           "monorepo",
         ]);
 
@@ -199,6 +208,10 @@ export function validateConfig(data: unknown): ValidationError[] {
 
         if ("worktreeDir" in r && typeof r.worktreeDir !== "string") {
           errors.push({ field: `${fieldPrefix}.worktreeDir`, message: "Must be a string" });
+        }
+
+        if ("autoUpstream" in r && typeof r.autoUpstream !== "boolean") {
+          errors.push({ field: `${fieldPrefix}.autoUpstream`, message: "Must be a boolean" });
         }
 
         for (const arrayKey of [
@@ -310,6 +323,8 @@ export function getRepoConfig(config: OmwConfig, repoPath: string): ResolvedRepo
     linkFiles: repoOverride?.linkFiles ?? config.defaults?.linkFiles ?? DEFAULT_RESOLVED.linkFiles,
     postCreate: repoOverride?.postCreate ?? config.defaults?.postCreate ?? DEFAULT_RESOLVED.postCreate,
     postRemove: repoOverride?.postRemove ?? config.defaults?.postRemove ?? DEFAULT_RESOLVED.postRemove,
+    autoUpstream:
+      repoOverride?.autoUpstream ?? config.defaults?.autoUpstream ?? DEFAULT_RESOLVED.autoUpstream,
     monorepo: repoOverride?.monorepo,
   };
 }

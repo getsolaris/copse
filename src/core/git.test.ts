@@ -3,7 +3,13 @@ import { existsSync, realpathSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { GitWorktree } from "./git";
 import { GitError } from "./types";
-import { cleanupTempDirs, createTempDir, createTempRepo } from "./test-helpers";
+import {
+  cleanupTempDirs,
+  createTempDir,
+  createTempRepo,
+  createTempRepoWithRemote,
+  runGit,
+} from "./test-helpers";
 
 afterEach(() => {
   cleanupTempDirs();
@@ -157,5 +163,79 @@ describe("GitWorktree integration", () => {
 
   it("checkVersion() passes for supported git versions", async () => {
     await expect(GitWorktree.checkVersion()).resolves.toBeUndefined();
+  });
+});
+
+describe("GitWorktree upstream methods", () => {
+  let testDir = "";
+  let remoteDir = "";
+
+  beforeEach(async () => {
+    const result = await createTempRepoWithRemote("omw-upstream-");
+    testDir = result.repoPath;
+    remoteDir = result.remotePath;
+  });
+
+  afterEach(() => {
+    cleanupTempDirs();
+  });
+
+  it("remoteBranchExists() returns true for existing remote branch", async () => {
+    const branch = await GitWorktree.getBranchForWorktree(testDir);
+    expect(branch).not.toBeNull();
+
+    const exists = await GitWorktree.remoteBranchExists(branch as string, "origin", testDir);
+    expect(exists).toBeTrue();
+  });
+
+  it("remoteBranchExists() returns false for non-existent branch", async () => {
+    const exists = await GitWorktree.remoteBranchExists("feature/does-not-exist", "origin", testDir);
+    expect(exists).toBeFalse();
+  });
+
+  it("remoteBranchExists() works with slash-containing branch names", async () => {
+    await runGit(["checkout", "-b", "feature/auth"], testDir);
+    await runGit(["push", "origin", "feature/auth"], testDir);
+    await runGit(["checkout", "-"], testDir);
+
+    const exists = await GitWorktree.remoteBranchExists("feature/auth", "origin", testDir);
+    expect(exists).toBeTrue();
+  });
+
+  it("setUpstream() sets upstream successfully", async () => {
+    const branch = (await GitWorktree.getBranchForWorktree(testDir)) as string;
+
+    await GitWorktree.setUpstream(branch, "origin", testDir);
+
+    const remote = await (GitWorktree as any).run(["config", `branch.${branch}.remote`], testDir);
+    expect(remote).toBe("origin");
+  });
+
+  it("setUpstream() does not overwrite existing upstream", async () => {
+    const branch = (await GitWorktree.getBranchForWorktree(testDir)) as string;
+    const backupRemote = createTempDir("omw-backup-remote-");
+
+    await runGit(["init", "--bare"], backupRemote);
+    await runGit(["remote", "add", "backup", backupRemote], testDir);
+    await (GitWorktree as any).run(["config", `branch.${branch}.remote`, "backup"], testDir);
+    await (GitWorktree as any).run(["config", `branch.${branch}.merge`, `refs/heads/${branch}`], testDir);
+
+    await GitWorktree.setUpstream(branch, "origin", testDir);
+
+    const remote = await (GitWorktree as any).run(["config", `branch.${branch}.remote`], testDir);
+    expect(remote).toBe("backup");
+  });
+
+  it("getDefaultRemote() returns origin by default", async () => {
+    const remote = await GitWorktree.getDefaultRemote(testDir);
+    expect(remote).toBe("origin");
+    expect(existsSync(remoteDir)).toBeTrue();
+  });
+
+  it("getDefaultRemote() returns configured checkout.defaultRemote", async () => {
+    await runGit(["config", "checkout.defaultRemote", "upstream"], testDir);
+
+    const remote = await GitWorktree.getDefaultRemote(testDir);
+    expect(remote).toBe("upstream");
   });
 });
