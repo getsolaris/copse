@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { cleanupTempDirs, createTempDir } from "./test-helpers.ts";
 import {
+  generateReferenceFiles,
   generateSkillContent,
   getSkillDir,
   getSkillFilePath,
@@ -58,48 +59,90 @@ describe("getSkillFilePath", () => {
 });
 
 describe("generateSkillContent", () => {
-  it("includes SKILL.md frontmatter", () => {
+  it("includes SKILL.md frontmatter with metadata", () => {
     const content = generateSkillContent();
     expect(content).toStartWith("---\n");
     expect(content).toContain("name: omw");
     expect(content).toContain("description:");
+    expect(content).toContain("metadata:");
+    expect(content).toContain("author: getsolaris");
+    expect(content).toContain('version: "1.0.0"');
   });
 
-  it("includes omw command reference", () => {
+  it("includes quick start and command overview", () => {
     const content = generateSkillContent();
-    expect(content).toContain("omw list");
-    expect(content).toContain("omw add");
-    expect(content).toContain("omw remove");
-    expect(content).toContain("omw switch");
-    expect(content).toContain("omw exec");
-    expect(content).toContain("omw doctor");
+    expect(content).toContain("## Quick Start");
+    expect(content).toContain("Create a feature worktree");
+    expect(content).toContain("Clean up merged worktrees");
+    expect(content).toContain("Run commands across worktrees");
+    expect(content).toContain("## Command Overview");
+    expect(content).toContain("| Command | Aliases | Description |");
+    expect(content).toContain("| `add` |");
+    expect(content).toContain("| `shell-init` |");
+    expect(content).toContain("| `init` |");
   });
 
-  it("includes workflow examples", () => {
+  it("includes monorepo, config, and command reference links", () => {
     const content = generateSkillContent();
-    expect(content).toContain("## Workflows");
-    expect(content).toContain("--create");
+    expect(content).toContain("## Monorepo Workflows");
+    expect(content).toContain("--focus");
+    expect(content).toContain("## Configuration");
     expect(content).toContain("--json");
+    expect(content).toContain("~/.config/oh-my-worktree/config.json");
+    expect(content).toContain("## Command Reference");
+    expect(content).toContain("For detailed options and examples for each command:");
+    expect(content).toContain("references/add.md");
+    expect(content).toContain("references/shell-init.md");
+    expect(content).toContain("references/init.md");
+  });
+});
+
+describe("generateReferenceFiles", () => {
+  it("returns all 20 command reference files", () => {
+    const references = generateReferenceFiles();
+    expect(references.size).toBe(20);
+    expect(references.has("add.md")).toBeTrue();
+    expect(references.has("remove.md")).toBeTrue();
+    expect(references.has("shell-init.md")).toBeTrue();
+    expect(references.has("init.md")).toBeTrue();
   });
 
-  it("includes config path", () => {
-    const content = generateSkillContent();
-    expect(content).toContain("~/.config/oh-my-worktree/config.json");
+  it("each reference includes required sections", () => {
+    const references = generateReferenceFiles();
+
+    for (const [name, content] of references.entries()) {
+      const command = name.replace(".md", "");
+      expect(content).toContain(`# omw ${command}`);
+      expect(content).toContain("## Synopsis");
+      expect(content).toContain("## Options");
+      expect(content).toContain("## Examples");
+      expect(content).toContain("## Notes");
+      expect(content).toContain("| Flag | Type | Alias | Description |");
+      expect(content).toContain("```bash");
+    }
   });
 });
 
 describe("writeSkillFile", () => {
-  it("creates skill file with directory structure", () => {
+  it("creates SKILL.md and references directory", () => {
     const result = writeSkillFile("codex");
 
     expect(result.action).toBe("created");
     expect(result.platform).toBe("codex");
     expect(result.filePath).toContain(join(".agents", "skills", "omw", "SKILL.md"));
+    expect(result.referenceDir).toContain(join(".agents", "skills", "omw", "references"));
+    expect(result.referenceCount).toBe(20);
     expect(existsSync(result.filePath)).toBeTrue();
+    expect(existsSync(result.referenceDir)).toBeTrue();
 
     const content = readFileSync(result.filePath, "utf-8");
     expect(content).toContain("name: omw");
     expect(content).toContain("oh-my-worktree");
+
+    const referenceFiles = readdirSync(result.referenceDir);
+    expect(referenceFiles).toHaveLength(20);
+    expect(referenceFiles).toContain("add.md");
+    expect(referenceFiles).toContain("init.md");
   });
 
   it("creates claude-code skill in ~/.claude/skills/omw/", () => {
@@ -107,7 +150,10 @@ describe("writeSkillFile", () => {
 
     expect(result.action).toBe("created");
     expect(result.filePath).toContain(join(".claude", "skills", "omw", "SKILL.md"));
+    expect(result.referenceDir).toContain(join(".claude", "skills", "omw", "references"));
+    expect(result.referenceCount).toBe(20);
     expect(existsSync(result.filePath)).toBeTrue();
+    expect(existsSync(result.referenceDir)).toBeTrue();
   });
 
   it("creates opencode skill in ~/.config/opencode/skill/omw/", () => {
@@ -115,7 +161,10 @@ describe("writeSkillFile", () => {
 
     expect(result.action).toBe("created");
     expect(result.filePath).toContain(join(".config", "opencode", "skill", "omw", "SKILL.md"));
+    expect(result.referenceDir).toContain(join(".config", "opencode", "skill", "omw", "references"));
+    expect(result.referenceCount).toBe(20);
     expect(existsSync(result.filePath)).toBeTrue();
+    expect(existsSync(result.referenceDir)).toBeTrue();
   });
 
   it("updates existing skill file", () => {
@@ -128,22 +177,26 @@ describe("writeSkillFile", () => {
   it("is idempotent — running twice produces same content", () => {
     writeSkillFile("opencode");
     const first = readFileSync(getSkillFilePath("opencode"), "utf-8");
+    const firstReference = readFileSync(join(getSkillDir("opencode"), "references", "add.md"), "utf-8");
 
     writeSkillFile("opencode");
     const second = readFileSync(getSkillFilePath("opencode"), "utf-8");
+    const secondReference = readFileSync(join(getSkillDir("opencode"), "references", "add.md"), "utf-8");
 
     expect(first).toBe(second);
+    expect(firstReference).toBe(secondReference);
   });
 
   it("creates nested directories when they do not exist", () => {
     const dir = getSkillDir("codex");
     expect(existsSync(dir)).toBeFalse();
 
-    writeSkillFile("codex");
+    const result = writeSkillFile("codex");
     expect(existsSync(dir)).toBeTrue();
+    expect(existsSync(result.referenceDir)).toBeTrue();
   });
 
-  it("all platforms produce valid SKILL.md with frontmatter", () => {
+  it("all platforms produce valid SKILL.md and references", () => {
     for (const platform of SUPPORTED_PLATFORMS) {
       const result = writeSkillFile(platform);
       const content = readFileSync(result.filePath, "utf-8");
@@ -151,7 +204,12 @@ describe("writeSkillFile", () => {
       expect(content).toStartWith("---\n");
       expect(content).toContain("name: omw");
       expect(content).toContain("description:");
-      expect(content).toContain("omw list");
+      expect(content).toContain("## Command Overview");
+      expect(existsSync(result.referenceDir)).toBeTrue();
+      expect(result.referenceCount).toBe(20);
+      const referenceNames = readdirSync(result.referenceDir);
+      expect(referenceNames).toContain("config.md");
+      expect(referenceNames).toContain("open.md");
     }
   });
 });

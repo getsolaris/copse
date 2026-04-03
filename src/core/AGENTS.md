@@ -14,6 +14,7 @@ Shared business logic for both CLI and TUI. No UI, no process.exit, no console o
 | `files.ts` | File copy/symlink ops | `copyFiles()`, `linkFiles()`, `cleanupFiles()` |
 | `monorepo.ts` | Workspace detection | `detectMonorepoTools()`, `discoverPackages()`, `validateFocusPaths()` |
 | `glob-hooks.ts` | Per-package hook matching | `matchHooksForFocus()`, `executeGlobHooks()` |
+| `skill-templates.ts` | AI agent skill file generation | `writeSkillFile()`, `generateSkillContent()`, `generateReferenceFiles()`, `getSkillFilePath()` |
 | `session.ts` | Tmux session management | `openSession()`, `closeSession()`, `listSessions()`, `SessionError` |
 | `types.ts` | Shared types + errors | `Worktree`, `GitError`, `GitVersionError` |
 | `test-helpers.ts` | Test utilities | `createTempRepo()`, `createTempDir()`, `cleanupTempDirs()` |

@@ -1,7 +1,7 @@
 import type { CommandModule } from "yargs";
+import { dirname } from "node:path";
 import {
   writeSkillFile,
-  getSkillFilePath,
   SUPPORTED_PLATFORMS,
 } from "../../core/skill-templates.ts";
 import type { SkillPlatform } from "../../core/skill-templates.ts";
@@ -29,9 +29,10 @@ const cmd: CommandModule = {
 
     try {
       const result = writeSkillFile(platform);
-      const icon = result.action === "created" ? "✓" : "✓";
-
-      console.log(`${icon} ${result.action === "created" ? "Installed" : "Updated"} → ${result.filePath}`);
+      const actionWord = result.action === "created" ? "Installed" : "Updated";
+      console.log(`✓ ${actionWord} → ${dirname(result.filePath)}/`);
+      console.log("    SKILL.md");
+      console.log(`    references/ (${result.referenceCount} commands)`);
       process.exit(0);
     } catch (err) {
       console.error(`Error: ${(err as Error).message}`);

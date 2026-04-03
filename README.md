@@ -410,18 +410,22 @@ When `sessions.enabled` is `true` and you're inside tmux, `omw switch` automatic
 Install omw skill for AI coding agents so they can use omw commands.
 
 ```bash
-omw init --skill claude-code   # → ~/.claude/skills/omw/SKILL.md
-omw init --skill codex          # → ~/.agents/skills/omw/SKILL.md
-omw init --skill opencode       # → ~/.config/opencode/skill/omw/SKILL.md
+omw init --skill claude-code   # → ~/.claude/skills/omw/
+omw init --skill codex          # → ~/.agents/skills/omw/
+omw init --skill opencode       # → ~/.config/opencode/skill/omw/
 ```
 
 | Platform | Skill Path |
 |----------|-----------|
-| `claude-code` | `~/.claude/skills/omw/SKILL.md` |
-| `codex` | `~/.agents/skills/omw/SKILL.md` |
-| `opencode` | `~/.config/opencode/skill/omw/SKILL.md` |
+| `claude-code` | `~/.claude/skills/omw/` |
+| `codex` | `~/.agents/skills/omw/` |
+| `opencode` | `~/.config/opencode/skill/omw/` |
 
-The command is idempotent — running it again updates the skill file.
+Each skill directory contains:
+- `SKILL.md` — overview and common workflows
+- `references/` — detailed per-command documentation (20 files)
+
+The command is idempotent — running it again updates the skill directory.
 
 ## Configuration
 

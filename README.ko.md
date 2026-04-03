@@ -408,18 +408,22 @@ omw add feature/login --create --session --layout api
 AI 코딩 에이전트가 omw를 사용할 수 있도록 스킬을 설치합니다.
 
 ```bash
-omw init --skill claude-code   # → ~/.claude/skills/omw/SKILL.md
-omw init --skill codex          # → ~/.agents/skills/omw/SKILL.md
-omw init --skill opencode       # → ~/.config/opencode/skill/omw/SKILL.md
+omw init --skill claude-code   # → ~/.claude/skills/omw/
+omw init --skill codex          # → ~/.agents/skills/omw/
+omw init --skill opencode       # → ~/.config/opencode/skill/omw/
 ```
 
 | 플랫폼 | 스킬 경로 |
 |--------|----------|
-| `claude-code` | `~/.claude/skills/omw/SKILL.md` |
-| `codex` | `~/.agents/skills/omw/SKILL.md` |
-| `opencode` | `~/.config/opencode/skill/omw/SKILL.md` |
+| `claude-code` | `~/.claude/skills/omw/` |
+| `codex` | `~/.agents/skills/omw/` |
+| `opencode` | `~/.config/opencode/skill/omw/` |
 
-멱등성 — 다시 실행하면 스킬 파일을 업데이트합니다.
+각 스킬 디렉토리에는 다음이 포함됩니다:
+- `SKILL.md` — 개요와 공통 워크플로우
+- `references/` — 명령별 상세 문서 (20개 파일)
+
+멱등성 — 다시 실행하면 스킬 디렉토리를 업데이트합니다.
 
 ## 설정
 
