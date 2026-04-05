@@ -39,7 +39,7 @@ Manage git worktrees with ease. Create, switch, and clean up worktrees with conf
 - **Shell completions** — tab completion for bash/zsh/fish (`omw shell-init --completions`)
 - **Config profiles** — switch between configuration sets (`omw config --profiles`)
 - **Tmux sessions** — auto-create/kill tmux sessions per worktree with layout templates (`omw session`)
-- **AI agent skills** — install omw skill for Claude Code, Codex, OpenCode (`omw init --skill`)
+- **AI agent init** — create config by default or install omw skill for Claude Code, Codex, OpenCode (`omw init`, `omw init --skill`)
 
 ## Requirements
 
@@ -82,16 +82,16 @@ omw
 omw list
 
 # Create a new worktree
-omw add feature/my-feature --create
+omw add feature/my-feature
 
 # Create with monorepo focus
-omw add feature/my-feature --create --focus apps/web,apps/api
+omw add feature/my-feature --focus apps/web,apps/api
 
 # Create from a GitHub PR
 omw add --pr 123
 
 # Use a template
-omw add feature/login --create --template review
+omw add feature/login --template review
 
 # Pin a worktree to protect from cleanup
 omw pin feature/important --reason "active sprint"
@@ -115,7 +115,7 @@ omw import /path/to/worktree
 omw session feature/my-feature
 
 # Create worktree with tmux session
-omw add feature/new --create --session
+omw add feature/new --session
 
 # Run command across all worktrees
 omw exec "bun test"
@@ -134,6 +134,9 @@ omw remove feature/my-feature --yes
 
 # Clean up merged worktrees
 omw clean --dry-run
+
+# Initialize config file
+omw init
 
 # Generate AI agent skill file
 omw init --skill claude-code
@@ -221,21 +224,21 @@ Press `r` to recheck, `Esc` to go back.
 | `omw clone <url>`        | Clone repo and initialize omw        |
 | `omw import <path>`      | Adopt worktree with omw metadata     |
 | `omw session [branch]`   | Manage tmux sessions for worktrees   |
-| `omw init`               | Initialize omw integrations (AI agent skills) |
+| `omw init`               | Initialize config or install AI agent skills |
 
 ### `omw add`
 
 ```bash
-omw add feature/login --create               # Create new branch + worktree
-omw add feature/login --create --base main    # Branch from main
+omw add feature/login                        # Create branch if needed + worktree
+omw add feature/login --base main            # New branches start from main
 omw add existing-branch                      # Worktree for existing branch
 
 # Monorepo: create with focus packages
-omw add feature/login --create --focus apps/web,apps/api
-omw add feature/login --create --focus apps/web --focus apps/api
+omw add feature/login --focus apps/web,apps/api
+omw add feature/login --focus apps/web --focus apps/api
 
 # Use a template
-omw add feature/login --create --template review
+omw add feature/login --template review
 
 # Create from a GitHub PR (requires gh CLI)
 omw add --pr 123
@@ -399,17 +402,18 @@ Sessions are auto-created/killed when `sessions.autoCreate` / `sessions.autoKill
 
 ```bash
 # Create worktree with tmux session
-omw add feature/login --create --session
-omw add feature/login --create --session --layout api
+omw add feature/login --session
+omw add feature/login --session --layout api
 ```
 
 When `sessions.enabled` is `true` and you're inside tmux, `omw switch` automatically switches to the target worktree's tmux session.
 
 ### `omw init`
 
-Install omw skill for AI coding agents so they can use omw commands.
+Initialize omw config by default, or install omw skill for AI coding agents so they can use omw commands.
 
 ```bash
+omw init                         # → ~/.config/oh-my-worktree/config.json
 omw init --skill claude-code   # → ~/.claude/skills/omw/
 omw init --skill codex          # → ~/.agents/skills/omw/
 omw init --skill opencode       # → ~/.config/opencode/skill/omw/
@@ -423,8 +427,9 @@ omw init --skill opencode       # → ~/.config/opencode/skill/omw/
 
 Each skill directory contains:
 - `SKILL.md` — overview and common workflows
-- `references/` — detailed per-command documentation (20 files)
+- `references/` — detailed per-command documentation (21 files)
 
+Without `--skill`, the command reuses the normal config initializer and creates only `config.json`.
 The command is idempotent — running it again updates the skill directory.
 
 ## Configuration
@@ -636,9 +641,9 @@ Named presets for worktree creation. Each template can override any default fiel
 | `postCreate`   | `string[]` | Override post-create hooks         |
 | `postRemove`   | `string[]` | Override post-remove hooks         |
 | `autoUpstream` | `boolean`  | Override upstream tracking         |
-| `base`         | `string`   | Default base branch for `--create` |
+| `base`         | `string`   | Default base branch for newly created branches |
 
-Usage: `omw add feature/login --create --template review`
+Usage: `omw add feature/login --template review`
 
 Template values override the resolved repo config. The `base` field sets a default for `--base` if not explicitly provided.
 
@@ -713,7 +718,7 @@ Tmux session management for worktrees.
 | `name`    | `string` | Yes      | Window name                    |
 | `command` | `string` | No       | Command to run in the window   |
 
-Session naming: branch `feat/auth-token` → tmux session `omw:feat-auth-token`.
+Session naming: branch `feat/auth-token` → tmux session `omw_feat-auth-token`.
 
 #### `sharedDeps`
 
@@ -748,7 +753,7 @@ Share dependencies between main repo and worktrees to save disk space. Can be se
 Track which monorepo packages a worktree is working on.
 
 ```bash
-omw add feature/login --create --focus apps/web,apps/api
+omw add feature/login --focus apps/web,apps/api
 ```
 
 - Supports comma-separated, space-separated, or multiple `--focus` flags

@@ -184,20 +184,33 @@ export class GitWorktree {
       mkdirSync(parentDir, { recursive: true });
     }
 
+    const branchExists = await this.localBranchExists(branch, cwd);
+    const shouldCreateBranch = !branchExists;
+
     let args = ["worktree", "add", worktreePath, branch];
 
-    if (opts?.createBranch) {
+    if (shouldCreateBranch) {
       args = [
         "worktree",
         "add",
         "-b",
         branch,
         worktreePath,
-        opts.base ?? "HEAD",
+        opts?.base ?? "HEAD",
       ];
     }
 
     await this.run(args, cwd);
+    invalidateGitCache();
+  }
+
+  static async localBranchExists(branch: string, cwd?: string): Promise<boolean> {
+    try {
+      await this.run(["rev-parse", "--verify", `refs/heads/${branch}`], cwd ?? (Bun as any).cwd);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   static async remove(
@@ -211,16 +224,19 @@ export class GitWorktree {
     if (opts?.force) args.push("--force");
 
     await this.run(args, cwd);
+    invalidateGitCache();
   }
 
   static async move(source: string, dest: string, cwd?: string): Promise<void> {
     await this.checkVersion();
     await this.run(["worktree", "move", source, dest], cwd);
+    invalidateGitCache();
   }
 
   static async prune(cwd?: string): Promise<void> {
     await this.checkVersion();
     await this.run(["worktree", "prune"], cwd);
+    invalidateGitCache();
   }
 
   static async isWorktree(dir?: string): Promise<boolean> {
@@ -335,6 +351,7 @@ export class GitWorktree {
   static async unlock(worktreePath: string, cwd?: string): Promise<void> {
     await this.checkVersion();
     await this.run(["worktree", "unlock", worktreePath], cwd);
+    invalidateGitCache();
   }
 
   static async isMergedInto(branch: string, target: string, cwd?: string): Promise<boolean> {

@@ -14,28 +14,36 @@ afterEach(cleanupTempDirs);
 
 describe("toSessionName", () => {
   it("converts branch with slashes to safe session name", () => {
-    expect(toSessionName("feat/auth-token")).toBe("omw:feat-auth-token");
+    expect(toSessionName("feat/auth-token")).toBe("omw_feat-auth-token");
   });
 
   it("converts branch with multiple slashes", () => {
-    expect(toSessionName("fix/ui/sidebar")).toBe("omw:fix-ui-sidebar");
+    expect(toSessionName("fix/ui/sidebar")).toBe("omw_fix-ui-sidebar");
   });
 
   it("handles simple branch name", () => {
-    expect(toSessionName("main")).toBe("omw:main");
+    expect(toSessionName("main")).toBe("omw_main");
   });
 
   it("replaces special characters with underscore", () => {
-    expect(toSessionName("feat/auth@v2#test")).toBe("omw:feat-auth_v2_test");
+    expect(toSessionName("feat/auth@v2#test")).toBe("omw_feat-auth_v2_test");
   });
 
   it("uses custom prefix", () => {
-    expect(toSessionName("main", "wt")).toBe("wt:main");
+    expect(toSessionName("main", "wt")).toBe("wt_main");
+  });
+
+  it("sanitizes special characters in prefix", () => {
+    expect(toSessionName("main", "es:dev")).toBe("es_dev_main");
   });
 });
 
 describe("fromSessionName", () => {
   it("extracts branch from session name", () => {
+    expect(fromSessionName("omw_feat-auth-token")).toBe("feat-auth-token");
+  });
+
+  it("supports legacy colon session names", () => {
     expect(fromSessionName("omw:feat-auth-token")).toBe("feat-auth-token");
   });
 
@@ -48,7 +56,7 @@ describe("fromSessionName", () => {
   });
 
   it("uses custom prefix", () => {
-    expect(fromSessionName("wt:main", "wt")).toBe("main");
+    expect(fromSessionName("wt_main", "wt")).toBe("main");
   });
 });
 
@@ -56,7 +64,7 @@ describe("session metadata", () => {
   it("writes and reads metadata for main worktree", async () => {
     const repoPath = await createTempRepo();
     const info = {
-      name: "omw:test-branch",
+      name: "omw_test-branch",
       branch: "test-branch",
       worktreePath: repoPath,
       createdAt: "2025-01-01T00:00:00.000Z",
@@ -73,7 +81,7 @@ describe("session metadata", () => {
     await runGit(["worktree", "add", wtPath, "-b", "test-session"], repoPath);
 
     const info = {
-      name: "omw:test-session",
+      name: "omw_test-session",
       branch: "test-session",
       worktreePath: wtPath,
       createdAt: "2025-01-01T00:00:00.000Z",
@@ -95,7 +103,7 @@ describe("session metadata", () => {
   it("removes metadata", async () => {
     const repoPath = await createTempRepo();
     writeSessionMeta(repoPath, {
-      name: "omw:test",
+      name: "omw_test",
       branch: "test",
       worktreePath: repoPath,
       createdAt: "2025-01-01T00:00:00.000Z",

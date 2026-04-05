@@ -73,6 +73,7 @@ describe("generateSkillContent", () => {
     const content = generateSkillContent();
     expect(content).toContain("## Quick Start");
     expect(content).toContain("Create a feature worktree");
+    expect(content).toContain("omw add feature/my-feature --base main");
     expect(content).toContain("Clean up merged worktrees");
     expect(content).toContain("Run commands across worktrees");
     expect(content).toContain("Review a GitHub PR");
@@ -136,10 +137,22 @@ describe("generateReferenceFiles", () => {
     const addRef = references.get("add.md");
 
     expect(addRef).toBeDefined();
+    expect(addRef).toContain("missing branches are created automatically");
+    expect(addRef).toContain("--base only applies when a new branch is created");
     expect(addRef).toContain("## Configuration");
     expect(addRef).toContain("Related config keys in `~/.config/oh-my-worktree/config.json`:");
     expect(addRef).toContain("`defaults.worktreeDir` — Directory pattern for new worktrees");
     expect(addRef).toContain("`sessions.layouts` — Tmux session layout definitions");
+  });
+
+  it("documents init config-first behavior", () => {
+    const references = generateReferenceFiles();
+    const initRef = references.get("init.md");
+
+    expect(initRef).toBeDefined();
+    expect(initRef).toContain("# Initialize config");
+    expect(initRef).toContain("omw init");
+    expect(initRef).toContain("Without --skill, reuses config initialization and creates only config.json.");
   });
 
   it("does not render Configuration section when config keys are empty", () => {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { existsSync, realpathSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
-import { GitWorktree } from "./git";
+import { GitWorktree, invalidateGitCache } from "./git";
 import { GitError } from "./types";
 import {
   cleanupTempDirs,
@@ -12,6 +12,7 @@ import {
 } from "./test-helpers";
 
 afterEach(() => {
+  invalidateGitCache();
   cleanupTempDirs();
 });
 
@@ -122,6 +123,41 @@ describe("GitWorktree integration", () => {
       expect(existsSync(worktreePath)).toBeTrue();
     } finally {
       rmSync(worktreePath, { recursive: true, force: true });
+    }
+  });
+
+  it("add() creates a missing branch without createBranch option", async () => {
+    const worktreePath = join(testDir, "..", `omw-auto-create-${Date.now()}`);
+    try {
+      await GitWorktree.add("feature/auto-create", worktreePath, undefined, testDir);
+
+      expect(existsSync(worktreePath)).toBeTrue();
+      expect(await GitWorktree.localBranchExists("feature/auto-create", testDir)).toBeTrue();
+    } finally {
+      rmSync(worktreePath, { recursive: true, force: true });
+    }
+  });
+
+  it("add() uses base only when creating a new branch", async () => {
+    const createdPath = join(testDir, "..", `omw-base-created-${Date.now()}`);
+    const existingPath = join(testDir, "..", `omw-base-existing-${Date.now()}`);
+
+    try {
+      await runGit(["checkout", "-b", "develop"], testDir);
+      writeFileSync(join(testDir, "develop.txt"), "from develop\n");
+      await runGit(["add", "develop.txt"], testDir);
+      await runGit(["commit", "-m", "develop commit"], testDir);
+      await runGit(["checkout", "main"], testDir);
+
+      await GitWorktree.add("feature/from-develop", createdPath, { base: "develop" }, testDir);
+      expect(existsSync(join(createdPath, "develop.txt"))).toBeTrue();
+
+      await runGit(["branch", "feature/existing", "main"], testDir);
+      await GitWorktree.add("feature/existing", existingPath, { createBranch: true, base: "develop" }, testDir);
+      expect(existsSync(join(existingPath, "develop.txt"))).toBeFalse();
+    } finally {
+      rmSync(createdPath, { recursive: true, force: true });
+      rmSync(existingPath, { recursive: true, force: true });
     }
   });
 

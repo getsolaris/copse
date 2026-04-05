@@ -43,9 +43,9 @@ omw session --list
 ```
 Active sessions (3):
 
-  omw:feat-auth-token  feat/auth-token  3 windows [api]
-  omw:feat-user-api    feat/user-api    3 windows [api] (attached)
-  omw:fix-gateway      fix/gateway      1 windows
+  omw_feat-auth-token  feat/auth-token  3 windows [api]
+  omw_feat-user-api    feat/user-api    3 windows [api] (attached)
+  omw_fix-gateway      fix/gateway      1 windows
 ```
 
 ### List as JSON
@@ -69,8 +69,8 @@ omw session --kill-all
 ### Create worktree with session
 
 ```bash
-omw add feature/login --create --session
-omw add feature/login --create --session --layout api
+omw add feature/login --session
+omw add feature/login --session --layout api
 ```
 
 ### Auto-create/kill via config

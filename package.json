@@ -1,6 +1,6 @@
 {
   "name": "oh-my-worktree",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "bin": {
     "omw": "./src/index.ts"
   },

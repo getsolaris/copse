@@ -79,16 +79,16 @@ const commandOverview: CommandOverview[] = [
   { command: "config", aliases: "-", description: "Initialize, inspect, validate, and manage config profiles." },
   { command: "open", aliases: "-", description: "Open a worktree path in your preferred editor." },
   { command: "shell-init", aliases: "-", description: "Generate shell integration and completions." },
-  { command: "init", aliases: "-", description: "Install or update omw AI agent skill files." },
+  { command: "init", aliases: "-", description: "Initialize config or install/update omw AI agent skill files." },
 ];
 
 const referenceSpecs: ReferenceSpec[] = [
   {
     command: "add",
     summary: "Create a new worktree from a branch, template, or GitHub PR.",
-    synopsis: "omw add <branch> [path]",
+    synopsis: "omw add [branch] [path]",
     options: [
-      { flag: "--create", type: "boolean", alias: "-c", description: "Create branch if it doesn't exist" },
+      { flag: "--create", type: "boolean", alias: "-c", description: "Optional compatibility flag; missing branches are created automatically" },
       { flag: "--base", type: "string", alias: "-b", description: "Base branch/commit for new branch" },
       { flag: "--focus", type: "array", alias: "-f", description: "Focus packages for monorepo" },
       { flag: "--template", type: "string", alias: "-t", description: "Use a named template from config" },
@@ -97,10 +97,12 @@ const referenceSpecs: ReferenceSpec[] = [
       { flag: "--layout", type: "string", alias: "-", description: "Session layout name from config" },
     ],
     examples: [
-      ["Create a feature branch worktree", "omw add feature/auth --create --base main"],
+      ["Create a feature branch worktree", "omw add feature/auth --base main"],
       ["Create from PR with session layout", "omw add feature/review --pr 123 --session --layout dev"],
     ],
     notes: [
+      "Creates the branch automatically when it does not already exist.",
+      "Existing branches are reused as-is; --base only applies when a new branch is created.",
       "Runs copyFiles, linkFiles, sharedDeps, postCreate hooks, monorepo hooks after creation.",
       "Rolls back on hook failure.",
       "Requires gh CLI for --pr.",
@@ -418,7 +420,7 @@ const referenceSpecs: ReferenceSpec[] = [
     ],
     notes: [
       "Requires tmux.",
-      "Session naming: branch feat/auth-token → tmux session omw:feat-auth-token.",
+      "Session naming: branch feat/auth-token → tmux session omw_feat-auth-token.",
       "Supports layout templates with multiple windows.",
     ],
     configKeys: [
@@ -491,16 +493,17 @@ const referenceSpecs: ReferenceSpec[] = [
   },
   {
     command: "init",
-    summary: "Install or update omw AI agent skill files.",
+    summary: "Initialize omw config or install AI agent skill files.",
     synopsis: "omw init",
     options: [
       { flag: "--skill", type: "string", alias: "-s", description: "Install AI agent skill: claude-code, codex, opencode" },
     ],
     examples: [
+      ["Initialize config", "omw init"],
       ["Install Claude Code skill", "omw init --skill claude-code"],
       ["Install Codex skill", "omw init --skill codex"],
     ],
-    notes: ["Idempotent — running again updates existing files.", "Installs SKILL.md + references/ directory."],
+    notes: ["Without --skill, reuses config initialization and creates only config.json.", "With --skill, installs or updates SKILL.md + references/ directory.", "Idempotent — running again updates existing files without breaking existing setup."],
     configKeys: [],
   },
 ];
@@ -536,7 +539,7 @@ export function generateSkillContent(): string {
     "### Create a feature worktree",
     "",
     "```bash",
-    "omw add feature/my-feature --create --base main",
+    "omw add feature/my-feature --base main",
     "```",
     "",
     "### List and check status",
@@ -570,14 +573,14 @@ export function generateSkillContent(): string {
     "",
     "```bash",
     "# Create worktree with predefined template (hooks, base branch, settings)",
-    "omw add feature/new --create --template frontend",
+    "omw add feature/new --template frontend",
     "```",
     "",
     "### Tmux session management",
     "",
     "```bash",
     "# Create worktree with tmux session",
-    "omw add feature/api --create --session --layout dev",
+    "omw add feature/api --session --layout dev",
     "",
     "# List active sessions",
     "omw session --list",
@@ -607,7 +610,7 @@ export function generateSkillContent(): string {
     "Use focus paths to target packages and trigger matching monorepo hooks.",
     "",
     "```bash",
-    "omw add feature/web-auth --create --focus apps/web,apps/api",
+    "omw add feature/web-auth --focus apps/web,apps/api",
     "omw import /path/to/worktree --focus packages/core --pin",
     "omw list --json",
     "```",

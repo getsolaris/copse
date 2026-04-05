@@ -253,6 +253,18 @@ describe("initConfig", () => {
     const parsed = JSON.parse(content);
     expect(parsed.version).toBe(1);
   });
+
+  it("returns existing config path without overwriting the file", async () => {
+    const dir = createTempDir("omw-config-existing-");
+    const configPath = join(dir, "config.json");
+    writeFileSync(configPath, JSON.stringify({ version: 1, defaults: { worktreeDir: "custom" } }, null, 2), "utf-8");
+
+    const returnedPath = initConfig(configPath);
+
+    expect(returnedPath).toBe(configPath);
+    const content = await Bun.file(configPath).text();
+    expect(content).toContain('"worktreeDir": "custom"');
+  });
 });
 
 describe("loadConfig", () => {

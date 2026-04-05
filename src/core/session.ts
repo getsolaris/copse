@@ -37,6 +37,10 @@ export interface TmuxSessionStatus {
 
 const SESSION_PREFIX = "omw";
 
+function sanitizeSessionPart(value: string): string {
+  return value.replace(/\//g, "-").replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
 async function runTmux(args: string[]): Promise<string> {
   const proc = (Bun as any).spawn(["tmux", ...args], {
     stdout: "pipe",
@@ -64,16 +68,22 @@ async function runTmux(args: string[]): Promise<string> {
 }
 
 export function toSessionName(branch: string, prefix?: string): string {
-  const p = prefix ?? SESSION_PREFIX;
-  const safe = branch.replace(/\//g, "-").replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `${p}:${safe}`;
+  const p = sanitizeSessionPart(prefix ?? SESSION_PREFIX);
+  const safe = sanitizeSessionPart(branch);
+  return `${p}_${safe}`;
 }
 
 export function fromSessionName(sessionName: string, prefix?: string): string | null {
-  const p = prefix ?? SESSION_PREFIX;
-  const pattern = `${p}:`;
-  if (!sessionName.startsWith(pattern)) return null;
-  return sessionName.slice(pattern.length);
+  const p = sanitizeSessionPart(prefix ?? SESSION_PREFIX);
+  const prefixes = [`${p}_`, `${p}:`];
+
+  for (const pattern of prefixes) {
+    if (sessionName.startsWith(pattern)) {
+      return sessionName.slice(pattern.length);
+    }
+  }
+
+  return null;
 }
 
 function getSessionMetaPath(worktreePath: string): string {
@@ -221,7 +231,7 @@ export async function attachSession(sessionName: string): Promise<void> {
 }
 
 export async function listSessions(prefix?: string): Promise<TmuxSessionStatus[]> {
-  const p = prefix ?? SESSION_PREFIX;
+  const p = sanitizeSessionPart(prefix ?? SESSION_PREFIX);
 
   try {
     const output = await runTmux([
@@ -235,7 +245,7 @@ export async function listSessions(prefix?: string): Promise<TmuxSessionStatus[]
     return output
       .split("\n")
       .filter(Boolean)
-      .filter((line) => line.startsWith(`${p}:`))
+       .filter((line) => line.startsWith(`${p}_`) || line.startsWith(`${p}:`))
       .map((line) => {
         const [name, windows, attached, created] = line.split("\x1f");
         return {

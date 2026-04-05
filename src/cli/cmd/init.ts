@@ -1,5 +1,6 @@
 import type { CommandModule } from "yargs";
 import { dirname } from "node:path";
+import { getConfigPath, initConfig } from "../../core/config.ts";
 import {
   writeSkillFile,
   SUPPORTED_PLATFORMS,
@@ -8,7 +9,7 @@ import type { SkillPlatform } from "../../core/skill-templates.ts";
 
 const cmd: CommandModule = {
   command: "init",
-  describe: "Initialize omw integrations",
+  describe: "Initialize config or install omw integrations",
   builder: (yargs) =>
     yargs.option("skill", {
       type: "string",
@@ -19,15 +20,13 @@ const cmd: CommandModule = {
   handler: async (argv) => {
     const platform = argv.skill as SkillPlatform | undefined;
 
-    if (!platform) {
-      console.error(
-        "Please specify an option.\n\nExample:\n  omw init --skill claude-code\n  omw init --skill codex\n\nSupported platforms: " +
-          SUPPORTED_PLATFORMS.join(", "),
-      );
-      process.exit(1);
-    }
-
     try {
+      if (!platform) {
+        const configPath = initConfig();
+        console.log(`✓ Initialized config → ${configPath}`);
+        process.exit(0);
+      }
+
       const result = writeSkillFile(platform);
       const actionWord = result.action === "created" ? "Installed" : "Updated";
       console.log(`✓ ${actionWord} → ${dirname(result.filePath)}/`);

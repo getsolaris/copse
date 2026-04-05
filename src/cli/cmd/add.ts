@@ -14,14 +14,13 @@ import { validateFocusPaths } from "../../core/monorepo.ts";
 import { isTmuxAvailable, openSession } from "../../core/session.ts";
 
 const cmd: CommandModule = {
-  command: "add <branch> [path]",
+  command: "add [branch] [path]",
   describe: "Create a new worktree for a branch",
   builder: (yargs) =>
     yargs
       .positional("branch", {
         type: "string",
         describe: "Branch name",
-        demandOption: true,
       })
       .positional("path", {
         type: "string",
@@ -30,7 +29,7 @@ const cmd: CommandModule = {
       .option("create", {
         type: "boolean",
         alias: "c",
-        describe: "Create branch if it doesn't exist",
+        describe: "Optional compatibility flag; missing branches are created automatically",
       })
       .option("base", {
         type: "string",
@@ -62,10 +61,15 @@ const cmd: CommandModule = {
         describe: "Session layout name from config",
       }),
   handler: async (argv) => {
-    let branch = argv.branch as string;
+    let branch = argv.branch as string | undefined;
     const prNumber = argv.pr as number | undefined;
     const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
     const repoName = basename(mainRepoPath);
+
+    if (!branch && !prNumber) {
+      console.error("Error: specify a branch or use --pr <number>.");
+      process.exit(1);
+    }
 
     // PR integration: resolve PR number to branch name via gh CLI
     if (prNumber) {
@@ -95,6 +99,11 @@ const cmd: CommandModule = {
         console.error("Error: 'gh' CLI not found. Install it from https://cli.github.com");
         process.exit(1);
       }
+    }
+
+    if (!branch) {
+      console.error("Error: could not determine branch name.");
+      process.exit(1);
     }
 
     const safeBranch = branch.replace(/\//g, "-");
@@ -153,7 +162,7 @@ const cmd: CommandModule = {
         branch,
         worktreePath,
         {
-          createBranch: argv.create as boolean,
+          createBranch: Boolean(argv.create),
           base: argv.base as string | undefined,
         },
         mainRepoPath,
