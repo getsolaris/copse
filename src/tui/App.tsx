@@ -197,23 +197,14 @@ function AppShell(props: { repoPath: string }) {
         <box width={1} />
 
         <box flexGrow={1} backgroundColor={theme.bg.base}>
-          <Show when={app.activeTab() === "list" && !app.showRemove() && !app.showBulkActions()}>
+          <Show when={app.activeTab() !== "config" && !app.showRemove() && !app.showBulkActions()}>
             <WorktreeList />
-          </Show>
-          <Show when={app.activeTab() === "list" && app.showRemove()}>
-            <WorktreeRemove w={mainW()} h={h() - 3} />
           </Show>
           <Show when={app.activeTab() === "list" && app.showBulkActions()}>
             <BulkActions w={mainW()} h={h() - 3} />
           </Show>
-          <Show when={app.activeTab() === "add"}>
-            <WorktreeCreate />
-          </Show>
           <Show when={app.activeTab() === "config"}>
             <ConfigView />
-          </Show>
-          <Show when={app.activeTab() === "doctor"}>
-            <DoctorView />
           </Show>
         </box>
       </box>
@@ -261,6 +252,18 @@ function AppShell(props: { repoPath: string }) {
         </box>
       </Show>
 
+      <Show when={app.activeTab() === "add"}>
+        <WorktreeCreate />
+      </Show>
+
+      <Show when={app.activeTab() === "doctor"}>
+        <DoctorView />
+      </Show>
+
+      <Show when={app.showRemove()}>
+        <WorktreeRemove />
+      </Show>
+
       <Show when={app.showCommandPalette()}>
         <CommandPalette />
       </Show>
@@ -269,6 +272,10 @@ function AppShell(props: { repoPath: string }) {
 }
 
 export async function launchTUI() {
+  if (process.stdout.isTTY) {
+    process.stdout.write("\u001b]0;Oh My Worktree\u0007");
+  }
+
   const repoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
 
   let repoPaths = [repoPath];

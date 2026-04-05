@@ -3,6 +3,7 @@ import { useApp } from "../context/AppContext.tsx";
 import { runAllChecks, runFixes, type DoctorCheckResult, type DoctorReport, type FixResult } from "../../core/doctor.ts";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { theme } from "../themes.ts";
+import { PopupShell } from "./PopupShell.tsx";
 
 export function DoctorView() {
   const app = useApp();
@@ -52,6 +53,12 @@ export function DoctorView() {
 
   const w = () => dims().width;
   const h = () => dims().height;
+  const dialogW = () => Math.max(50, Math.min(80, w() - 4));
+  const dialogH = () => {
+    const lines = checksLen() + fixLen() + 8 + (fixLen() > 0 ? 2 : 0);
+    return Math.max(12, Math.min(lines, h() - 4));
+  };
+  const contentW = () => Math.max(dialogW() - 4, 10);
 
   const statusIcon = (status: string) => {
     if (status === "pass") return "\u2713";
@@ -69,94 +76,96 @@ export function DoctorView() {
   const fixLen = () => fixResults().length;
 
   return (
-    <box x={0} y={0} width="100%" height="100%" backgroundColor={theme.bg.base} flexDirection="column">
-      <box
-        width="100%" height="100%"
-        border={true} borderStyle="rounded"
-        borderColor={report()?.healthy ? theme.text.success : report() ? theme.text.warning : theme.border.default}
-        backgroundColor={theme.bg.surface}
-        title=" Doctor "
-        titleAlignment="left"
-        flexDirection="column"
-        paddingX={1}
-        paddingY={1}
-      >
-        <Show when={loading()}>
-          <text fg={theme.text.secondary}>Running health checks...</text>
-        </Show>
+    <PopupShell
+      width={dialogW()}
+      height={dialogH()}
+      borderColor={report()?.healthy ? theme.text.success : report() ? theme.text.warning : theme.border.default}
+      backgroundColor={theme.bg.surface}
+      title=" Doctor "
+      footer={(
+        <>
+          <box height={1} width={contentW()}>
+            <text fg={theme.border.subtle}>
+              {"\u2500".repeat(Math.max(contentW(), 1))}
+            </text>
+          </box>
+          <box flexDirection="row" gap={2}>
+            <text fg={theme.text.secondary}>{"r:recheck"}</text>
+            <Show when={!report()?.healthy}>
+              <text fg={theme.text.secondary}>{"f:fix"}</text>
+            </Show>
+            <text fg={theme.text.secondary}>{"Esc:back"}</text>
+          </box>
+        </>
+      )}
+    >
+      <Show when={loading()}>
+        <text fg={theme.text.secondary}>Running health checks...</text>
+      </Show>
 
-        <Show when={fixing()}>
-          <text fg={theme.text.accent}>Running auto-fix...</text>
-        </Show>
+      <Show when={fixing()}>
+        <text fg={theme.text.accent}>Running auto-fix...</text>
+      </Show>
 
-        <Show when={!loading() && !fixing() && !!error()}>
-          <text fg={theme.text.error}>Error: {error()}</text>
-        </Show>
+      <Show when={!loading() && !fixing() && !!error()}>
+        <text fg={theme.text.error}>Error: {error()}</text>
+      </Show>
 
-        <Show when={!loading() && !fixing() && !error() && !!report()}>
-          <text fg={theme.text.accent}>Health Checks</text>
-          <text fg={theme.border.subtle}>{"\u2500".repeat(Math.max(w() - 34, 10))}</text>
+      <Show when={!loading() && !fixing() && !error() && !!report()}>
+        <text fg={theme.text.accent}>Health Checks</text>
+        <text fg={theme.border.subtle}>{"\u2500".repeat(contentW())}</text>
 
-          <For each={report()!.checks}>
-            {(check: DoctorCheckResult) => {
+        <For each={report()!.checks}>
+          {(check: DoctorCheckResult) => {
+            return (
+              <box width="100%" height={1} flexDirection="row">
+                <text fg={statusColor(check.status)}>
+                  {statusIcon(check.status)}
+                </text>
+                <text x={2} y={0} fg={theme.text.primary}>
+                  {check.name}:
+                </text>
+                <text x={check.name.length + 4} y={0} fg={theme.text.secondary}>
+                  {check.message}
+                </text>
+              </box>
+            );
+          }}
+        </For>
+
+        <text fg={theme.border.subtle}>{"\u2500".repeat(contentW())}</text>
+        <text
+          fg={report()!.healthy ? theme.text.success : theme.text.warning}
+        >
+          {report()!.healthy
+            ? "\u2713 All checks passed"
+            : `${report()!.checks.filter((c: DoctorCheckResult) => c.status === "fail").length} error(s), ${report()!.checks.filter((c: DoctorCheckResult) => c.status === "warn").length} warning(s) found`}
+        </text>
+
+        <Show when={fixLen() > 0}>
+          <text fg={theme.text.accent}>Fix Results</text>
+          <text fg={theme.border.subtle}>{"\u2500".repeat(contentW())}</text>
+          <For each={fixResults()}>
+            {(fix: FixResult) => {
               return (
                 <box width="100%" height={1} flexDirection="row">
-                  <text fg={statusColor(check.status)}>
-                    {statusIcon(check.status)}
+                  <text fg={fix.success ? theme.text.success : theme.text.error}>
+                    {fix.success ? "\u2713" : "\u2717"}
                   </text>
                   <text x={2} y={0} fg={theme.text.primary}>
-                    {check.name}:
+                    {fix.action}
                   </text>
-                  <text x={check.name.length + 4} y={0} fg={theme.text.secondary}>
-                    {check.message}
-                  </text>
+                  <Show when={!!fix.detail}>
+                    <text x={fix.action.length + 3} y={0} fg={theme.text.secondary}>
+                      ({fix.detail})
+                    </text>
+                  </Show>
                 </box>
               );
             }}
           </For>
-
-          <text fg={theme.border.subtle}>{"\u2500".repeat(Math.max(w() - 34, 10))}</text>
-          <text
-            fg={report()!.healthy ? theme.text.success : theme.text.warning}
-          >
-            {report()!.healthy
-              ? "\u2713 All checks passed"
-              : `${report()!.checks.filter((c: DoctorCheckResult) => c.status === "fail").length} error(s), ${report()!.checks.filter((c: DoctorCheckResult) => c.status === "warn").length} warning(s) found`}
-          </text>
-
-          <Show when={fixLen() > 0}>
-            <text fg={theme.text.accent}>Fix Results</text>
-            <text fg={theme.border.subtle}>{"\u2500".repeat(Math.max(w() - 34, 10))}</text>
-            <For each={fixResults()}>
-              {(fix: FixResult) => {
-                return (
-                  <box width="100%" height={1} flexDirection="row">
-                    <text fg={fix.success ? theme.text.success : theme.text.error}>
-                      {fix.success ? "\u2713" : "\u2717"}
-                    </text>
-                    <text x={2} y={0} fg={theme.text.primary}>
-                      {fix.action}
-                    </text>
-                    <Show when={!!fix.detail}>
-                      <text x={fix.action.length + 3} y={0} fg={theme.text.secondary}>
-                        ({fix.detail})
-                      </text>
-                    </Show>
-                  </box>
-                );
-              }}
-            </For>
-          </Show>
         </Show>
-      </box>
-
-      <box width="100%" height={1} backgroundColor={theme.bg.base} flexDirection="row" gap={2}>
-        <box flexDirection="row"><text fg={theme.text.secondary}>r</text><text fg={theme.text.primary}>:recheck</text></box>
-        <Show when={!report()?.healthy}>
-          <box flexDirection="row"><text fg={theme.text.secondary}>f</text><text fg={theme.text.primary}>:fix</text></box>
-        </Show>
-        <box flexDirection="row"><text fg={theme.text.secondary}>Esc</text><text fg={theme.text.primary}>:back</text></box>
-      </box>
-    </box>
+      </Show>
+    </PopupShell>
   );
 }

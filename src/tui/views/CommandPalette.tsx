@@ -9,6 +9,7 @@ import {
   THEME_LABELS,
   type ThemeName,
 } from "../themes.ts";
+import { PopupShell } from "./PopupShell.tsx";
 import { loadConfig, getConfigPath, writeAtomically } from "../../core/config.ts";
 
 interface Command {
@@ -179,27 +180,31 @@ export function CommandPalette() {
 
   const dialogW = () => Math.max(50, Math.min(80, dims().width - 4));
   const dialogH = () => Math.max(10, Math.min(filtered().length + 8, dims().height - 4));
-  const dialogX = () => Math.max(0, Math.floor((dims().width - dialogW()) / 2));
-  const dialogY = () => Math.max(0, Math.floor((dims().height - dialogH()) / 2));
   const innerW = () => dialogW() - 4;
   const listH = () => dialogH() - 8;
 
   return (
-    <box
-      x={dialogX()}
-      y={dialogY()}
+    <PopupShell
       width={dialogW()}
       height={dialogH()}
-      border={true}
-      borderStyle="rounded"
       borderColor={theme.border.active}
       backgroundColor={theme.bg.surface}
-      flexDirection="column"
-      paddingX={1}
-      paddingY={1}
       title=" Command Palette "
-      titleAlignment="left"
-      position="absolute"
+      footer={(
+        <>
+          <box height={1} width={innerW()}>
+            <text fg={theme.border.subtle}>
+              {"\u2500".repeat(Math.max(innerW(), 1))}
+            </text>
+          </box>
+
+          <box flexDirection="row" gap={2}>
+            <text fg={theme.text.secondary}>{"\u2191\u2193:navigate"}</text>
+            <text fg={theme.text.secondary}>{"Enter:run"}</text>
+            <text fg={theme.text.secondary}>{"Esc:close"}</text>
+          </box>
+        </>
+      )}
     >
       <box
         height={1}
@@ -258,18 +263,6 @@ export function CommandPalette() {
           </box>
         </Show>
       </box>
-
-      <box height={1} width={innerW()}>
-        <text fg={theme.border.subtle}>
-          {"\u2500".repeat(Math.max(innerW(), 1))}
-        </text>
-      </box>
-
-      <box flexDirection="row" gap={2}>
-        <text fg={theme.text.secondary}>{"\u2191\u2193:navigate"}</text>
-        <text fg={theme.text.secondary}>{"Enter:run"}</text>
-        <text fg={theme.text.secondary}>{"Esc:close"}</text>
-      </box>
-    </box>
+    </PopupShell>
   );
 }

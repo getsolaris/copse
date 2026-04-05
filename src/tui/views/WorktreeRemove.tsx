@@ -7,8 +7,9 @@ import { executeHooks } from "../../core/hooks.ts";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { toast } from "@opentui-ui/toast/solid";
 import { theme } from "../themes.ts";
+import { PopupShell } from "./PopupShell.tsx";
 
-export function WorktreeRemove(props: { w: number; h: number }) {
+export function WorktreeRemove() {
   const app = useApp();
   const git = useGit();
   const dims = useTerminalDimensions();
@@ -93,29 +94,36 @@ export function WorktreeRemove(props: { w: number; h: number }) {
   });
 
   const wt = () => targetWorktree();
-  const dialogW = () => Math.max(48, Math.min(88, dims().width - 4));
+  const dialogW = () => Math.max(50, Math.min(80, dims().width - 4));
   const dialogH = () => 10;
-  const dialogX = () => Math.max(0, Math.floor((dims().width - dialogW()) / 2));
-  const dialogY = () => Math.max(0, Math.floor((dims().height - dialogH()) / 2));
 
   return (
-    <box x={0} y={0} width={dims().width} height={dims().height} backgroundColor={theme.bg.overlay} position="absolute">
-      <box
-        x={dialogX()}
-        y={dialogY()}
-        width={dialogW()}
-        height={dialogH()}
-        border={true}
-        borderStyle="rounded"
-        borderColor={theme.border.active}
-        backgroundColor={theme.bg.elevated}
-        flexDirection="column"
-        paddingX={1}
-        paddingY={1}
-        gap={1}
-        title=" Remove Worktree "
-        titleAlignment="left"
-      >
+    <PopupShell
+      width={dialogW()}
+      height={dialogH()}
+      borderColor={theme.border.active}
+      backgroundColor={theme.bg.elevated}
+      gap={1}
+      title=" Remove Worktree "
+      backdrop={true}
+      footer={(
+        <box flexDirection="column">
+          <Show when={!removing() && !confirmForce()}>
+            <box height={1} flexDirection="row" gap={2}>
+              <text fg={theme.text.secondary}>[Enter] Confirm</text>
+              <text fg={theme.text.secondary}>[Esc] Cancel</text>
+            </box>
+          </Show>
+
+          <Show when={confirmForce()}>
+            <box height={1} flexDirection="row" gap={2}>
+              <text fg={theme.text.secondary}>[Enter] Force remove</text>
+              <text fg={theme.text.secondary}>[Esc] Cancel</text>
+            </box>
+          </Show>
+        </box>
+      )}
+    >
         <Show when={!!wt()}>
           <box height={1} flexDirection="row">
             <box width={10} height={1}><text fg={theme.text.secondary}>Branch</text></box>
@@ -127,19 +135,8 @@ export function WorktreeRemove(props: { w: number; h: number }) {
             <text fg={theme.text.primary}>{wt()?.path}</text>
           </box>
 
-          <Show when={!removing() && !confirmForce()}>
-            <box height={1} flexDirection="row" gap={2}>
-              <text fg={theme.text.secondary}>[Enter] Confirm</text>
-              <text fg={theme.text.secondary}>[Esc] Cancel</text>
-            </box>
-          </Show>
-
           <Show when={confirmForce()}>
             <text fg={theme.text.warning}>{message()}</text>
-            <box height={1} flexDirection="row" gap={2}>
-              <text fg={theme.text.secondary}>[Enter] Force remove</text>
-              <text fg={theme.text.secondary}>[Esc] Cancel</text>
-            </box>
           </Show>
 
           <Show when={removing()}>
@@ -152,7 +149,6 @@ export function WorktreeRemove(props: { w: number; h: number }) {
         <Show when={!wt()}>
           <text fg={theme.text.secondary}>No worktree selected.</text>
         </Show>
-      </box>
-    </box>
+    </PopupShell>
   );
 }
