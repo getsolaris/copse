@@ -18,7 +18,6 @@ const result = await Bun.build({
   plugins: [solidPlugin],
   external: [
     "@opentui/core",
-    "@opentui/solid",
     "@opentui/core-darwin-arm64",
     "@opentui/core-darwin-x64",
     "@opentui/core-linux-arm64",
