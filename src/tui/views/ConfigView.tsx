@@ -54,16 +54,14 @@ export function ConfigView() {
       <box
         width="100%"
         height="100%"
-        border={true}
-        borderStyle="rounded"
-        borderColor={theme.border.default}
         backgroundColor={theme.bg.surface}
-        title=" Configuration "
-        titleAlignment="left"
         flexDirection="column"
-        paddingX={1}
+        paddingX={2}
         paddingY={1}
       >
+        <box height={1}>
+          <text fg={theme.text.accent}><b>Configuration</b></text>
+        </box>
         <box flexDirection="row" gap={1}>
           <text fg={theme.text.secondary}>Path:</text>
           <text fg={theme.text.primary}>{configPath}</text>

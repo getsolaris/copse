@@ -186,11 +186,13 @@ function AppShell(props: { repoPath: string }) {
           width={SIDEBAR_W}
           flexShrink={0}
           backgroundColor={theme.bg.surface}
-          border={true} borderStyle="rounded"
-          borderColor={theme.border.default}
-          title={sidebarTitle()}
-          titleAlignment="left"
+          flexDirection="column"
         >
+          <box height={1} paddingX={1}>
+            <text fg={theme.text.accent}>
+              <b>{sidebarTitle()}</b>
+            </text>
+          </box>
           <Sidebar />
         </box>
 

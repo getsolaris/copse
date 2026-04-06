@@ -49,7 +49,8 @@
       }
     },
     "theme": {
-      "type": "string"
+      "type": "string",
+      "enum": ["opencode", "tokyo-night", "dracula", "nord", "catppuccin", "github-dark", "one-dark", "monokai", "github-light"]
     },
     "sessions": {
       "type": "object",
@@ -209,7 +210,7 @@
         "properties": {
           "defaults": { "$ref": "#/properties/defaults" },
           "repos": { "$ref": "#/properties/repos" },
-          "theme": { "type": "string" },
+          "theme": { "type": "string", "enum": ["opencode", "tokyo-night", "dracula", "nord", "catppuccin", "github-dark", "one-dark", "monokai", "github-light"] },
           "templates": { "$ref": "#/properties/templates" },
           "lifecycle": { "$ref": "#/properties/lifecycle" },
           "sessions": { "$ref": "#/properties/sessions" }

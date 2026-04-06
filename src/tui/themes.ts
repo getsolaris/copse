@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 
-export type ThemeName = "opencode" | "tokyo-night" | "dracula" | "nord" | "catppuccin" | "github-dark";
+export type ThemeName = "opencode" | "tokyo-night" | "dracula" | "nord" | "catppuccin" | "github-dark" | "one-dark" | "monokai" | "github-light";
 
 export interface Theme {
   bg: { base: string; surface: string; elevated: string; overlay: string };
@@ -158,6 +158,72 @@ const THEMES: Record<ThemeName, Theme> = {
       descFg: "#484f58",
     },
   },
+  "one-dark": {
+    bg: { base: "#282c34", surface: "#21252b", elevated: "#2c313a", overlay: "#1b1f27" },
+    border: { default: "#3e4451", active: "#61afef", subtle: "#2c313a" },
+    text: {
+      primary: "#abb2bf",
+      secondary: "#5c6370",
+      accent: "#61afef",
+      success: "#98c379",
+      warning: "#e5c07b",
+      error: "#e06c75",
+      selected: "#ffffff",
+    },
+    tab: { active: "#61afef", activeBg: "#2c313a", inactive: "#5c6370", inactiveBg: "#282c34" },
+    select: {
+      focusedBg: "#2c313a",
+      focusedFg: "#61afef",
+      selectedBg: "#2c313a",
+      selectedFg: "#abb2bf",
+      normalFg: "#abb2bf",
+      descFg: "#5c6370",
+    },
+  },
+  monokai: {
+    bg: { base: "#272822", surface: "#1e1f1c", elevated: "#3e3d32", overlay: "#1a1b18" },
+    border: { default: "#49483e", active: "#a6e22e", subtle: "#3e3d32" },
+    text: {
+      primary: "#f8f8f2",
+      secondary: "#75715e",
+      accent: "#66d9ef",
+      success: "#a6e22e",
+      warning: "#e6db74",
+      error: "#f92672",
+      selected: "#ffffff",
+    },
+    tab: { active: "#a6e22e", activeBg: "#3e3d32", inactive: "#75715e", inactiveBg: "#272822" },
+    select: {
+      focusedBg: "#3e3d32",
+      focusedFg: "#66d9ef",
+      selectedBg: "#3e3d32",
+      selectedFg: "#f8f8f2",
+      normalFg: "#f8f8f2",
+      descFg: "#75715e",
+    },
+  },
+  "github-light": {
+    bg: { base: "#ffffff", surface: "#f6f8fa", elevated: "#eaeef2", overlay: "#d0d7de" },
+    border: { default: "#d0d7de", active: "#0969da", subtle: "#eaeef2" },
+    text: {
+      primary: "#1f2328",
+      secondary: "#656d76",
+      accent: "#0969da",
+      success: "#1a7f37",
+      warning: "#9a6700",
+      error: "#cf222e",
+      selected: "#000000",
+    },
+    tab: { active: "#0969da", activeBg: "#eaeef2", inactive: "#656d76", inactiveBg: "#ffffff" },
+    select: {
+      focusedBg: "#ddf4ff",
+      focusedFg: "#0969da",
+      selectedBg: "#eaeef2",
+      selectedFg: "#1f2328",
+      normalFg: "#1f2328",
+      descFg: "#656d76",
+    },
+  },
 };
 
 export const THEME_NAMES: ThemeName[] = [
@@ -167,6 +233,9 @@ export const THEME_NAMES: ThemeName[] = [
   "nord",
   "catppuccin",
   "github-dark",
+  "one-dark",
+  "monokai",
+  "github-light",
 ];
 
 export const THEME_LABELS: Record<ThemeName, string> = {
@@ -176,6 +245,9 @@ export const THEME_LABELS: Record<ThemeName, string> = {
   nord: "Nord",
   catppuccin: "Catppuccin Mocha",
   "github-dark": "GitHub Dark",
+  "one-dark": "One Dark",
+  monokai: "Monokai",
+  "github-light": "GitHub Light",
 };
 
 export const [currentThemeName, setCurrentThemeName] = createSignal<ThemeName>("opencode");

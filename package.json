@@ -1,6 +1,6 @@
 {
   "name": "@getsolaris/oh-my-worktree",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Git worktree manager with a beautiful TUI",
   "license": "MIT",
   "repository": {

@@ -158,12 +158,9 @@ export function WorktreeList() {
           <box
             width="100%"
             height="100%"
-            border={true}
-            borderStyle="rounded"
-            borderColor={theme.border.default}
             flexDirection="column"
             backgroundColor={theme.bg.surface}
-            paddingX={1}
+            paddingX={2}
             paddingY={1}
           >
             <box height={1} flexDirection="row">

@@ -19,7 +19,7 @@ Manage git worktrees with ease. Create, switch, and clean up worktrees with conf
 - **Health checks** — `omw doctor` diagnoses worktree issues
 - **Centralized worktrees** — all worktrees under `~/.omw/worktrees/` by default
 - **Smart cleanup** — auto-detect and remove merged worktrees
-- **Themes** — 6 built-in color themes (OpenCode, Tokyo Night, Dracula, Nord, Catppuccin, GitHub Dark)
+- **Themes** — 9 built-in color themes (OpenCode, Tokyo Night, Dracula, Nord, Catppuccin, GitHub Dark, One Dark, Monokai, GitHub Light)
 - **Templates** — reusable worktree presets (`omw add --template review`)
 - **Cross-worktree exec** — run commands across all worktrees (`omw exec "bun test"`)
 - **GitHub PR integration** — create worktrees from PRs (`omw add --pr 123`)
@@ -805,7 +805,7 @@ Set via config or command palette (`Ctrl+P`):
 { "theme": "tokyo-night" }
 ```
 
-Available: `opencode`, `tokyo-night`, `dracula`, `nord`, `catppuccin`, `github-dark`
+Available: `opencode`, `tokyo-night`, `dracula`, `nord`, `catppuccin`, `github-dark`, `one-dark`, `monokai`, `github-light`
 
 ## Shell Integration
 
