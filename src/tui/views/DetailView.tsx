@@ -1,7 +1,8 @@
-import { Show, For, createSignal, createEffect, on, onCleanup, createMemo } from "solid-js";
-import { useTerminalDimensions } from "@opentui/solid";
+import { Show, For, createSignal, createEffect, on, onCleanup } from "solid-js";
+import { useTerminalDimensions, useRenderer, useSelectionHandler } from "@opentui/solid";
 import { useGit } from "../context/GitContext.tsx";
-import { theme, getSyntaxStyle, currentThemeName } from "../themes.ts";
+import { useToast } from "../context/ToastContext.tsx";
+import { theme } from "../themes.ts";
 import { readFocus } from "../../core/focus.ts";
 import { readSessionMeta, sessionExists, type SessionInfo } from "../../core/session.ts";
 import { GitWorktree } from "../../core/git.ts";
@@ -22,6 +23,8 @@ const LABEL_W = 16;
 
 export function DetailView(props: { worktree: Worktree }) {
   const git = useGit();
+  const toast = useToast();
+  const renderer = useRenderer();
   const dims = useTerminalDimensions();
 
   const w = () => dims().width;
@@ -30,7 +33,14 @@ export function DetailView(props: { worktree: Worktree }) {
   const [data, setData] = createSignal<DetailData | null>(null);
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal("");
-  const syntaxStyle = createMemo(() => getSyntaxStyle(currentThemeName()));
+
+  useSelectionHandler((selection) => {
+    const text = selection.getSelectedText();
+    if (!text) return;
+
+    renderer.copyToClipboardOSC52(text);
+    toast.addToast({ type: "info", message: "Copied to clipboard" });
+  });
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -147,50 +157,46 @@ export function DetailView(props: { worktree: Worktree }) {
     <box x={0} y={0} width={w()} height={h()} backgroundColor={theme.bg.base}>
       <scrollbox x={2} y={1} width={w() - 3} height={h() - 3}>
         <box height={1}>
-          <text x={0} y={0} fg={theme.text.accent} bold>
+          <text x={0} y={0} fg={theme.text.accent} bold selectable>
             Worktree Detail
           </text>
-          <text x={17} y={0} fg={theme.text.secondary}>
+          <text x={17} y={0} fg={theme.text.secondary} selectable>
             {"(Esc to close)"}
           </text>
         </box>
 
         <box height={1}>
-          <text x={0} y={0} fg={theme.border.subtle}>{separator()}</text>
+          <text x={0} y={0} fg={theme.border.subtle} selectable>{separator()}</text>
         </box>
 
         <box height={1} />
 
         <box height={1} flexDirection="row">
           <box width={LABEL_W} height={1}>
-            <text x={0} y={0} fg={theme.text.secondary}>Branch</text>
+            <text x={0} y={0} fg={theme.text.secondary} selectable>Branch</text>
           </box>
-          <text fg={theme.text.accent}>
-            {props.worktree.branch ?? "(detached)"}
-          </text>
+          <text selectable fg={theme.text.accent}>{props.worktree.branch ?? "(detached)"}</text>
         </box>
 
         <box height={1} flexDirection="row">
           <box width={LABEL_W} height={1}>
-            <text x={0} y={0} fg={theme.text.secondary}>Path</text>
+            <text x={0} y={0} fg={theme.text.secondary} selectable>Path</text>
           </box>
-          <text fg={theme.text.primary}>{props.worktree.path}</text>
+          <text selectable fg={theme.text.primary}>{props.worktree.path}</text>
         </box>
 
         <box height={1} flexDirection="row">
           <box width={LABEL_W} height={1}>
-            <text x={0} y={0} fg={theme.text.secondary}>Status</text>
+            <text x={0} y={0} fg={theme.text.secondary} selectable>Status</text>
           </box>
-          <text fg={statusColor()}>{statusLabel()}</text>
+          <text selectable fg={statusColor()}>{statusLabel()}</text>
         </box>
 
         <box height={1} flexDirection="row">
           <box width={LABEL_W} height={1}>
-            <text x={0} y={0} fg={theme.text.secondary}>HEAD</text>
+            <text x={0} y={0} fg={theme.text.secondary} selectable>HEAD</text>
           </box>
-          <text fg={theme.text.secondary}>
-            {props.worktree.head?.slice(0, 8)}
-          </text>
+          <text selectable fg={theme.text.secondary}>{props.worktree.head?.slice(0, 8)}</text>
         </box>
 
         <Show when={loading()}>
@@ -203,7 +209,7 @@ export function DetailView(props: { worktree: Worktree }) {
         <Show when={!loading() && !!error()}>
           <box height={1} />
           <box height={1}>
-            <text x={0} y={0} fg={theme.text.error}>
+            <text x={0} y={0} fg={theme.text.error} selectable>
               {`Failed to load details: ${error()}`}
             </text>
           </box>
@@ -212,61 +218,57 @@ export function DetailView(props: { worktree: Worktree }) {
         <Show when={!loading() && !error() && !!data()}>
           <box height={1} />
           <box height={1}>
-            <text x={0} y={0} fg={theme.text.accent} bold>
+            <text x={0} y={0} fg={theme.text.accent} bold selectable>
               Upstream
             </text>
           </box>
           <box height={1}>
-            <text x={0} y={0} fg={theme.border.subtle}>{separator()}</text>
+            <text x={0} y={0} fg={theme.border.subtle} selectable>{separator()}</text>
           </box>
           <box height={1} flexDirection="row">
             <box width={LABEL_W} height={1}>
-              <text x={0} y={0} fg={theme.text.secondary}>Sync</text>
+              <text x={0} y={0} fg={theme.text.secondary} selectable>Sync</text>
             </box>
-            <text fg={syncColor()}>{syncLabel()}</text>
+            <text selectable fg={syncColor()}>{syncLabel()}</text>
           </box>
           <Show when={data()!.aheadBehind.ahead > 0}>
             <box height={1} flexDirection="row">
               <box width={LABEL_W} height={1}>
-                <text x={0} y={0} fg={theme.text.secondary}>Ahead</text>
+                <text x={0} y={0} fg={theme.text.secondary} selectable>Ahead</text>
               </box>
-              <text fg={theme.text.warning}>
-                {`${data()!.aheadBehind.ahead} commit(s)`}
-              </text>
+              <text selectable fg={theme.text.warning}>{`${data()!.aheadBehind.ahead} commit(s)`}</text>
             </box>
           </Show>
           <Show when={data()!.aheadBehind.behind > 0}>
             <box height={1} flexDirection="row">
               <box width={LABEL_W} height={1}>
-                <text x={0} y={0} fg={theme.text.secondary}>Behind</text>
+                <text x={0} y={0} fg={theme.text.secondary} selectable>Behind</text>
               </box>
-              <text fg={theme.text.warning}>
-                {`${data()!.aheadBehind.behind} commit(s)`}
-              </text>
+              <text selectable fg={theme.text.warning}>{`${data()!.aheadBehind.behind} commit(s)`}</text>
             </box>
           </Show>
 
           <box height={1} />
           <box height={1}>
-            <text x={0} y={0} fg={theme.text.accent} bold>
+            <text x={0} y={0} fg={theme.text.accent} bold selectable>
               Recent Commits
             </text>
           </box>
           <box height={1}>
-            <text x={0} y={0} fg={theme.border.subtle}>{separator()}</text>
+            <text x={0} y={0} fg={theme.border.subtle} selectable>{separator()}</text>
           </box>
           <Show
             when={data()!.commits.length > 0}
             fallback={
               <box height={1}>
-                <text x={0} y={0} fg={theme.text.secondary}>No commits found</text>
+                <text x={0} y={0} fg={theme.text.secondary} selectable>No commits found</text>
               </box>
             }
           >
             <For each={data()!.commits}>
               {(line) => (
                 <box height={1}>
-                  <text x={0} y={0} fg={theme.text.primary}>{line}</text>
+                  <text x={0} y={0} fg={theme.text.primary} selectable>{line}</text>
                 </box>
               )}
             </For>
@@ -275,12 +277,12 @@ export function DetailView(props: { worktree: Worktree }) {
           <Show when={!props.worktree.isMain}>
             <box height={1} />
             <box height={1}>
-              <text x={0} y={0} fg={theme.text.accent} bold>
+              <text x={0} y={0} fg={theme.text.accent} bold selectable>
                 {`Diff vs ${mainBranch()}`}
               </text>
             </box>
             <box height={1}>
-              <text x={0} y={0} fg={theme.border.subtle}>{separator()}</text>
+              <text x={0} y={0} fg={theme.border.subtle} selectable>{separator()}</text>
             </box>
             <Show when={data()!.diffStat.length > 0}>
               <code language="diff" code={data()!.diffStat} />
@@ -290,7 +292,7 @@ export function DetailView(props: { worktree: Worktree }) {
               when={data()!.fullDiff.length > 0}
               fallback={
                 <box height={1}>
-                  <text x={0} y={0} fg={theme.text.secondary}>No changes</text>
+                  <text x={0} y={0} fg={theme.text.secondary} selectable>No changes</text>
                 </box>
               }
             >
@@ -303,17 +305,17 @@ export function DetailView(props: { worktree: Worktree }) {
           <Show when={data()!.focus && data()!.focus!.length > 0}>
             <box height={1} />
             <box height={1}>
-              <text x={0} y={0} fg={theme.text.accent} bold>
+              <text x={0} y={0} fg={theme.text.accent} bold selectable>
                 Focus Paths
               </text>
             </box>
             <box height={1}>
-              <text x={0} y={0} fg={theme.border.subtle}>{separator()}</text>
+              <text x={0} y={0} fg={theme.border.subtle} selectable>{separator()}</text>
             </box>
             <For each={data()!.focus!}>
               {(p) => (
                 <box height={1}>
-                  <text x={0} y={0} fg={theme.text.primary}>
+                  <text x={0} y={0} fg={theme.text.primary} selectable>
                     {`  \u2022 ${p}`}
                   </text>
                 </box>
@@ -324,33 +326,31 @@ export function DetailView(props: { worktree: Worktree }) {
           <Show when={data()!.session}>
             <box height={1} />
             <box height={1}>
-              <text x={0} y={0} fg={theme.text.accent} bold>
+              <text x={0} y={0} fg={theme.text.accent} bold selectable>
                 Session
               </text>
             </box>
             <box height={1}>
-              <text x={0} y={0} fg={theme.border.subtle}>{separator()}</text>
+              <text x={0} y={0} fg={theme.border.subtle} selectable>{separator()}</text>
             </box>
             <box height={1} flexDirection="row">
               <box width={LABEL_W} height={1}>
-                <text x={0} y={0} fg={theme.text.secondary}>Name</text>
+                <text x={0} y={0} fg={theme.text.secondary} selectable>Name</text>
               </box>
-              <text fg={theme.text.primary}>{data()!.session!.meta.name}</text>
+              <text selectable fg={theme.text.primary}>{data()!.session!.meta.name}</text>
             </box>
             <box height={1} flexDirection="row">
               <box width={LABEL_W} height={1}>
-                <text x={0} y={0} fg={theme.text.secondary}>Status</text>
+                <text x={0} y={0} fg={theme.text.secondary} selectable>Status</text>
               </box>
-              <text fg={data()!.session!.active ? theme.text.success : theme.text.error}>
-                {data()!.session!.active ? "\u25CF active" : "\u25CB inactive"}
-              </text>
+              <text selectable fg={data()!.session!.active ? theme.text.success : theme.text.error}>{data()!.session!.active ? "\u25CF active" : "\u25CB inactive"}</text>
             </box>
             <Show when={data()!.session!.meta.layout}>
               <box height={1} flexDirection="row">
                 <box width={LABEL_W} height={1}>
-                  <text x={0} y={0} fg={theme.text.secondary}>Layout</text>
+                  <text x={0} y={0} fg={theme.text.secondary} selectable>Layout</text>
                 </box>
-                <text fg={theme.text.primary}>{data()!.session!.meta.layout}</text>
+                <text selectable fg={theme.text.primary}>{data()!.session!.meta.layout}</text>
               </box>
             </Show>
           </Show>
@@ -359,19 +359,19 @@ export function DetailView(props: { worktree: Worktree }) {
             <box height={1} />
             <box height={1} flexDirection="row">
               <box width={LABEL_W} height={1}>
-                <text x={0} y={0} fg={theme.text.secondary}>Type</text>
+                <text x={0} y={0} fg={theme.text.secondary} selectable>Type</text>
               </box>
-              <text fg={theme.text.accent}>main worktree</text>
+              <text selectable fg={theme.text.accent}>main worktree</text>
             </box>
           </Show>
         </Show>
 
         <box height={1} />
         <box height={1}>
-          <text x={0} y={0} fg={theme.border.subtle}>{separator()}</text>
+          <text x={0} y={0} fg={theme.border.subtle} selectable>{separator()}</text>
         </box>
         <box height={1}>
-          <text x={0} y={0} fg={theme.text.secondary}>
+          <text x={0} y={0} fg={theme.text.secondary} selectable>
             {"Esc:back  d:delete  o:open  r:refresh"}
           </text>
         </box>
