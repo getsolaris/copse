@@ -54,8 +54,7 @@ Manage git worktrees with ease. Create, switch, and clean up worktrees with conf
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew tap getsolaris/tap
-brew install oh-my-worktree
+brew install getsolaris/tap/oh-my-worktree
 ```
 
 ### curl (one-liner)
