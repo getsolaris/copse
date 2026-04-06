@@ -3,8 +3,18 @@ import { hideBin } from "yargs/helpers";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+function findPackageJson(): string {
+  let dir = import.meta.dir;
+  for (let i = 0; i < 5; i++) {
+    const candidate = join(dir, "package.json");
+    try { readFileSync(candidate, "utf-8"); return candidate; } catch {}
+    dir = join(dir, "..");
+  }
+  return join(import.meta.dir, "../../package.json");
+}
+
 const pkg = JSON.parse(
-  readFileSync(join(import.meta.dir, "../../package.json"), "utf-8"),
+  readFileSync(findPackageJson(), "utf-8"),
 ) as { version: string };
 
 if (process.argv.length === 2) {
