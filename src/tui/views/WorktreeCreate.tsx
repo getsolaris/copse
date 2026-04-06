@@ -1,9 +1,8 @@
-import { createSignal, createEffect, on, For, Show } from "solid-js";
+import { createSignal, createEffect, on, onCleanup, For, Show } from "solid-js";
 import { useApp } from "../context/AppContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
 import { GitWorktree } from "../../core/git.ts";
 import { loadConfig, getRepoConfig, expandTemplate } from "../../core/config.ts";
-import { invalidateGitCache } from "../../core/git.ts";
 import { copyFiles, linkFiles } from "../../core/files.ts";
 import { executeHooks } from "../../core/hooks.ts";
 import { writeFocus } from "../../core/focus.ts";
@@ -57,6 +56,14 @@ export function WorktreeCreate() {
     setBranchPickerIdx(-1);
     setShowPicker(branchInput().length > 0 && filteredBranches().length > 0);
   }));
+
+  createEffect(on(step, (currentStep) => {
+    app.setInputFocused(currentStep === "input");
+  }));
+
+  onCleanup(() => {
+    app.setInputFocused(false);
+  });
 
   const updateStep = (index: number, updates: Partial<ProgressStep>) => {
     setProgressSteps(steps => steps.map((s, i) => i === index ? { ...s, ...updates } : s));
@@ -143,28 +150,6 @@ export function WorktreeCreate() {
         setResolvedPath(resolveTargetPath());
         setStep("preview");
         return;
-      }
-      if (key === "backspace") {
-        if (focusField() === "branch") {
-          setBranchInput((s) => s.slice(0, -1));
-        } else {
-          setFocusInput((s) => s.slice(0, -1));
-        }
-        return;
-      }
-      if (event.sequence === "\x15" || (event.ctrl && key === "u")) {
-        if (focusField() === "branch") setBranchInput("");
-        else setFocusInput("");
-        return;
-      }
-      if (event.sequence === "\x17" || (event.ctrl && key === "w")) {
-        if (focusField() === "branch") setBranchInput((s) => s.replace(/\S+\s*$/, ""));
-        else setFocusInput((s) => s.replace(/\S+\s*$/, ""));
-        return;
-      }
-      if (event.sequence && event.sequence.length === 1 && event.sequence.charCodeAt(0) >= 32) {
-        if (focusField() === "branch") setBranchInput((s) => s + event.sequence);
-        else setFocusInput((s) => s + event.sequence);
       }
     }
 
@@ -418,17 +403,15 @@ export function WorktreeCreate() {
 
           <text fg={focusField() === "branch" ? theme.text.accent : theme.text.secondary}>Branch name</text>
 
-          <box width={inputFieldW()} height={1}
-               backgroundColor={theme.bg.elevated}>
-            <text x={1} y={0} fg={theme.text.primary}>
-              {branchInput()}
-            </text>
-            <Show when={focusField() === "branch"}>
-              <text x={branchInput().length + 1} y={0} fg={theme.text.accent}>
-                {"\u2588"}
-              </text>
-            </Show>
-          </box>
+          <input
+            value={branchInput()}
+            onInput={(value: string) => setBranchInput(value)}
+            placeholder="Branch name or search..."
+            focused={focusField() === "branch"}
+            width={inputFieldW()}
+            backgroundColor={theme.bg.elevated}
+            cursorColor={theme.text.accent}
+          />
 
           <Show when={showPicker() && focusField() === "branch" && filteredBranches().length > 0}>
             <For each={filteredBranches()}>
@@ -458,17 +441,15 @@ export function WorktreeCreate() {
             <text fg={theme.text.secondary}>{"(optional)"}</text>
           </box>
 
-          <box width={inputFieldW()} height={1}
-               backgroundColor={theme.bg.elevated}>
-            <text x={1} y={0} fg={theme.text.primary}>
-              {focusInput()}
-            </text>
-            <Show when={focusField() === "focus"}>
-              <text x={focusInput().length + 1} y={0} fg={theme.text.accent}>
-                {"\u2588"}
-              </text>
-            </Show>
-          </box>
+          <input
+            value={focusInput()}
+            onInput={(value: string) => setFocusInput(value)}
+            placeholder="apps/web,apps/api (optional)"
+            focused={focusField() === "focus"}
+            width={inputFieldW()}
+            backgroundColor={theme.bg.elevated}
+            cursorColor={theme.text.accent}
+          />
 
           <text fg={theme.text.secondary}>{"comma-separated paths, e.g. apps/web,apps/api"}</text>
 
