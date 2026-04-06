@@ -1,8 +1,19 @@
 {
-  "name": "oh-my-worktree",
+  "name": "@getsolaris/oh-my-worktree",
   "version": "0.7.1",
+  "description": "Git worktree manager with a beautiful TUI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getsolaris/oh-my-worktree.git"
+  },
+  "keywords": ["git", "worktree", "tui", "cli", "git-worktree"],
   "bin": {
-    "omw": "./src/index.ts"
+    "omw": "./dist/omw.js"
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "dev": "bun run src/index.ts",

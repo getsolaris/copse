@@ -66,9 +66,9 @@ curl -fsSL https://raw.githubusercontent.com/getsolaris/oh-my-worktree/main/inst
 ### npm / bun
 
 ```bash
-bun install -g oh-my-worktree
+bun install -g @getsolaris/oh-my-worktree
 # or
-npm install -g oh-my-worktree
+npm install -g @getsolaris/oh-my-worktree
 ```
 
 ## Local Development
