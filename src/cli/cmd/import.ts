@@ -1,9 +1,10 @@
 import type { CommandModule } from "yargs";
 import { resolve } from "node:path";
 import { importWorktree, validateImportTarget } from "../../core/import.ts";
-import { GitWorktree, invalidateGitCache } from "../../core/git.ts";
+import { invalidateGitCache } from "../../core/git.ts";
 import { logActivity } from "../../core/activity-log.ts";
 import { ImportError } from "../../core/types.ts";
+import { resolveMainRepo } from "../utils.ts";
 
 const cmd: CommandModule = {
   command: "import <path>",
@@ -47,7 +48,7 @@ const cmd: CommandModule = {
       invalidateGitCache();
 
       const branch = worktree.branch ?? validation.branch ?? "unknown";
-      const mainRepoPath = worktree.repoPath ?? (await GitWorktree.getMainRepoPath().catch(() => process.cwd()));
+      const mainRepoPath = worktree.repoPath ?? (await resolveMainRepo());
       console.log(`Imported worktree: ${branch} at ${worktree.path}`);
       try {
         logActivity(mainRepoPath, {

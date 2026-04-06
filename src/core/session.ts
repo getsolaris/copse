@@ -1,5 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync, unlinkSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
+import { dirname } from "node:path";
+import { getMetadataFilePath } from "./metadata.ts";
+import type { SessionWindowConfig, SessionLayoutConfig } from "./config.ts";
 
 export class SessionError extends Error {
   constructor(
@@ -11,14 +13,7 @@ export class SessionError extends Error {
   }
 }
 
-export interface SessionWindowConfig {
-  name: string;
-  command?: string;
-}
-
-export interface SessionLayoutConfig {
-  windows: SessionWindowConfig[];
-}
+export type { SessionWindowConfig, SessionLayoutConfig };
 
 export interface SessionInfo {
   name: string;
@@ -87,22 +82,7 @@ export function fromSessionName(sessionName: string, prefix?: string): string | 
 }
 
 function getSessionMetaPath(worktreePath: string): string {
-  const gitPath = join(worktreePath, ".git");
-  const stat = statSync(gitPath, { throwIfNoEntry: false });
-
-  if (!stat) {
-    return join(gitPath, "omw-session");
-  }
-
-  if (stat.isDirectory()) {
-    return join(gitPath, "omw-session");
-  }
-
-  const content = readFileSync(gitPath, "utf-8").trim();
-  const actualGitDir = content.replace(/^gitdir:\s*/, "").trim();
-  const resolvedGitDir = resolve(worktreePath, actualGitDir);
-
-  return join(resolvedGitDir, "omw-session");
+  return getMetadataFilePath(worktreePath, "omw-session");
 }
 
 export function writeSessionMeta(worktreePath: string, info: SessionInfo): void {

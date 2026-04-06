@@ -1,6 +1,6 @@
 import type { CommandModule } from "yargs";
 import { GitWorktree } from "../../core/git.ts";
-import { GitError } from "../../core/types.ts";
+import { resolveMainRepo, handleCliError } from "../utils.ts";
 
 const cmd: CommandModule = {
   command: "diff <ref1> [ref2]",
@@ -33,7 +33,7 @@ const cmd: CommandModule = {
     const nameOnly = !!(argv as Record<string, unknown>)["name-only"];
 
     try {
-      const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+      const mainRepoPath = await resolveMainRepo();
       const worktrees = await GitWorktree.list(mainRepoPath);
 
       const resolveRef = (ref: string): string => {
@@ -59,12 +59,7 @@ const cmd: CommandModule = {
 
       process.exit(0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

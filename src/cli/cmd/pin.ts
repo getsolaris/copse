@@ -1,7 +1,7 @@
 import type { CommandModule } from "yargs";
 import { GitWorktree } from "../../core/git.ts";
-import { GitError } from "../../core/types.ts";
 import { listPinnedWorktrees, readPin, removePin, writePin } from "../../core/pin.ts";
+import { handleCliError } from "../utils.ts";
 
 const cmd: CommandModule = {
   command: "pin [branch]",
@@ -30,9 +30,9 @@ const cmd: CommandModule = {
   handler: async (argv) => {
     try {
       const args = argv as unknown as { branch?: string; reason?: string };
+      const worktrees = await GitWorktree.list();
 
       if (argv.list) {
-        const worktrees = await GitWorktree.list();
         const pinned = listPinnedWorktrees(worktrees).map((worktree) => ({
           ...worktree,
           pin: readPin(worktree.path),
@@ -83,7 +83,6 @@ const cmd: CommandModule = {
         process.exit(1);
       }
 
-      const worktrees = await GitWorktree.list();
       const target = worktrees.find((wt) => wt.branch === branch);
 
       if (!target) {
@@ -112,12 +111,7 @@ const cmd: CommandModule = {
       console.log(`Pinned worktree: ${target.path}`);
       process.exit(0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

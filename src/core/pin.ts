@@ -1,24 +1,10 @@
-import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, existsSync } from "node:fs";
-import { join, resolve, dirname } from "node:path";
+import { readFileSync, writeFileSync, unlinkSync, mkdirSync, existsSync } from "node:fs";
+import { join, dirname } from "node:path";
 import type { PinMetadata, Worktree } from "./types.ts";
+import { getMetadataFilePath } from "./metadata.ts";
 
 function getPinFilePath(worktreePath: string): string {
-  const gitPath = join(worktreePath, ".git");
-  const stat = statSync(gitPath, { throwIfNoEntry: false });
-
-  if (!stat) {
-    return join(gitPath, "omw-pin");
-  }
-
-  if (stat.isDirectory()) {
-    return join(gitPath, "omw-pin");
-  }
-
-  const content = readFileSync(gitPath, "utf-8").trim();
-  const actualGitDir = content.replace(/^gitdir:\s*/, "").trim();
-  const resolvedGitDir = resolve(worktreePath, actualGitDir);
-
-  return join(resolvedGitDir, "omw-pin");
+  return getMetadataFilePath(worktreePath, "omw-pin");
 }
 
 function getCurrentBranch(worktreePath: string): string {

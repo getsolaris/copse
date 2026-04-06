@@ -1,10 +1,10 @@
 import type { CommandModule } from "yargs";
 import { basename } from "node:path";
 import { GitWorktree } from "../../core/git.ts";
-import { GitError } from "../../core/types.ts";
 import { logActivity } from "../../core/activity-log.ts";
 import { loadConfig, getSessionConfig } from "../../core/config.ts";
 import { isInsideTmux, sessionExists, toSessionName, attachSession } from "../../core/session.ts";
+import { resolveMainRepo, findWorktreeOrExit, handleCliError } from "../utils.ts";
 
 const cmd: CommandModule = {
   command: "switch <branch-or-path>",
@@ -16,16 +16,9 @@ const cmd: CommandModule = {
     const branchOrPath = argv["branch-or-path"] as string;
 
     try {
-      const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+      const mainRepoPath = await resolveMainRepo();
       const worktrees = await GitWorktree.list(mainRepoPath);
-
-      const target = worktrees.find(
-        (wt) => wt.branch === branchOrPath || wt.path === branchOrPath || wt.path.endsWith("/" + branchOrPath),
-      );
-      if (!target) {
-        console.error(`Error: no worktree for branch or path '${branchOrPath}'`);
-        process.exit(1);
-      }
+      const target = findWorktreeOrExit(worktrees, branchOrPath);
 
       try { logActivity(mainRepoPath, { timestamp: new Date().toISOString(), event: "switch", branch: target.branch ?? branchOrPath, path: target.path }); } catch {}
 
@@ -45,12 +38,7 @@ const cmd: CommandModule = {
       console.log(`cd ${JSON.stringify(target.path)}`);
       process.exit(0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

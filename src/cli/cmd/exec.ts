@@ -1,8 +1,8 @@
 import type { CommandModule } from "yargs";
 import { GitWorktree } from "../../core/git.ts";
-import { GitError } from "../../core/types.ts";
 import { loadConfig, getConfiguredRepoPaths } from "../../core/config.ts";
 import { resolve } from "node:path";
+import { resolveMainRepo, handleCliError } from "../utils.ts";
 
 interface ExecResult {
   branch: string;
@@ -59,7 +59,7 @@ const cmd: CommandModule = {
 
       if (argv.all) {
         const config = loadConfig();
-        const currentRepo = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+        const currentRepo = await resolveMainRepo();
         const configPaths = getConfiguredRepoPaths(config);
 
         const seen = new Set([resolve(currentRepo)]);
@@ -171,12 +171,7 @@ const cmd: CommandModule = {
       const hasFailure = results.some((r) => r.exitCode !== 0);
       process.exit(hasFailure ? 1 : 0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

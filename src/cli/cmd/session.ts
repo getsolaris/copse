@@ -1,7 +1,6 @@
 import type { CommandModule } from "yargs";
 import { basename } from "node:path";
 import { GitWorktree } from "../../core/git.ts";
-import { GitError } from "../../core/types.ts";
 import { loadConfig, getSessionConfig, resolveSessionLayout } from "../../core/config.ts";
 import {
   isTmuxAvailable,
@@ -13,6 +12,7 @@ import {
   removeSessionMeta,
   toSessionName,
 } from "../../core/session.ts";
+import { resolveMainRepo, findWorktreeOrExit, handleCliError } from "../utils.ts";
 
 const cmd: CommandModule = {
   command: "session [branch-or-path]",
@@ -62,7 +62,7 @@ const cmd: CommandModule = {
     }
 
     try {
-      const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+      const mainRepoPath = await resolveMainRepo();
       const config = loadConfig();
       const sessionConfig = getSessionConfig(config);
 
@@ -82,13 +82,7 @@ const cmd: CommandModule = {
       }
 
       const worktrees = await GitWorktree.list(mainRepoPath);
-      const target = worktrees.find(
-        (wt) => wt.branch === branchOrPath || wt.path === branchOrPath || wt.path.endsWith("/" + branchOrPath),
-      );
-      if (!target) {
-        console.error(`Error: no worktree found for '${branchOrPath}'`);
-        process.exit(1);
-      }
+      const target = findWorktreeOrExit(worktrees, branchOrPath);
 
       const branch = target.branch ?? basename(target.path);
 
@@ -113,12 +107,7 @@ const cmd: CommandModule = {
       console.log(`Session: ${sessionName}`);
       process.exit(0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

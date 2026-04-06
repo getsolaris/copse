@@ -1,27 +1,13 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
-import { dirname, join, resolve } from "path";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { dirname } from "path";
 import type { ActivityEvent } from "./types.ts";
+import { getMetadataFilePath } from "./metadata.ts";
 
 const maxLogLines = 1000;
 const truncateToLines = 500;
 
 export function getActivityLogPath(repoPath: string): string {
-  const gitPath = join(repoPath, ".git");
-  const stat = statSync(gitPath, { throwIfNoEntry: false });
-
-  if (!stat) {
-    return join(gitPath, "omw-activity.log");
-  }
-
-  if (stat.isDirectory()) {
-    return join(gitPath, "omw-activity.log");
-  }
-
-  const content = readFileSync(gitPath, "utf-8").trim();
-  const actualGitDir = content.replace(/^gitdir:\s*/, "").trim();
-  const resolvedGitDir = resolve(repoPath, actualGitDir);
-
-  return join(resolvedGitDir, "omw-activity.log");
+  return getMetadataFilePath(repoPath, "omw-activity.log");
 }
 
 export function logActivity(repoPath: string, event: ActivityEvent): void {

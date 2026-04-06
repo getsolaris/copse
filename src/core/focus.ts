@@ -1,23 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs';
-import { dirname, join, resolve } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { dirname } from 'path';
+import { getMetadataFilePath } from "./metadata.ts";
 
 export function getFocusFilePath(worktreePath: string): string {
-  const gitPath = join(worktreePath, '.git');
-  const stat = statSync(gitPath, { throwIfNoEntry: false });
-
-  if (!stat) {
-    return join(gitPath, 'omw-focus');
-  }
-
-  if (stat.isDirectory()) {
-    return join(gitPath, 'omw-focus');
-  }
-
-  const content = readFileSync(gitPath, 'utf-8').trim();
-  const actualGitDir = content.replace(/^gitdir:\s*/, '').trim();
-  const resolvedGitDir = resolve(worktreePath, actualGitDir);
-
-  return join(resolvedGitDir, 'omw-focus');
+  return getMetadataFilePath(worktreePath, "omw-focus");
 }
 
 export function writeFocus(worktreePath: string, focusPaths: string[]): void {

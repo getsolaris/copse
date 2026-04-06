@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { GitWorktree } from "../../core/git.ts";
 import { GitError } from "../../core/types.ts";
 import { loadConfig, getRepoConfig, expandTemplate, resolveTemplate, mergeTemplateWithRepo, getSessionConfig, resolveSessionLayout } from "../../core/config.ts";
+import { resolveMainRepo } from "../utils.ts";
 import { executeHooks, HookError, HookTimeoutError } from "../../core/hooks.ts";
 import { matchHooksForFocus, executeGlobHooks } from "../../core/glob-hooks.ts";
 import { copyFiles, linkFiles, applySharedDeps } from "../../core/files.ts";
@@ -63,7 +64,7 @@ const cmd: CommandModule = {
   handler: async (argv) => {
     let branch = argv.branch as string | undefined;
     const prNumber = argv.pr as number | undefined;
-    const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+    const mainRepoPath = await resolveMainRepo();
     const repoName = basename(mainRepoPath);
 
     if (!branch && !prNumber) {
@@ -322,7 +323,8 @@ const cmd: CommandModule = {
       try {
         await GitWorktree.remove(worktreePath, { force: true }, mainRepoPath);
         console.error("Rolled back worktree.");
-      } catch {
+      } catch (rollbackErr) {
+        console.error(`Warning: rollback failed: ${(rollbackErr as Error).message}`);
       }
 
       if (err instanceof HookTimeoutError) {

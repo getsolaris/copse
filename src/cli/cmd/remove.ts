@@ -1,24 +1,13 @@
 import type { CommandModule } from "yargs";
 import { GitWorktree } from "../../core/git.ts";
-import { GitError } from "../../core/types.ts";
 import { loadConfig, getRepoConfig, getSessionConfig } from "../../core/config.ts";
 import { executeHooks } from "../../core/hooks.ts";
 import { readFocus } from "../../core/focus.ts";
 import { matchHooksForFocus, executeGlobHooks } from "../../core/glob-hooks.ts";
 import { basename } from "node:path";
-import * as readline from "node:readline";
 import { logActivity } from "../../core/activity-log.ts";
 import { closeSession, isTmuxAvailable } from "../../core/session.ts";
-
-async function confirm(question: string): Promise<boolean> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-    });
-  });
-}
+import { confirm, resolveMainRepo, findWorktreeOrExit, handleCliError } from "../utils.ts";
 
 const cmd: CommandModule = {
   command: "remove <branch-or-path>",
@@ -35,16 +24,10 @@ const cmd: CommandModule = {
     const yes = !!argv.yes;
 
     try {
-      const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+      const mainRepoPath = await resolveMainRepo();
       const worktrees = await GitWorktree.list(mainRepoPath);
+      const target = findWorktreeOrExit(worktrees, branchOrPath);
 
-      const target = worktrees.find(
-        (wt) => wt.branch === branchOrPath || wt.path === branchOrPath || wt.path.endsWith("/" + branchOrPath),
-      );
-      if (!target) {
-        console.error(`Error: no worktree found for '${branchOrPath}'`);
-        process.exit(1);
-      }
       if (target.isMain) {
         console.error(`Error: cannot remove the main worktree`);
         process.exit(1);
@@ -127,12 +110,7 @@ const cmd: CommandModule = {
       try { logActivity(mainRepoPath, { timestamp: new Date().toISOString(), event: "delete", branch: target.branch ?? branchOrPath, path: target.path }); } catch {}
       process.exit(0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

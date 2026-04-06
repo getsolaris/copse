@@ -207,38 +207,7 @@ export function applySharedDeps(
   return result;
 }
 
-export function shouldInvalidateDeps(
-  sourceDir: string,
-  targetDir: string,
-  config: SharedDepsConfig,
-): string[] {
-  const invalidateOn = config.invalidateOn ?? [];
-  const changed: string[] = [];
 
-  for (const file of invalidateOn) {
-    const srcPath = join(resolve(sourceDir), file);
-    const dstPath = join(resolve(targetDir), file);
-
-    const srcStat = statSync(srcPath, { throwIfNoEntry: false });
-    const dstStat = statSync(dstPath, { throwIfNoEntry: false });
-
-    if (!srcStat || !dstStat) {
-      if (srcStat || dstStat) changed.push(file);
-      continue;
-    }
-
-    if (srcStat.mtimeMs !== dstStat.mtimeMs || srcStat.size !== dstStat.size) {
-      changed.push(file);
-    }
-  }
-
-  return changed;
-}
-
-/**
- * Remove files/symlinks from targetDir (for rollback on failed worktree creation).
- * Does not throw if files don't exist.
- */
 export function cleanupFiles(targetDir: string, files: string[]): void {
   for (const file of files) {
     const target = join(resolve(targetDir), file);

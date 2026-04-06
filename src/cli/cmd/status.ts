@@ -4,6 +4,7 @@ import { GitError } from "../../core/types.ts";
 import { loadConfig, getConfiguredRepoPaths } from "../../core/config.ts";
 import { readFocus } from "../../core/focus.ts";
 import { resolve } from "node:path";
+import { resolveMainRepo } from "../utils.ts";
 
 interface StatusRow {
   repo: string;
@@ -36,7 +37,7 @@ const cmd: CommandModule = {
 
       if (argv.all) {
         const config = loadConfig();
-        const currentRepo = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+        const currentRepo = await resolveMainRepo();
         const configPaths = getConfiguredRepoPaths(config);
 
         const seen = new Set([resolve(currentRepo)]);

@@ -62,6 +62,10 @@ export class GitWorktree {
     return stdout.trim();
   }
 
+  static async exec(args: string[], cwd?: string): Promise<string> {
+    return this.run(args, cwd);
+  }
+
   static async checkVersion(): Promise<void> {
     if (this.gitVersionChecked) return;
 

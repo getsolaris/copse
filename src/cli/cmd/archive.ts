@@ -1,22 +1,11 @@
 import type { CommandModule } from "yargs";
 import { GitWorktree, invalidateGitCache } from "../../core/git.ts";
 import { logActivity } from "../../core/activity-log.ts";
-import { GitError } from "../../core/types.ts";
 import { createArchive, listArchives } from "../../core/archive.ts";
 import { loadConfig, getRepoConfig } from "../../core/config.ts";
 import { executeHooks } from "../../core/hooks.ts";
 import { basename } from "node:path";
-import * as readline from "node:readline";
-
-async function confirm(question: string): Promise<boolean> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-    });
-  });
-}
+import { confirm, resolveMainRepo, findWorktreeOrExit, handleCliError } from "../utils.ts";
 
 const cmd: CommandModule = {
   command: "archive [branch]",
@@ -61,16 +50,10 @@ const cmd: CommandModule = {
         process.exit(1);
       }
 
-      const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+      const mainRepoPath = await resolveMainRepo();
       const worktrees = await GitWorktree.list(mainRepoPath);
+      const target = findWorktreeOrExit(worktrees, branch);
 
-      const target = worktrees.find(
-        (wt) => wt.branch === branch || wt.path === branch || wt.path.endsWith("/" + branch),
-      );
-      if (!target) {
-        console.error(`Error: no worktree found for '${branch}'`);
-        process.exit(1);
-      }
       if (target.isMain) {
         console.error(`Error: cannot archive the main worktree`);
         process.exit(1);
@@ -119,12 +102,7 @@ const cmd: CommandModule = {
 
       process.exit(0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

@@ -1,7 +1,9 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
+import { GitWorktree } from "./git.ts";
 import { writeFocus } from "./focus.ts";
 import { ImportError, type Worktree } from "./types.ts";
+import { resolveGitDir } from "./metadata.ts";
 
 interface ImportValidationResult {
   valid: boolean;
@@ -10,28 +12,7 @@ interface ImportValidationResult {
 }
 
 async function runGit(args: string[], cwd: string): Promise<string> {
-  const proc = (Bun as any).spawn(["git", ...args], {
-    cwd,
-    stdout: "pipe",
-    stderr: "pipe",
-    env: {
-      ...(Bun as any).env,
-      LC_ALL: "C",
-      LANG: "C",
-    },
-  });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-    proc.exited,
-  ]);
-
-  if (exitCode !== 0) {
-    throw new Error(`git ${args.join(" ")} failed: ${stderr.trim()}`);
-  }
-
-  return stdout.trim();
+  return GitWorktree.exec(args, cwd);
 }
 
 function getBranchFromGitDir(gitDir: string): string | null {
@@ -55,18 +36,7 @@ export function getWorktreeGitDir(worktreePath: string): string {
     throw new Error(`Missing .git at ${gitPath}`);
   }
 
-  if (gitStat.isDirectory()) {
-    return gitPath;
-  }
-
-  const content = readFileSync(gitPath, "utf-8").trim();
-  const match = content.match(/^gitdir:\s*(.+)$/);
-
-  if (!match) {
-    throw new Error(`Invalid .git file format at ${gitPath}`);
-  }
-
-  return resolve(resolvedPath, match[1].trim());
+  return resolveGitDir(resolvedPath);
 }
 
 export function validateImportTarget(path: string): ImportValidationResult {
@@ -160,7 +130,9 @@ export async function importWorktree(
     try {
       const pinModule: { writePin: (worktreePath: string) => void } = await import("./pin.ts");
       pinModule.writePin(resolvedPath);
-    } catch {}
+    } catch (err) {
+      console.warn(`Warning: failed to pin worktree: ${(err as Error).message}`);
+    }
   }
 
   return {

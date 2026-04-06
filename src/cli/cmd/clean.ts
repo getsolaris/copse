@@ -1,20 +1,9 @@
 import type { CommandModule } from "yargs";
 import { GitWorktree } from "../../core/git.ts";
-import { GitError } from "../../core/types.ts";
 import { loadConfig } from "../../core/config.ts";
 import { analyzeLifecycle, formatLifecycleReport } from "../../core/lifecycle.ts";
 import { isPinned } from "../../core/pin.ts";
-import * as readline from "node:readline";
-
-async function confirm(question: string): Promise<boolean> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-    });
-  });
-}
+import { confirm, resolveMainRepo, handleCliError } from "../utils.ts";
 
 const cmd: CommandModule = {
   command: "clean",
@@ -29,23 +18,35 @@ const cmd: CommandModule = {
     const yes = !!argv.yes;
 
     try {
-      const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+      const mainRepoPath = await resolveMainRepo();
       const worktrees = await GitWorktree.list(mainRepoPath);
 
       const mainWorktree = worktrees.find((wt) => wt.isMain) ?? worktrees[0];
       const mainBranch = mainWorktree?.branch ?? "main";
 
-      const toClean: typeof worktrees = [];
-      for (const wt of worktrees) {
-        if (wt.isMain) continue;
+      const candidates = worktrees.filter((wt) => {
+        if (wt.isMain) return false;
         if (isPinned(wt.path)) {
           console.log(`  Skipping (pinned): ${wt.branch}`);
-          continue;
+          return false;
         }
-        if (!wt.branch) continue;
-        const merged = await GitWorktree.isMergedInto(wt.branch, mainBranch, mainRepoPath);
+        if (!wt.branch) return false;
+        return true;
+      });
+
+      const checked = await Promise.all(
+        candidates.map(async (wt) => {
+          const [merged, dirty] = await Promise.all([
+            GitWorktree.isMergedInto(wt.branch!, mainBranch, mainRepoPath),
+            GitWorktree.isDirty(wt.path),
+          ]);
+          return { wt, merged, dirty };
+        }),
+      );
+
+      const toClean: typeof worktrees = [];
+      for (const { wt, merged, dirty } of checked) {
         if (!merged) continue;
-        const dirty = await GitWorktree.isDirty(wt.path);
         if (dirty) {
           console.log(`  Skipping (dirty): ${wt.branch}`);
           continue;
@@ -94,12 +95,7 @@ const cmd: CommandModule = {
 
       process.exit(0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

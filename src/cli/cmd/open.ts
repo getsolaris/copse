@@ -1,7 +1,7 @@
 import type { CommandModule } from "yargs";
 import { GitWorktree } from "../../core/git.ts";
-import { GitError } from "../../core/types.ts";
 import { existsSync } from "node:fs";
+import { resolveMainRepo, findWorktreeOrExit, handleCliError } from "../utils.ts";
 
 const KNOWN_EDITORS = ["code", "cursor", "vim", "nvim", "emacs", "nano", "subl", "zed", "idea", "webstorm"] as const;
 
@@ -70,21 +70,9 @@ const cmd: CommandModule = {
       if (!branchOrPath) {
         targetPath = process.cwd();
       } else {
-        const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+        const mainRepoPath = await resolveMainRepo();
         const worktrees = await GitWorktree.list(mainRepoPath);
-
-        const target = worktrees.find(
-          (wt) =>
-            wt.branch === branchOrPath ||
-            wt.path === branchOrPath ||
-            wt.path.endsWith("/" + branchOrPath),
-        );
-
-        if (!target) {
-          console.error(`Error: no worktree found for '${branchOrPath}'`);
-          process.exit(1);
-        }
-
+        const target = findWorktreeOrExit(worktrees, branchOrPath);
         targetPath = target.path;
       }
 
@@ -113,12 +101,7 @@ const cmd: CommandModule = {
       await proc.exited;
       process.exit(0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

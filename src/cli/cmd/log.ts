@@ -1,8 +1,6 @@
 import type { CommandModule } from "yargs";
-import { GitWorktree } from "../../core/git.ts";
-import { GitError } from "../../core/types.ts";
 import { clearActivityLog, readActivityLog } from "../../core/activity-log.ts";
-import * as readline from "node:readline";
+import { confirm, resolveMainRepo, handleCliError } from "../utils.ts";
 
 function colorEvent(event: string): string {
   const colors: Record<string, string> = {
@@ -17,16 +15,6 @@ function colorEvent(event: string): string {
 
   const color = colors[event] ?? colors.reset;
   return `${color}${event}${colors.reset}`;
-}
-
-async function confirm(question: string): Promise<boolean> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-    });
-  });
 }
 
 const cmd: CommandModule = {
@@ -51,7 +39,7 @@ const cmd: CommandModule = {
       }),
   handler: async (argv) => {
     try {
-      const mainRepoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+      const mainRepoPath = await resolveMainRepo();
 
       if (argv.clear) {
         const confirmed = await confirm("Clear activity log? [y/N] ");
@@ -84,13 +72,7 @@ const cmd: CommandModule = {
 
       process.exit(0);
     } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Git error: ${err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-
-      process.exit(1);
+      handleCliError(err);
     }
   },
 };

@@ -1,5 +1,6 @@
 import type { CommandModule } from "yargs";
 import { basename, resolve } from "node:path";
+import { GitWorktree } from "../../core/git.ts";
 import { GitError } from "../../core/types.ts";
 import { initConfig, loadConfig, resolveTemplate, mergeTemplateWithRepo, getRepoConfig } from "../../core/config.ts";
 import { executeHooks, HookError, HookTimeoutError } from "../../core/hooks.ts";
@@ -53,26 +54,7 @@ const cmd: CommandModule = {
     console.log(`Cloning ${url}...`);
 
     try {
-      const proc = (Bun as any).spawn(["git", "clone", url, targetPath], {
-        stdout: "pipe",
-        stderr: "pipe",
-        env: { ...process.env, LC_ALL: "C" },
-      });
-
-      const [, stderr, exitCode] = await Promise.all([
-        new Response(proc.stdout).text(),
-        new Response(proc.stderr).text(),
-        proc.exited,
-      ]);
-
-      if (exitCode !== 0) {
-        throw new GitError(
-          `git clone failed: ${stderr.trim()}`,
-          exitCode,
-          stderr.trim(),
-          `git clone ${url} ${targetPath}`,
-        );
-      }
+      await GitWorktree.exec(["clone", url, targetPath]);
     } catch (err) {
       if (err instanceof GitError) {
         console.error(`Error: ${err.stderr || err.message}`);
