@@ -30,15 +30,7 @@ export function Sidebar() {
 
   const displayItems = createMemo<DisplayItem[]>(() => {
     const wts = worktrees();
-    const multiRepo = git.isMultiRepo();
     const items: DisplayItem[] = [];
-
-    if (!multiRepo) {
-      for (let i = 0; i < wts.length; i++) {
-        items.push({ type: "worktree", wt: wts[i], flatIdx: i });
-      }
-      return items;
-    }
 
     const grouped = new Map<string, Worktree[]>();
     for (const wt of wts) {
