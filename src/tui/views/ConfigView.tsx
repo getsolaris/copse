@@ -48,7 +48,6 @@ export function ConfigView() {
 
   const w = () => dims().width;
   const h = () => dims().height;
-  const contentH = () => Math.max(h() - 4, 1);
 
   return (
     <box x={0} y={0} width="100%" height="100%" backgroundColor={theme.bg.base} flexDirection="column">
@@ -60,79 +59,77 @@ export function ConfigView() {
         paddingX={2}
         paddingY={1}
       >
-        <scrollbox height={contentH()} focused>
-          <box height={1}>
-            <text fg={theme.text.accent}><b>Configuration</b></text>
-          </box>
-          <box flexDirection="row" gap={1}>
-            <text fg={theme.text.secondary}>Path:</text>
-            <text fg={theme.text.primary}>{configPath}</text>
-          </box>
+        <box height={1}>
+          <text fg={theme.text.accent}><b>Configuration</b></text>
+        </box>
+        <box flexDirection="row" gap={1}>
+          <text fg={theme.text.secondary}>Path:</text>
+          <text fg={theme.text.primary}>{configPath}</text>
+        </box>
 
-          <Show when={!cfg()}>
-            <box flexDirection="column" gap={1}>
-              <text fg={theme.text.warning}>No config file found.</text>
-              <box flexDirection="row" gap={1}>
-                <text fg={theme.text.secondary}>Press</text>
-                <text fg={theme.text.accent}>i</text>
-                <text fg={theme.text.secondary}>to initialize with defaults.</text>
-              </box>
+        <Show when={!cfg()}>
+          <box flexDirection="column" gap={1}>
+            <text fg={theme.text.warning}>No config file found.</text>
+            <box flexDirection="row" gap={1}>
+              <text fg={theme.text.secondary}>Press</text>
+              <text fg={theme.text.accent}>i</text>
+              <text fg={theme.text.secondary}>to initialize with defaults.</text>
             </box>
-          </Show>
+          </box>
+        </Show>
 
-          <Show when={!!cfg()}>
-            <box flexDirection="column" gap={1}>
-              <text fg={theme.text.accent}>Defaults</text>
-              <box flexDirection="row">
-                <box width={14}><text fg={theme.text.secondary}>worktreeDir</text></box>
-                <text fg={theme.text.primary}>{cfg()?.defaults?.worktreeDir ?? "../{repo}-{branch}"}</text>
-              </box>
-              <box flexDirection="row">
-                <box width={14}><text fg={theme.text.secondary}>copyFiles</text></box>
-                <text fg={theme.text.primary}>[{(cfg()?.defaults?.copyFiles ?? []).join(", ")}]</text>
-              </box>
-              <box flexDirection="row">
-                <box width={14}><text fg={theme.text.secondary}>linkFiles</text></box>
-                <text fg={theme.text.primary}>[{(cfg()?.defaults?.linkFiles ?? []).join(", ")}]</text>
-              </box>
-              <box flexDirection="row">
-                <box width={14}><text fg={theme.text.secondary}>postCreate</text></box>
-                <text fg={theme.text.primary}>[{(cfg()?.defaults?.postCreate ?? []).join(", ")}]</text>
-              </box>
+        <Show when={!!cfg()}>
+          <box flexDirection="column" gap={1}>
+            <text fg={theme.text.accent}>Defaults</text>
+            <box flexDirection="row">
+              <box width={14}><text fg={theme.text.secondary}>worktreeDir</text></box>
+              <text fg={theme.text.primary}>{cfg()?.defaults?.worktreeDir ?? "../{repo}-{branch}"}</text>
             </box>
+            <box flexDirection="row">
+              <box width={14}><text fg={theme.text.secondary}>copyFiles</text></box>
+              <text fg={theme.text.primary}>[{(cfg()?.defaults?.copyFiles ?? []).join(", ")}]</text>
+            </box>
+            <box flexDirection="row">
+              <box width={14}><text fg={theme.text.secondary}>linkFiles</text></box>
+              <text fg={theme.text.primary}>[{(cfg()?.defaults?.linkFiles ?? []).join(", ")}]</text>
+            </box>
+            <box flexDirection="row">
+              <box width={14}><text fg={theme.text.secondary}>postCreate</text></box>
+              <text fg={theme.text.primary}>[{(cfg()?.defaults?.postCreate ?? []).join(", ")}]</text>
+            </box>
+          </box>
 
-            <box><text fg={theme.border.subtle}>{"\u2500".repeat(Math.max(w() - 34, 10))}</text></box>
+          <box><text fg={theme.border.subtle}>{"\u2500".repeat(Math.max(w() - 34, 10))}</text></box>
 
-            <Show when={(cfg()?.repos?.length ?? 0) > 0}>
-              <box flexDirection="column" gap={1}>
-                <text fg={theme.text.accent}>Repos ({cfg()?.repos?.length})</text>
-                <For each={cfg()?.repos?.slice(0, 4)}>
-                  {(repo) => (
-                    <box flexDirection="column" gap={0}>
-                      <text fg={theme.text.primary}>{repo.path.split("/").pop() ?? repo.path}</text>
-                      <box flexDirection="row">
-                        <box width={11}><text fg={theme.text.secondary}>copyFiles</text></box>
-                        <text fg={theme.text.primary}>{(repo.copyFiles ?? []).length > 0 ? (repo.copyFiles ?? []).join(", ") : "—"}</text>
-                      </box>
-                      <box flexDirection="row">
-                        <box width={11}><text fg={theme.text.secondary}>postCreate</text></box>
-                        <text fg={theme.text.primary}>{(repo.postCreate ?? []).length > 0 ? (repo.postCreate ?? []).join(", ") : "—"}</text>
-                      </box>
+          <Show when={(cfg()?.repos?.length ?? 0) > 0}>
+            <box flexDirection="column" gap={1}>
+              <text fg={theme.text.accent}>Repos ({cfg()?.repos?.length})</text>
+              <For each={cfg()?.repos?.slice(0, 4)}>
+                {(repo) => (
+                  <box flexDirection="column" gap={0}>
+                    <text fg={theme.text.primary}>{repo.path.split("/").pop() ?? repo.path}</text>
+                    <box flexDirection="row">
+                      <box width={11}><text fg={theme.text.secondary}>copyFiles</text></box>
+                      <text fg={theme.text.primary}>{(repo.copyFiles ?? []).length > 0 ? (repo.copyFiles ?? []).join(", ") : "\u2014"}</text>
                     </box>
-                  )}
-                </For>
-              </box>
-            </Show>
-
-            <Show when={(cfg()?.repos?.length ?? 0) === 0}>
-              <text fg={theme.text.secondary}>No per-repo configs defined.</text>
-            </Show>
+                    <box flexDirection="row">
+                      <box width={11}><text fg={theme.text.secondary}>postCreate</text></box>
+                      <text fg={theme.text.primary}>{(repo.postCreate ?? []).length > 0 ? (repo.postCreate ?? []).join(", ") : "\u2014"}</text>
+                    </box>
+                  </box>
+                )}
+              </For>
+            </box>
           </Show>
 
-          <Show when={!!message()}>
-            <text fg={theme.text.success}>{message()}</text>
+          <Show when={(cfg()?.repos?.length ?? 0) === 0}>
+            <text fg={theme.text.secondary}>No per-repo configs defined.</text>
           </Show>
-        </scrollbox>
+        </Show>
+
+        <Show when={!!message()}>
+          <text fg={theme.text.success}>{message()}</text>
+        </Show>
       </box>
 
       <box width="100%" height={1} backgroundColor={theme.bg.base} flexDirection="row" gap={2}>
