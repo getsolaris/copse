@@ -8,7 +8,8 @@ import { executeHooks } from "../../core/hooks.ts";
 import { writeFocus } from "../../core/focus.ts";
 import { validateFocusPaths } from "../../core/monorepo.ts";
 import { matchHooksForFocus, executeGlobHooks } from "../../core/glob-hooks.ts";
-import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
+import { useKeyboard, usePaste, useTerminalDimensions } from "@opentui/solid";
+import { decodePasteBytes } from "@opentui/core";
 import { basename, resolve } from "node:path";
 import { toast } from "@opentui-ui/toast/solid";
 import { theme } from "../themes.ts";
@@ -321,6 +322,19 @@ export function WorktreeCreate() {
         setStep("input");
         setStatusMsg("");
       }
+    }
+  });
+
+  usePaste((event) => {
+    if (!app.inputFocused()) return;
+    const text = decodePasteBytes(event.bytes).replace(/\r?\n/g, "");
+    if (!text) return;
+    if (focusField() === "branch") {
+      setBranchInput((value) => value + text);
+      return;
+    }
+    if (focusField() === "focus") {
+      setFocusInput((value) => value + text);
     }
   });
 

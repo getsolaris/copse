@@ -1,7 +1,8 @@
 import { createSignal, For, createMemo, onCleanup, onMount, Show } from "solid-js";
 import { useApp } from "../context/AppContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
-import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
+import { useKeyboard, usePaste, useTerminalDimensions } from "@opentui/solid";
+import { decodePasteBytes } from "@opentui/core";
 import {
   theme,
   setCurrentThemeName,
@@ -175,6 +176,14 @@ export function CommandPalette() {
       setSelectedIdx((i) => Math.max(i - 1, 0));
       return;
     }
+  });
+
+  usePaste((event) => {
+    if (!app.inputFocused()) return;
+    const text = decodePasteBytes(event.bytes).replace(/\r?\n/g, "");
+    if (!text) return;
+    setQuery((value) => value + text);
+    setSelectedIdx(0);
   });
 
   const handleQueryInput = (value: string) => {
