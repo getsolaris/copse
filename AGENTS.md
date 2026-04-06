@@ -193,3 +193,4 @@ When adding or modifying a feature, **all** of the following must be updated bef
 9. **src/core/AGENTS.md** — update module map with new core modules
 10. **Skill references** — update `src/core/skill-templates.ts` when CLI commands change (add/remove/rename commands, change options, update config keys). This regenerates the AI agent skill files (`SKILL.md` + `references/*.md`) installed via `omw init --skill`. If the local project smoke-testing skill is affected, update `.claude/skills/omw-cli-smoke-testing/SKILL.md` and `references/command-groups.md` too.
 11. **Typecheck + Tests** — `bun run typecheck` and `bun test` must pass
+12. **CLI Smoke Test** — after non-trivial CLI changes, run the smoke-testing skill (`.claude/skills/omw-cli-smoke-testing/`) to verify all affected commands and their flags work end-to-end in isolated temp environments. This is the final gate before considering CLI work complete.

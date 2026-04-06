@@ -1,6 +1,7 @@
 import { resolve, dirname } from "path";
 import { mkdirSync, existsSync } from "fs";
 import { GitError, GitVersionError, type Worktree } from "./types";
+import { mapWithLimit } from "./concurrency.ts";
 
 interface CacheEntry<T> {
   data: T;
@@ -98,12 +99,10 @@ export class GitWorktree {
     const output = await this.run(["worktree", "list", "--porcelain"], baseDir);
     const worktrees = this.parsePorcelain(output, repoName, repoPath);
 
-    const withDirty = await Promise.all(
-      worktrees.map(async (wt) => ({
-        ...wt,
-        isDirty: await this.isDirty(wt.path).catch(() => false),
-      })),
-    );
+    const withDirty = await mapWithLimit(worktrees, 10, async (wt) => ({
+      ...wt,
+      isDirty: await this.isDirty(wt.path).catch(() => false),
+    }));
 
     return setCache(cacheKey, withDirty);
   }
@@ -121,15 +120,13 @@ export class GitWorktree {
       }
     }
 
-    const results = await Promise.all(
-      uniquePaths.map(async (repoPath) => {
-        try {
-          return await this.list(repoPath);
-        } catch {
-          return [];
-        }
-      }),
-    );
+    const results = await mapWithLimit(uniquePaths, 5, async (repoPath) => {
+      try {
+        return await this.list(repoPath);
+      } catch {
+        return [] as Worktree[];
+      }
+    });
 
     return results.flat();
   }

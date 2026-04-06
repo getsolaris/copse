@@ -1,6 +1,7 @@
 import type { CommandModule } from "yargs";
 import { GitWorktree } from "../../core/git.ts";
 import { loadConfig, getConfiguredRepoPaths } from "../../core/config.ts";
+import { mapWithLimit } from "../../core/concurrency.ts";
 import { resolve } from "node:path";
 import { resolveMainRepo, handleCliError } from "../utils.ts";
 
@@ -86,13 +87,11 @@ const cmd: CommandModule = {
         filtered = filtered.filter((wt) => !wt.isDirty);
       }
       if (argv.behind) {
-        const withSync = await Promise.all(
-          filtered.map(async (wt) => {
-            if (!wt.branch) return { wt, behind: false };
-            const sync = await GitWorktree.getAheadBehind(wt.branch, wt.path);
-            return { wt, behind: sync.behind > 0 };
-          }),
-        );
+        const withSync = await mapWithLimit(filtered, 10, async (wt) => {
+          if (!wt.branch) return { wt, behind: false };
+          const sync = await GitWorktree.getAheadBehind(wt.branch, wt.path);
+          return { wt, behind: sync.behind > 0 };
+        });
         filtered = withSync.filter((s) => s.behind).map((s) => s.wt);
       }
 
@@ -136,7 +135,7 @@ const cmd: CommandModule = {
       let results: ExecResult[];
 
       if (parallel) {
-        results = await Promise.all(filtered.map(runOne));
+        results = await mapWithLimit(filtered, 10, runOne);
       } else {
         results = [];
         for (const wt of filtered) {

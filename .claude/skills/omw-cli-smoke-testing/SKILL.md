@@ -1,7 +1,7 @@
 ---
 name: omw-cli-smoke-testing
 description: This skill should be used when the user asks to "run all commands", "smoke test the CLI", "test every omw command", "do manual QA", "verify commands in isolation", or "exhaustively test oh-my-worktree".
-version: 0.1.0
+version: 0.2.0
 ---
 
 # omw CLI Smoke Testing
@@ -10,7 +10,7 @@ Use this skill to run exhaustive, real-command QA for `oh-my-worktree` without t
 
 ## Purpose
 
-Treat `src/cli/index.ts` and `src/cli/cmd/*.ts` as the source of truth for the command surface. Build the execution plan from code first, then run commands in isolated temp environments and collect evidence for every command family.
+Treat `src/cli/index.ts` and `src/cli/cmd/*.ts` as the source of truth for the command surface. Build the execution plan from code first, then run commands in isolated temp environments and collect evidence for every command and every flag.
 
 Keep `AGENTS.md` short. Put the long-form manual QA procedure here.
 
@@ -20,6 +20,7 @@ Keep `AGENTS.md` short. Put the long-form manual QA procedure here.
 - A change touched multiple CLI commands or shared core behavior.
 - A release-ready verification pass is needed.
 - A command appears broken only in certain repo/config/tmux states and isolation is required.
+- Flag-level regression is needed after adding or changing options to any command.
 
 ## Do Not Use This Skill When
 
@@ -35,6 +36,8 @@ Keep `AGENTS.md` short. Put the long-form manual QA procedure here.
 4. Never run destructive QA against the project repo.
 5. Capture exact command, cwd, relevant env isolation, exit code, stdout, and stderr.
 6. Distinguish fixture problems from product bugs by re-running suspicious failures in a cleaner fixture.
+7. Every boolean flag must have at least one positive test. Every string/number flag must have one valid-value test and one invalid-value test. Every alias must be tested at least once.
+8. Use `bun run src/index.ts` not `omw` for all dev-mode testing.
 
 ## Execution Workflow
 
@@ -62,7 +65,19 @@ Create temp roots for:
 - disposable worktree directories
 - tmux state
 
-Use `references/manual-qa-playbook.md` for the fixture layout and wave plan.
+```bash
+TMPROOT=$(mktemp -d)
+export HOME="$TMPROOT/home"
+export XDG_CONFIG_HOME="$TMPROOT/xdg"
+mkdir -p "$HOME" "$XDG_CONFIG_HOME"
+git init "$TMPROOT/repo"
+cd "$TMPROOT/repo"
+git config user.email "qa@test.local"
+git config user.name "QA"
+echo "seed" > seed.txt && git add seed.txt && git commit -m "init"
+```
+
+Use `references/manual-qa-playbook.md` for the full fixture layout and wave plan.
 
 ### 3. Run baseline repo validation
 
@@ -86,19 +101,34 @@ Run commands in safe groups:
 
 Prefer real commands over synthetic assertions. Verify the side effects after each mutating command.
 
+**Flag-level coverage requirements per group:**
+
+- **Wave 3 (config/init/shell):** every flag for `config`, `init`, `shell-init` — including all aliases and negative cases for flags that require companion flags (`--activate` without `--profile`, etc.)
+- **Wave 4 (read-only):** every flag for `list`, `status`, `doctor`, `diff`, `exec`, `log` — including all `-j`/`-a`/`-p` aliases
+- **Wave 5 (mutation):** every flag for `add`, `remove`, `switch`, `rename`, `clean`, `pin`, `open`, `log --clear` — including dirty-worktree negative cases for `remove` without `--force`
+- **Wave 6 (remote/archive/import):** every flag for `clone`, `import`, `archive` — including `--no-init-config`, `--keep`, `--pin`
+- **Wave 7 (session):** every flag for `session` and `add --session` — including `--kill`, `--kill-all`, `--layout`
+
 ### 5. Record evidence
 
 For each command, record:
 
-- command line
-- cwd
-- important env isolation
-- exit code
-- stdout summary
-- stderr summary
-- follow-up assertion (`git worktree list`, file existence, tmux session existence, config file contents)
+```
+COMMAND: bun run src/index.ts <args>
+CWD: <path>
+ENV: HOME=<tmp> XDG_CONFIG_HOME=<tmp> [TMUX_TMPDIR=<tmp>]
+EXIT: <code>
+STDOUT: <summary or first 5 lines>
+STDERR: <summary or first 5 lines>
+POST: <git worktree list / file existence / tmux ls>
+RESULT: PASS | FAIL | SKIP (reason)
+```
 
-### 6. Handle failures carefully
+### 6. Check the flag coverage checklist
+
+Before closing the smoke run, work through the flag coverage checklist in `references/manual-qa-playbook.md`. Every checkbox must be either PASS or SKIP with a documented reason (e.g., "requires gh CLI", "requires tmux").
+
+### 7. Handle failures carefully
 
 When a command fails:
 
@@ -109,15 +139,17 @@ When a command fails:
 
 ## Additional Resources
 
-- `references/manual-qa-playbook.md` — fixture design, isolation rules, and verification waves
-- `references/command-groups.md` — current command surface grouped by QA setup
+- `references/manual-qa-playbook.md` — fixture design, isolation rules, per-flag test cases organized by wave, and the flag coverage checklist
+- `references/command-groups.md` — complete flag matrix for every command with exact flag names, types, aliases, and test invocations
 
 ## Output Expectations
 
 End with a compact evidence report that covers:
 
 - what was executed
-- which commands passed
+- which commands passed (with flag variants noted)
 - which commands failed
+- which flags were skipped and why
 - whether a failure was caused by the product or by an intentionally dirty fixture
 - any commands that required special isolation
+- the flag coverage checklist completion percentage

@@ -146,6 +146,15 @@ export function getConfigPath(): string {
   return join(getConfigDir(), "config.json");
 }
 
+const VALID_ROOT_KEYS = new Set(["version", "defaults", "repos", "$schema", "theme", "templates", "lifecycle", "sessions", "profiles", "activeProfile"]);
+const VALID_DEFAULT_KEYS = new Set(["worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "sharedDeps"]);
+const VALID_REPO_KEYS = new Set(["path", "worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "monorepo", "sharedDeps"]);
+const VALID_MONOREPO_KEYS = new Set(["autoDetect", "extraPatterns", "hooks"]);
+const VALID_TEMPLATE_KEYS = new Set(["worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "base"]);
+const VALID_LIFECYCLE_KEYS = new Set(["autoCleanMerged", "staleAfterDays", "maxWorktrees"]);
+const VALID_SESSION_KEYS = new Set(["enabled", "autoCreate", "autoKill", "prefix", "defaultLayout", "layouts"]);
+const VALID_PROFILE_KEYS = new Set(["defaults", "repos", "theme", "templates", "lifecycle", "sessions"]);
+
 export function validateConfig(data: unknown): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -164,10 +173,8 @@ export function validateConfig(data: unknown): ValidationError[] {
       message: `Expected version 1, got ${JSON.stringify(obj.version)}`,
     });
   }
-
-  const validRootKeys = new Set(["version", "defaults", "repos", "$schema", "theme", "templates", "lifecycle", "sessions", "profiles", "activeProfile"]);
   for (const key of Object.keys(obj)) {
-    if (!validRootKeys.has(key)) {
+    if (!VALID_ROOT_KEYS.has(key)) {
       errors.push({ field: key, message: `Unknown field '${key}'` });
     }
   }
@@ -177,18 +184,9 @@ export function validateConfig(data: unknown): ValidationError[] {
       errors.push({ field: "defaults", message: "Must be an object" });
     } else {
       const d = obj.defaults as Record<string, unknown>;
-      const validDefaultKeys = new Set([
-        "worktreeDir",
-        "copyFiles",
-        "linkFiles",
-        "postCreate",
-        "postRemove",
-        "autoUpstream",
-        "sharedDeps",
-      ]);
 
       for (const key of Object.keys(d)) {
-        if (!validDefaultKeys.has(key)) {
+        if (!VALID_DEFAULT_KEYS.has(key)) {
           errors.push({ field: `defaults.${key}`, message: `Unknown field '${key}'` });
         }
       }
@@ -236,20 +234,9 @@ export function validateConfig(data: unknown): ValidationError[] {
         }
 
         const r = repo as Record<string, unknown>;
-        const validRepoKeys = new Set([
-          "path",
-          "worktreeDir",
-          "copyFiles",
-          "linkFiles",
-          "postCreate",
-          "postRemove",
-          "autoUpstream",
-          "monorepo",
-          "sharedDeps",
-        ]);
 
         for (const key of Object.keys(r)) {
-          if (!validRepoKeys.has(key)) {
+          if (!VALID_REPO_KEYS.has(key)) {
             errors.push({
               field: `${fieldPrefix}.${key}`,
               message: `Unknown field '${key}'`,
@@ -296,9 +283,8 @@ export function validateConfig(data: unknown): ValidationError[] {
             errors.push({ field: `${fieldPrefix}.monorepo`, message: "Must be an object" });
           } else {
             const mono = r.monorepo as Record<string, unknown>;
-            const validMonorepoKeys = new Set(["autoDetect", "extraPatterns", "hooks"]);
             for (const key of Object.keys(mono)) {
-              if (!validMonorepoKeys.has(key)) {
+              if (!VALID_MONOREPO_KEYS.has(key)) {
                 errors.push({ field: `${fieldPrefix}.monorepo.${key}`, message: `Unknown field '${key}'` });
               }
             }
@@ -347,9 +333,6 @@ export function validateConfig(data: unknown): ValidationError[] {
       errors.push({ field: "templates", message: "Must be an object (key-value map)" });
     } else {
       const templates = obj.templates as Record<string, unknown>;
-      const validTemplateKeys = new Set([
-        "worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "base",
-      ]);
 
       for (const [name, tmpl] of Object.entries(templates)) {
         const prefix = `templates.${name}`;
@@ -359,7 +342,7 @@ export function validateConfig(data: unknown): ValidationError[] {
         }
         const t = tmpl as Record<string, unknown>;
         for (const key of Object.keys(t)) {
-          if (!validTemplateKeys.has(key)) {
+          if (!VALID_TEMPLATE_KEYS.has(key)) {
             errors.push({ field: `${prefix}.${key}`, message: `Unknown field '${key}'` });
           }
         }
@@ -386,9 +369,8 @@ export function validateConfig(data: unknown): ValidationError[] {
       errors.push({ field: "lifecycle", message: "Must be an object" });
     } else {
       const lc = obj.lifecycle as Record<string, unknown>;
-      const validLifecycleKeys = new Set(["autoCleanMerged", "staleAfterDays", "maxWorktrees"]);
       for (const key of Object.keys(lc)) {
-        if (!validLifecycleKeys.has(key)) {
+        if (!VALID_LIFECYCLE_KEYS.has(key)) {
           errors.push({ field: `lifecycle.${key}`, message: `Unknown field '${key}'` });
         }
       }
@@ -409,9 +391,8 @@ export function validateConfig(data: unknown): ValidationError[] {
       errors.push({ field: "sessions", message: "Must be an object" });
     } else {
       const sess = obj.sessions as Record<string, unknown>;
-      const validSessionKeys = new Set(["enabled", "autoCreate", "autoKill", "prefix", "defaultLayout", "layouts"]);
       for (const key of Object.keys(sess)) {
-        if (!validSessionKeys.has(key)) {
+        if (!VALID_SESSION_KEYS.has(key)) {
           errors.push({ field: `sessions.${key}`, message: `Unknown field '${key}'` });
         }
       }
@@ -472,9 +453,6 @@ export function validateConfig(data: unknown): ValidationError[] {
       errors.push({ field: "profiles", message: "Must be an object (key-value map)" });
     } else {
       const profiles = obj.profiles as Record<string, unknown>;
-      const validProfileKeys = new Set([
-        "defaults", "repos", "theme", "templates", "lifecycle", "sessions",
-      ]);
 
       for (const [name, profile] of Object.entries(profiles)) {
         const prefix = `profiles.${name}`;
@@ -484,7 +462,7 @@ export function validateConfig(data: unknown): ValidationError[] {
         }
         const p = profile as Record<string, unknown>;
         for (const key of Object.keys(p)) {
-          if (!validProfileKeys.has(key)) {
+          if (!VALID_PROFILE_KEYS.has(key)) {
             errors.push({ field: `${prefix}.${key}`, message: `Unknown field '${key}'` });
           }
         }

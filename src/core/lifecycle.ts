@@ -2,6 +2,7 @@ import type { Worktree } from "./types.ts";
 import type { LifecycleConfig } from "./config.ts";
 import { GitWorktree } from "./git.ts";
 import { isPinned } from "./pin.ts";
+import { mapWithLimit } from "./concurrency.ts";
 
 export interface StaleWorktree {
   worktree: Worktree;
@@ -28,32 +29,30 @@ export async function analyzeLifecycle(
   const pinProtected = nonMain.filter((wt) => isPinned(wt.path));
   const pinProtectedPaths = new Set(pinProtected.map((wt) => wt.path));
 
-  const merged: Worktree[] = [];
+  let merged: Worktree[] = [];
   if (config.autoCleanMerged) {
-    for (const wt of nonMain) {
-      if (pinProtectedPaths.has(wt.path)) continue;
-      if (!wt.branch) continue;
-      const isMerged = await GitWorktree.isMergedInto(wt.branch, mainBranch, mainRepoPath);
-      if (isMerged && !wt.isDirty) {
-        merged.push(wt);
-      }
-    }
+    const candidates = nonMain.filter((wt) => !pinProtectedPaths.has(wt.path) && wt.branch);
+    const checked = await mapWithLimit(candidates, 10, async (wt) => ({
+      wt,
+      isMerged: await GitWorktree.isMergedInto(wt.branch!, mainBranch, mainRepoPath),
+    }));
+    merged = checked.filter((c) => c.isMerged && !c.wt.isDirty).map((c) => c.wt);
   }
 
-  const stale: StaleWorktree[] = [];
+  let stale: StaleWorktree[] = [];
   if (config.staleAfterDays && config.staleAfterDays > 0) {
     const now = new Date();
-    for (const wt of nonMain) {
-      if (pinProtectedPaths.has(wt.path)) continue;
+    const candidates = nonMain.filter((wt) => !pinProtectedPaths.has(wt.path));
+    const checked = await mapWithLimit(candidates, 10, async (wt) => {
       const lastActivity = await GitWorktree.getWorktreeLastActivity(wt.path);
       const daysSince = lastActivity
         ? Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
         : Infinity;
-
-      if (daysSince >= config.staleAfterDays) {
-        stale.push({ worktree: wt, lastActivity, daysSinceActivity: daysSince === Infinity ? -1 : daysSince });
-      }
-    }
+      return { wt, lastActivity, daysSince };
+    });
+    stale = checked
+      .filter((c) => c.daysSince >= config.staleAfterDays!)
+      .map((c) => ({ worktree: c.wt, lastActivity: c.lastActivity, daysSinceActivity: c.daysSince === Infinity ? -1 : c.daysSince }));
   }
 
   const overLimit = config.maxWorktrees

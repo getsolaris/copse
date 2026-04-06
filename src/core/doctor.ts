@@ -64,9 +64,10 @@ function getConfiguredWorktreeBases(worktrees: Worktree[]): WorktreeBaseMatcher[
         .replace(/\\\{repo\\\}/g, escapeRegex(repoName))
         .replace(/\\\{branch\\\}/g, ".+")}$`;
 
+      const regex = new RegExp(pattern);
       return {
         path: resolve(dirname(template)),
-        matches: (name: string) => new RegExp(pattern).test(name),
+        matches: (name: string) => regex.test(name),
       };
     });
 }
@@ -83,41 +84,38 @@ function getTrackedWorktreeBaseDirs(worktrees: Worktree[]): string[] {
   return [...bases];
 }
 
+function collectOrphansFromDir(
+  basePath: string,
+  trackedPaths: Set<string>,
+  orphaned: Set<string>,
+  matcher?: (name: string) => boolean,
+): void {
+  if (!existsSync(basePath)) return;
+
+  const entries = readdirSync(basePath, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (matcher && !matcher(entry.name)) continue;
+    const dirPath = resolve(join(basePath, entry.name));
+    if (!trackedPaths.has(dirPath)) {
+      orphaned.add(dirPath);
+    }
+  }
+}
+
 function findOrphanedDirectories(worktrees: Worktree[]): string[] {
   const trackedPaths = new Set(worktrees.map((wt) => resolve(wt.path)));
   const orphaned = new Set<string>();
+  const scannedBases = new Set<string>();
 
   for (const worktreeBase of getConfiguredWorktreeBases(worktrees)) {
-    if (!existsSync(worktreeBase.path)) {
-      continue;
-    }
-
-    const localDirs = readdirSync(worktreeBase.path, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .filter((entry) => worktreeBase.matches(entry.name))
-      .map((entry) => resolve(join(worktreeBase.path, entry.name)));
-
-    for (const dirPath of localDirs) {
-      if (!trackedPaths.has(dirPath)) {
-        orphaned.add(dirPath);
-      }
-    }
+    scannedBases.add(worktreeBase.path);
+    collectOrphansFromDir(worktreeBase.path, trackedPaths, orphaned, worktreeBase.matches);
   }
 
   for (const worktreeBase of getTrackedWorktreeBaseDirs(worktrees)) {
-    if (!existsSync(worktreeBase)) {
-      continue;
-    }
-
-    const localDirs = readdirSync(worktreeBase, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => resolve(join(worktreeBase, entry.name)));
-
-    for (const dirPath of localDirs) {
-      if (!trackedPaths.has(dirPath)) {
-        orphaned.add(dirPath);
-      }
-    }
+    if (scannedBases.has(worktreeBase)) continue;
+    collectOrphansFromDir(worktreeBase, trackedPaths, orphaned);
   }
 
   return [...orphaned];

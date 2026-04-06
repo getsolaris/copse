@@ -102,9 +102,15 @@ export function linkFiles(
 
 import type { SharedDepsConfig } from "./config.ts";
 
-export function hardlinkDir(sourceDir: string, targetDir: string): { linked: number; errors: string[] } {
+const MAX_HARDLINK_DEPTH = 30;
+
+export function hardlinkDir(sourceDir: string, targetDir: string, depth = 0): { linked: number; errors: string[] } {
   let linked = 0;
   const errors: string[] = [];
+
+  if (depth > MAX_HARDLINK_DEPTH) {
+    return { linked: 0, errors: [`Max directory depth exceeded at ${sourceDir}`] };
+  }
 
   const srcResolved = resolve(sourceDir);
   const dstResolved = resolve(targetDir);
@@ -135,9 +141,9 @@ export function hardlinkDir(sourceDir: string, targetDir: string): { linked: num
       const dstPath = join(dstResolved, entry.name);
 
       if (entry.isDirectory()) {
-        const sub = hardlinkDir(srcPath, dstPath);
+        const sub = hardlinkDir(srcPath, dstPath, depth + 1);
         linked += sub.linked;
-        errors.push(...sub.errors);
+        if (sub.errors.length > 0) errors.push(...sub.errors);
       } else if (entry.isFile()) {
         if (existsSync(dstPath)) continue;
         try {

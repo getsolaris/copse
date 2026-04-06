@@ -1,6 +1,7 @@
 import type { CommandModule } from "yargs";
 import { GitWorktree } from "../../core/git.ts";
 import { loadConfig } from "../../core/config.ts";
+import { mapWithLimit } from "../../core/concurrency.ts";
 import { analyzeLifecycle, formatLifecycleReport } from "../../core/lifecycle.ts";
 import { isPinned } from "../../core/pin.ts";
 import { confirm, resolveMainRepo, handleCliError } from "../utils.ts";
@@ -34,15 +35,13 @@ const cmd: CommandModule = {
         return true;
       });
 
-      const checked = await Promise.all(
-        candidates.map(async (wt) => {
-          const [merged, dirty] = await Promise.all([
-            GitWorktree.isMergedInto(wt.branch!, mainBranch, mainRepoPath),
-            GitWorktree.isDirty(wt.path),
-          ]);
-          return { wt, merged, dirty };
-        }),
-      );
+      const checked = await mapWithLimit(candidates, 10, async (wt) => {
+        const [merged, dirty] = await Promise.all([
+          GitWorktree.isMergedInto(wt.branch!, mainBranch, mainRepoPath),
+          GitWorktree.isDirty(wt.path),
+        ]);
+        return { wt, merged, dirty };
+      });
 
       const toClean: typeof worktrees = [];
       for (const { wt, merged, dirty } of checked) {

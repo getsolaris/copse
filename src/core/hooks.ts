@@ -91,22 +91,34 @@ async function runSingleHook(
     if (onOutput && proc.stdout) {
       const reader = proc.stdout.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
+      const bufferChunks: string[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (line) onOutput(line);
+        const chunk = decoder.decode(value, { stream: true });
+        const parts = chunk.split("\n");
+
+        if (parts.length === 1) {
+          bufferChunks.push(parts[0]);
+        } else {
+          bufferChunks.push(parts[0]);
+          const completeLine = bufferChunks.join("");
+          bufferChunks.length = 0;
+          if (completeLine) onOutput(completeLine);
+
+          for (let i = 1; i < parts.length - 1; i++) {
+            if (parts[i]) onOutput(parts[i]);
+          }
+
+          const last = parts[parts.length - 1];
+          if (last) bufferChunks.push(last);
         }
       }
 
-      buffer += decoder.decode();
-      if (buffer) onOutput(buffer);
+      const remaining = bufferChunks.join("") + decoder.decode();
+      if (remaining) onOutput(remaining);
     }
 
     const exitCode = await proc.exited;

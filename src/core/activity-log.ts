@@ -1,10 +1,11 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
 import { dirname } from "path";
 import type { ActivityEvent } from "./types.ts";
 import { getMetadataFilePath } from "./metadata.ts";
 
 const maxLogLines = 1000;
 const truncateToLines = 500;
+const truncateCheckBytes = 80 * maxLogLines;
 
 export function getActivityLogPath(repoPath: string): string {
   return getMetadataFilePath(repoPath, "omw-activity.log");
@@ -16,10 +17,13 @@ export function logActivity(repoPath: string, event: ActivityEvent): void {
 
   appendFileSync(activityLogPath, `${JSON.stringify(event)}\n`, { encoding: "utf-8", mode: 0o600 });
 
-  const lines = readFileSync(activityLogPath, "utf-8").split(/\r?\n/).filter(Boolean);
-  if (lines.length > maxLogLines) {
-    const recentLines = lines.slice(-truncateToLines);
-    writeFileSync(activityLogPath, `${recentLines.join("\n")}\n`, { encoding: "utf-8", mode: 0o600 });
+  const stat = statSync(activityLogPath, { throwIfNoEntry: false });
+  if (stat && stat.size > truncateCheckBytes) {
+    const lines = readFileSync(activityLogPath, "utf-8").split(/\r?\n/).filter(Boolean);
+    if (lines.length > maxLogLines) {
+      const recentLines = lines.slice(-truncateToLines);
+      writeFileSync(activityLogPath, `${recentLines.join("\n")}\n`, { encoding: "utf-8", mode: 0o600 });
+    }
   }
 }
 
@@ -31,10 +35,20 @@ export function readActivityLog(repoPath: string, opts?: { limit?: number }): Ac
     return [];
   }
 
-  const lines = readFileSync(activityLogPath, "utf-8").split(/\r?\n/).filter(Boolean);
-  const events = lines.map((line) => JSON.parse(line) as ActivityEvent);
+  const raw = readFileSync(activityLogPath, "utf-8");
+  const lines = raw.split(/\r?\n/).filter(Boolean);
+  const start = Math.max(0, lines.length - limit);
+  const events: ActivityEvent[] = [];
 
-  return events.reverse().slice(0, limit);
+  for (let i = lines.length - 1; i >= start; i--) {
+    try {
+      events.push(JSON.parse(lines[i]) as ActivityEvent);
+    } catch {
+      // skip malformed lines
+    }
+  }
+
+  return events;
 }
 
 export function clearActivityLog(repoPath: string): void {
