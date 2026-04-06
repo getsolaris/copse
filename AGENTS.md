@@ -29,6 +29,7 @@ src/
     App.tsx            # TUI entrypoint — SolidJS + @opentui/solid
     context/*.tsx       # SolidJS context providers (AppContext, GitContext)
     views/*.tsx         # SolidJS components (WorktreeList, Sidebar, DoctorView, etc.)
+    views/Spinner.tsx  # Animated braille dots loading spinner
     themes.ts          # Theme definitions
   core/
     git.ts             # GitWorktree static class — all git subprocess operations
