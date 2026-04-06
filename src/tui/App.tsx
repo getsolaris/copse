@@ -176,12 +176,36 @@ function AppShell(props: { repoPath: string }) {
 
   const mainW = () => w() - SIDEBAR_W - 1;
 
+  const TAB_OPTIONS = [
+    { name: "Worktrees" },
+    { name: "Config" },
+  ];
+
+  const tabIndex = () => {
+    if (app.activeTab() === "config") return 1;
+    return 0;
+  };
+
   return (
     <box width={w()} height={h()} backgroundColor={theme.bg.base} flexDirection="column">
       <box height={1} backgroundColor={theme.bg.overlay}>
         <text x={1} y={0} fg={theme.text.accent}>
           {"\uD83C\uDF33 oh-my-worktree"}
         </text>
+        <tab_select
+          x={20}
+          y={0}
+          options={TAB_OPTIONS}
+          selectedIndex={tabIndex()}
+          focused={!app.inputFocused()}
+          tabWidth={12}
+          onChange={(idx: number) => {
+            app.setActiveTab(idx === 1 ? "config" : "list");
+          }}
+          onSelect={(idx: number) => {
+            app.setActiveTab(idx === 1 ? "config" : "list");
+          }}
+        />
         <text x={w() - headerRight().length - 2} y={0} fg={theme.text.secondary}>
           {headerRight()}
         </text>
