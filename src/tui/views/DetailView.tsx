@@ -6,6 +6,7 @@ import { readFocus } from "../../core/focus.ts";
 import { readSessionMeta, sessionExists, type SessionInfo } from "../../core/session.ts";
 import { GitWorktree } from "../../core/git.ts";
 import type { Worktree } from "../../core/types.ts";
+import { Spinner } from "./Spinner.tsx";
 
 interface DetailData {
   commits: string[];
@@ -196,7 +197,7 @@ export function DetailView(props: { worktree: Worktree }) {
         <Show when={loading()}>
           <box height={1} />
           <box height={1}>
-            <text x={0} y={0} fg={theme.text.secondary}>Loading details...</text>
+            <Spinner label="Loading details..." />
           </box>
         </Show>
 

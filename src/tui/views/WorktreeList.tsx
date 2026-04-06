@@ -7,6 +7,7 @@ import { readFocus } from "../../core/focus.ts";
 import { readSessionMeta } from "../../core/session.ts";
 import { GitWorktree } from "../../core/git.ts";
 import { DetailView } from "./DetailView.tsx";
+import { Spinner } from "./Spinner.tsx";
 
 interface WorktreeExtra {
   aheadBehind: { ahead: number; behind: number };
@@ -31,7 +32,6 @@ export function WorktreeList() {
     return wts[app.selectedWorktreeIndex()];
   };
   const w = () => dims().width;
-  const h = () => dims().height;
 
   const LABEL_W = 14;
 
@@ -142,7 +142,7 @@ export function WorktreeList() {
 
       <Show when={!app.showDetailView()}>
         <Show when={git.loading()}>
-          <text x={2} y={2} fg={theme.text.secondary}>Loading worktrees...</text>
+          <Spinner label="Loading worktrees..." />
         </Show>
 
         <Show when={!git.loading() && !!git.error()}>

@@ -4,6 +4,7 @@ import { runAllChecks, runFixes, type DoctorCheckResult, type DoctorReport, type
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { theme } from "../themes.ts";
 import { PopupShell } from "./PopupShell.tsx";
+import { Spinner } from "./Spinner.tsx";
 
 export function DoctorView() {
   const app = useApp();
@@ -100,7 +101,7 @@ export function DoctorView() {
       )}
     >
       <Show when={loading()}>
-        <text fg={theme.text.secondary}>Running health checks...</text>
+        <Spinner label="Running checks..." />
       </Show>
 
       <Show when={fixing()}>
