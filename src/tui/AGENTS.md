@@ -113,7 +113,13 @@ Pass `syntaxStyle` to `<code>` or `<diff>` components that accept a `theme` prop
 
 ## JSX Setup
 
-SolidJS JSX transform is loaded via `bunfig.toml` preload (`@opentui/solid/preload`).
+SolidJS JSX transform is registered by `@opentui/solid/preload`, which is loaded two ways:
+
+1. **`bunfig.toml` preload** — applies when Bun is invoked from the project root (local dev, tests).
+2. **Explicit `import "@opentui/solid/preload"` in `src/index.ts`** — applies when Bun is invoked from a different cwd, which is how Homebrew launches us (`bun run $LIBEXEC/src/index.ts`). Without this import, the Homebrew path fails with `Cannot find module 'react/jsx-dev-runtime'` (see git 41cc2d3 regression).
+
+The bundled `dist/omw.js` does not need either: the build plugin in `scripts/build.ts` transforms JSX at build time and strips the runtime preload import from the bundle.
+
 Intrinsic elements declared in `App.tsx`:
 ```typescript
 declare module "solid-js" {

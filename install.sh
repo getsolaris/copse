@@ -26,7 +26,7 @@ mkdir -p "${INSTALL_DIR}"
 info "Using Bun v$(bun --version)"
 info "Installing oh-my-worktree globally..."
 
-bun install -g "oh-my-worktree" || npm install -g "oh-my-worktree" || error "Global install failed"
+bun install -g "@getsolaris/oh-my-worktree" || npm install -g "@getsolaris/oh-my-worktree" || error "Global install failed"
 
 if command -v omw >/dev/null 2>&1; then
   info "Installed: $(omw --version 2>/dev/null || printf 'unknown')"

@@ -174,7 +174,7 @@ All git commands go through `GitWorktree.run()` (private static). This:
 
 - Runtime is Bun, not Node — use `Bun.spawn`, `Bun.Glob`, `Bun.env`
 - No standalone binary — distributed as npm package (`bun install -g`)
-- TUI uses SolidJS JSX transform via `bunfig.toml` preload (Babel plugin)
+- TUI uses SolidJS JSX transform via `@opentui/solid/preload` — loaded by `bunfig.toml` (dev/tests from project root) AND by explicit `import "@opentui/solid/preload"` in `src/index.ts` (required for Homebrew, which runs `bun run src/index.ts` from the user's cwd). The bundled `dist/omw.js` has JSX transformed at build time and strips the runtime preload via a plugin in `scripts/build.ts`.
 - Config file: `~/.config/oh-my-worktree/config.json` (XDG-compliant)
 - Focus metadata: stored in git internals (`<gitdir>/omw-focus`), not in worktree root
 - Session metadata: stored in git internals (`<gitdir>/omw-session`), not in worktree root
