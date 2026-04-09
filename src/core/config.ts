@@ -1,5 +1,6 @@
 import { join, resolve } from "path";
 import * as fs from "fs";
+import { expandWorkspaces } from "./workspace.ts";
 
 interface FsSyncCompat {
   readFileSync(path: string, encoding: "utf-8"): string;
@@ -79,10 +80,18 @@ export interface RepoConfig extends RepoDefaults {
   monorepo?: MonorepoConfig;
 }
 
+export interface WorkspaceConfig {
+  path: string;
+  depth?: number;
+  exclude?: string[];
+  defaults?: RepoDefaults;
+}
+
 export interface OmwConfig {
   version: 1;
   defaults?: RepoDefaults;
   repos?: RepoConfig[];
+  workspaces?: WorkspaceConfig[];
   theme?: string;
   templates?: Record<string, TemplateConfig>;
   lifecycle?: LifecycleConfig;
@@ -146,14 +155,15 @@ export function getConfigPath(): string {
   return join(getConfigDir(), "config.json");
 }
 
-const VALID_ROOT_KEYS = new Set(["version", "defaults", "repos", "$schema", "theme", "templates", "lifecycle", "sessions", "profiles", "activeProfile"]);
+const VALID_ROOT_KEYS = new Set(["version", "defaults", "repos", "workspaces", "$schema", "theme", "templates", "lifecycle", "sessions", "profiles", "activeProfile"]);
 const VALID_DEFAULT_KEYS = new Set(["worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "sharedDeps"]);
 const VALID_REPO_KEYS = new Set(["path", "worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "monorepo", "sharedDeps"]);
+const VALID_WORKSPACE_KEYS = new Set(["path", "depth", "exclude", "defaults"]);
 const VALID_MONOREPO_KEYS = new Set(["autoDetect", "extraPatterns", "hooks"]);
 const VALID_TEMPLATE_KEYS = new Set(["worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "base"]);
 const VALID_LIFECYCLE_KEYS = new Set(["autoCleanMerged", "staleAfterDays", "maxWorktrees"]);
 const VALID_SESSION_KEYS = new Set(["enabled", "autoCreate", "autoKill", "prefix", "defaultLayout", "layouts"]);
-const VALID_PROFILE_KEYS = new Set(["defaults", "repos", "theme", "templates", "lifecycle", "sessions"]);
+const VALID_PROFILE_KEYS = new Set(["defaults", "repos", "workspaces", "theme", "templates", "lifecycle", "sessions"]);
 
 export function validateConfig(data: unknown): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -320,6 +330,94 @@ export function validateConfig(data: unknown): ValidationError[] {
                     validateStringArray(hook.postRemove, `${fieldPrefix}.monorepo.hooks[${j}].postRemove`, errors);
                   }
                 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if ("workspaces" in obj && obj.workspaces !== undefined) {
+    if (!Array.isArray(obj.workspaces)) {
+      errors.push({ field: "workspaces", message: "Must be an array" });
+    } else {
+      for (let i = 0; i < obj.workspaces.length; i++) {
+        const workspace = obj.workspaces[i];
+        const fieldPrefix = `workspaces[${i}]`;
+
+        if (typeof workspace !== "object" || workspace === null) {
+          errors.push({ field: fieldPrefix, message: "Must be an object" });
+          continue;
+        }
+
+        const w = workspace as Record<string, unknown>;
+
+        for (const key of Object.keys(w)) {
+          if (!VALID_WORKSPACE_KEYS.has(key)) {
+            errors.push({
+              field: `${fieldPrefix}.${key}`,
+              message: `Unknown field '${key}'`,
+            });
+          }
+        }
+
+        if (!("path" in w) || typeof w.path !== "string") {
+          errors.push({
+            field: `${fieldPrefix}.path`,
+            message: "Required string field 'path' is missing",
+          });
+        }
+
+        if ("depth" in w && w.depth !== undefined) {
+          if (typeof w.depth !== "number" || !Number.isInteger(w.depth) || w.depth < 1 || w.depth > 3) {
+            errors.push({
+              field: `${fieldPrefix}.depth`,
+              message: "Must be an integer between 1 and 3",
+            });
+          }
+        }
+
+        if ("exclude" in w && w.exclude !== undefined) {
+          validateStringArray(w.exclude, `${fieldPrefix}.exclude`, errors);
+        }
+
+        if ("defaults" in w && w.defaults !== undefined) {
+          if (typeof w.defaults !== "object" || w.defaults === null || Array.isArray(w.defaults)) {
+            errors.push({ field: `${fieldPrefix}.defaults`, message: "Must be an object" });
+          } else {
+            const d = w.defaults as Record<string, unknown>;
+
+            for (const key of Object.keys(d)) {
+              if (!VALID_DEFAULT_KEYS.has(key)) {
+                errors.push({ field: `${fieldPrefix}.defaults.${key}`, message: `Unknown field '${key}'` });
+              }
+            }
+
+            if ("worktreeDir" in d && typeof d.worktreeDir !== "string") {
+              errors.push({ field: `${fieldPrefix}.defaults.worktreeDir`, message: "Must be a string" });
+            }
+
+            if ("autoUpstream" in d && typeof d.autoUpstream !== "boolean") {
+              errors.push({ field: `${fieldPrefix}.defaults.autoUpstream`, message: "Must be a boolean" });
+            }
+
+            for (const arrayKey of [
+              "copyFiles",
+              "linkFiles",
+              "postCreate",
+              "postRemove",
+            ] as const) {
+              if (arrayKey in d) {
+                validateStringArray(d[arrayKey], `${fieldPrefix}.defaults.${arrayKey}`, errors);
+              }
+            }
+
+            if ("sharedDeps" in d && d.sharedDeps !== undefined) {
+              if (typeof d.sharedDeps !== "object" || d.sharedDeps === null) {
+                errors.push({ field: `${fieldPrefix}.defaults.sharedDeps`, message: "Must be an object" });
+              } else {
+                validateSharedDeps(d.sharedDeps as Record<string, unknown>, `${fieldPrefix}.defaults.sharedDeps`, errors);
               }
             }
           }
@@ -611,7 +709,7 @@ export function loadConfig(overridePath?: string): OmwConfig {
     throw new Error(`Config validation failed after applying activeProfile: ${message}`);
   }
 
-  return resolved;
+  return expandWorkspaces(resolved);
 }
 
 export function getRepoConfig(config: OmwConfig, repoPath: string): ResolvedRepoConfig {

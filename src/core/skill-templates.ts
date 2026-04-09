@@ -159,8 +159,12 @@ const referenceSpecs: ReferenceSpec[] = [
     notes: [
       "Shows branch, path, status (clean/dirty/locked), focus paths.",
       "Focus column truncated to 40 chars.",
+      "--all also includes repos auto-discovered via the `workspaces` config.",
     ],
-    configKeys: ["`repos[].path` — Repository paths for --all flag"],
+    configKeys: [
+      "`repos[].path` — Repository paths for --all flag",
+      "`workspaces[].path` — Parent directories whose git repos are auto-discovered for --all",
+    ],
   },
   {
     command: "switch",
@@ -197,8 +201,12 @@ const referenceSpecs: ReferenceSpec[] = [
     notes: [
       "Shows branch, dirty count, sync status (ahead/behind), last commit info, focus paths.",
       "Marks current worktree with *.",
+      "--all also includes repos auto-discovered via the `workspaces` config.",
     ],
-    configKeys: ["`repos[].path` — Repository paths for --all flag"],
+    configKeys: [
+      "`repos[].path` — Repository paths for --all flag",
+      "`workspaces[].path` — Parent directories whose git repos are auto-discovered for --all",
+    ],
   },
   {
     command: "clean",
@@ -264,8 +272,12 @@ const referenceSpecs: ReferenceSpec[] = [
       "Runs in non-main worktrees only.",
       "Sets env vars: OMW_BRANCH, OMW_WORKTREE_PATH, OMW_REPO_PATH.",
       "Exit code 1 if any command fails.",
+      "--all also includes repos auto-discovered via the `workspaces` config.",
     ],
-    configKeys: ["`repos[].path` — Repository paths for --all flag"],
+    configKeys: [
+      "`repos[].path` — Repository paths for --all flag",
+      "`workspaces[].path` — Parent directories whose git repos are auto-discovered for --all",
+    ],
   },
   {
     command: "diff",
@@ -810,6 +822,19 @@ function generateConfigSchemaContent(): string {
     "| `monorepo.hooks[].linkFiles` | string[] | Package-level files to symlink |",
     "| `monorepo.hooks[].postCreate` | string[] | Package-level post-create hooks |",
     "| `monorepo.hooks[].postRemove` | string[] | Package-level post-remove hooks |",
+    "",
+    "### workspaces[]",
+    "",
+    "Auto-discover git repositories under parent directories. Discovered repos are merged into `repos[]` at load time. Explicit `repos[]` entries with the same resolved path always take precedence.",
+    "",
+    "| Key | Type | Default | Description |",
+    "|-----|------|---------|-------------|",
+    "| `path` | string | — | **Required.** Parent directory to scan. Supports `~` expansion. |",
+    "| `depth` | integer | `1` | Scan depth (1–3). `1` scans only immediate children. |",
+    "| `exclude` | string[] | `[]` | Glob patterns matched against directory names to skip. |",
+    "| `defaults` | object | — | Per-repo defaults applied to discovered repos. Same fields as `defaults`, but `monorepo` is not allowed. |",
+    "",
+    "Discovery rules: a directory is a repo only if it contains a `.git` **directory** (not a file). Linked worktrees and submodules are skipped. Discovered repos are not recursed into. Symbolic links are not followed.",
     "",
     "### templates",
     "",

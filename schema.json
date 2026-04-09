@@ -111,6 +111,47 @@
         }
       }
     },
+    "workspaces": {
+      "type": "array",
+      "description": "Parent directories whose immediate (or nested up to depth) git repo children are auto-discovered and merged into repos at load time. Explicit repos entries with the same path always take precedence.",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Parent directory to scan. Supports ~ for HOME."
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "default": 1,
+            "description": "How many directory levels to scan. depth=1 scans only immediate children."
+          },
+          "exclude": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Glob patterns matched against directory names to skip (e.g. node_modules, .cache)."
+          },
+          "defaults": {
+            "type": "object",
+            "description": "Per-repo defaults applied to every discovered repo in this workspace. Acts as the repo-override layer for getRepoConfig().",
+            "additionalProperties": false,
+            "properties": {
+              "worktreeDir": { "type": "string" },
+              "copyFiles": { "type": "array", "items": { "type": "string" } },
+              "linkFiles": { "type": "array", "items": { "type": "string" } },
+              "postCreate": { "type": "array", "items": { "type": "string" } },
+              "postRemove": { "type": "array", "items": { "type": "string" } },
+              "autoUpstream": { "type": "boolean" },
+              "sharedDeps": { "$ref": "#/definitions/sharedDeps" }
+            }
+          }
+        }
+      }
+    },
     "repos": {
       "type": "array",
       "items": {
@@ -210,6 +251,7 @@
         "properties": {
           "defaults": { "$ref": "#/properties/defaults" },
           "repos": { "$ref": "#/properties/repos" },
+          "workspaces": { "$ref": "#/properties/workspaces" },
           "theme": { "type": "string", "enum": ["opencode", "tokyo-night", "dracula", "nord", "catppuccin", "github-dark", "one-dark", "monokai", "github-light"] },
           "templates": { "$ref": "#/properties/templates" },
           "lifecycle": { "$ref": "#/properties/lifecycle" },

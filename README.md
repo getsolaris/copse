@@ -39,6 +39,7 @@ Manage git worktrees with ease. Create, switch, and clean up worktrees with conf
 - **Shell completions** — tab completion for bash/zsh/fish (`omw shell-init --completions`)
 - **Config profiles** — switch between configuration sets (`omw config --profiles`)
 - **Tmux sessions** — auto-create/kill tmux sessions per worktree with layout templates (`omw session`)
+- **Workspaces** — auto-discover git repos under parent directories with per-workspace defaults (`workspaces` config)
 - **AI agent init** — create config by default or install omw skill for Claude Code, Codex, OpenCode (`omw init`, `omw init --skill`)
 
 ## Requirements
@@ -594,6 +595,19 @@ Initialize with: `omw config --init`
       }
     }
   },
+  "workspaces": [
+    {
+      "path": "~/Desktop/work",
+      "depth": 1,
+      "exclude": ["node_modules", ".cache", "archived"],
+      "defaults": {
+        "copyFiles": [".env", ".env.local"],
+        "linkFiles": ["node_modules"],
+        "postCreate": ["bun install"],
+        "autoUpstream": true
+      }
+    }
+  ],
   "repos": [
     {
       "path": "/Users/me/dev/frontend",
@@ -659,6 +673,51 @@ Per-repo overrides. Each entry requires `path`.
 | `postCreate`  | `string[]` | No       | Override default post-create hooks  |
 | `postRemove`  | `string[]` | No       | Override default post-remove hooks  |
 | `monorepo`    | `object`   | No       | Monorepo support config             |
+
+#### `workspaces[]`
+
+Auto-discover git repositories under parent directories. Each discovered repo is merged into `repos[]` at load time with the workspace's `defaults` as its override layer.
+
+```json
+{
+  "workspaces": [
+    {
+      "path": "~/Desktop/work",
+      "depth": 1,
+      "exclude": ["node_modules", ".cache", "archived"],
+      "defaults": {
+        "copyFiles": [".env", ".env.local"],
+        "linkFiles": ["node_modules"],
+        "postCreate": ["bun install"],
+        "autoUpstream": true
+      }
+    }
+  ]
+}
+```
+
+| Field      | Type       | Required | Default | Description                                                                    |
+| ---------- | ---------- | -------- | ------- | ------------------------------------------------------------------------------ |
+| `path`     | `string`   | Yes      | —       | Parent directory to scan. Supports `~` expansion.                              |
+| `depth`    | `integer`  | No       | `1`     | Scan depth (1–3). `1` means immediate children only.                           |
+| `exclude`  | `string[]` | No       | `[]`    | Glob patterns matched against directory names to skip (e.g. `node_modules`).   |
+| `defaults` | `object`   | No       | —       | Per-repo defaults applied to every discovered repo. Same fields as `defaults`. |
+
+**Discovery rules:**
+
+- A directory is a repo only if it contains a `.git` **directory** (not a file). Linked worktrees (`.git` as file) and submodules are skipped.
+- Discovered repos do NOT have their children scanned (no recursion into repos).
+- Symbolic links are not followed.
+- Discovery runs on every `loadConfig()` call. There is no caching.
+
+**Precedence (highest → lowest):**
+
+1. Explicit `repos[]` entry with the same resolved path — wins entirely.
+2. `workspaces[].defaults` — repo-level override layer.
+3. Top-level `defaults`.
+4. Built-in defaults.
+
+**`workspaces[].defaults` does NOT support `monorepo`.** If you need monorepo hooks for a discovered repo, add an explicit `repos[]` entry for it.
 
 #### `monorepo`
 

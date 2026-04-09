@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import {
   expandTemplate,
   getRepoConfig,
@@ -10,7 +10,7 @@ import {
   type OmwConfig,
   validateConfig,
 } from "./config";
-import { cleanupTempDirs, createTempDir } from "./test-helpers";
+import { cleanupTempDirs, createTempDir, runGit } from "./test-helpers";
 
 const originalXdgConfigHome = Bun.env.XDG_CONFIG_HOME;
 const originalHome = Bun.env.HOME;
@@ -456,6 +456,213 @@ describe("getRepoConfig - monorepo", () => {
     const config: OmwConfig = { version: 1, repos: [{ path: "/tmp/no-mono" }] };
     const resolved = getRepoConfig(config, "/tmp/no-mono");
     expect(resolved.monorepo).toBeUndefined();
+  });
+});
+
+describe("validateConfig - workspaces", () => {
+  it("valid workspaces config passes validation", () => {
+    const config = {
+      version: 1,
+      workspaces: [
+        {
+          path: "~/Desktop/work",
+          depth: 1,
+          exclude: ["node_modules", ".cache"],
+          defaults: {
+            copyFiles: [".env"],
+            postCreate: ["bun install"],
+          },
+        },
+      ],
+    };
+    expect(validateConfig(config)).toEqual([]);
+  });
+
+  it("workspaces with only path validates", () => {
+    expect(validateConfig({ version: 1, workspaces: [{ path: "/tmp/work" }] })).toEqual([]);
+  });
+
+  it("workspaces with depth at boundaries (1 and 3) validates", () => {
+    expect(validateConfig({ version: 1, workspaces: [{ path: "/tmp", depth: 1 }] })).toEqual([]);
+    expect(validateConfig({ version: 1, workspaces: [{ path: "/tmp", depth: 3 }] })).toEqual([]);
+  });
+
+  it("workspaces as non-array returns error", () => {
+    const result = validateConfig({ version: 1, workspaces: "not-an-array" });
+    expect(result.some((e) => e.field === "workspaces")).toBeTrue();
+  });
+
+  it("workspaces missing path returns error", () => {
+    const result = validateConfig({ version: 1, workspaces: [{ depth: 1 }] });
+    expect(result.some((e) => e.field === "workspaces[0].path")).toBeTrue();
+  });
+
+  it("workspaces depth below 1 returns error", () => {
+    const result = validateConfig({ version: 1, workspaces: [{ path: "/tmp", depth: 0 }] });
+    expect(result.some((e) => e.field === "workspaces[0].depth")).toBeTrue();
+  });
+
+  it("workspaces depth above 3 returns error", () => {
+    const result = validateConfig({ version: 1, workspaces: [{ path: "/tmp", depth: 4 }] });
+    expect(result.some((e) => e.field === "workspaces[0].depth")).toBeTrue();
+  });
+
+  it("workspaces depth as non-integer returns error", () => {
+    const result = validateConfig({ version: 1, workspaces: [{ path: "/tmp", depth: 1.5 }] });
+    expect(result.some((e) => e.field === "workspaces[0].depth")).toBeTrue();
+  });
+
+  it("workspaces exclude not string array returns error", () => {
+    const result = validateConfig({ version: 1, workspaces: [{ path: "/tmp", exclude: [123] }] });
+    expect(result.some((e) => e.field === "workspaces[0].exclude")).toBeTrue();
+  });
+
+  it("workspaces unknown field returns error", () => {
+    const result = validateConfig({ version: 1, workspaces: [{ path: "/tmp", bogus: true }] });
+    expect(result.some((e) => e.field === "workspaces[0].bogus")).toBeTrue();
+  });
+
+  it("workspaces defaults with monorepo field returns error", () => {
+    const result = validateConfig({
+      version: 1,
+      workspaces: [{ path: "/tmp", defaults: { monorepo: { autoDetect: true } } }],
+    });
+    expect(result.some((e) => e.field === "workspaces[0].defaults.monorepo")).toBeTrue();
+  });
+
+  it("workspaces defaults invalid autoUpstream returns error", () => {
+    const result = validateConfig({
+      version: 1,
+      workspaces: [{ path: "/tmp", defaults: { autoUpstream: "yes" } }],
+    });
+    expect(result.some((e) => e.field === "workspaces[0].defaults.autoUpstream")).toBeTrue();
+  });
+});
+
+describe("loadConfig - workspaces expansion", () => {
+  async function initTempRepo(dir: string): Promise<void> {
+    writeFileSync(join(dir, "README.md"), "# tmp\n");
+    await runGit(["init", "-b", "main"], dir);
+    await runGit(["add", "."], dir);
+    await runGit(["commit", "-m", "init"], dir);
+  }
+
+  it("expands workspace discovered repos into config.repos", async () => {
+    const parent = createTempDir("omw-load-ws-expand-");
+    const repoA = join(parent, "project-a");
+    const repoB = join(parent, "project-b");
+    mkdirSync(repoA);
+    mkdirSync(repoB);
+    await initTempRepo(repoA);
+    await initTempRepo(repoB);
+
+    const configDir = createTempDir("omw-load-ws-config-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        workspaces: [{ path: parent }],
+      }),
+    );
+
+    const loaded = loadConfig(configPath);
+    expect(loaded.repos).toHaveLength(2);
+    const paths = loaded.repos!.map((r) => r.path).sort();
+    expect(paths).toEqual([resolve(repoA), resolve(repoB)]);
+  });
+
+  it("explicit repos take precedence over workspace-discovered repos with same path", async () => {
+    const parent = createTempDir("omw-load-ws-precedence-");
+    const repoPath = join(parent, "shared-repo");
+    mkdirSync(repoPath);
+    await initTempRepo(repoPath);
+
+    const configDir = createTempDir("omw-load-ws-pre-config-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        workspaces: [
+          {
+            path: parent,
+            defaults: { copyFiles: ["from-workspace"] },
+          },
+        ],
+        repos: [
+          { path: repoPath, copyFiles: ["from-explicit"] },
+        ],
+      }),
+    );
+
+    const loaded = loadConfig(configPath);
+    expect(loaded.repos).toHaveLength(1);
+    expect(loaded.repos![0].copyFiles).toEqual(["from-explicit"]);
+  });
+
+  it("discovered repos inherit workspace defaults via getRepoConfig", async () => {
+    const parent = createTempDir("omw-load-ws-defaults-");
+    const repoA = join(parent, "app");
+    mkdirSync(repoA);
+    await initTempRepo(repoA);
+
+    const configDir = createTempDir("omw-load-ws-def-config-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        defaults: {
+          worktreeDir: "~/.omw/global/{repo}-{branch}",
+          postCreate: ["global-post"],
+        },
+        workspaces: [
+          {
+            path: parent,
+            defaults: {
+              copyFiles: [".env.workspace"],
+              postCreate: ["workspace-post"],
+            },
+          },
+        ],
+      }),
+    );
+
+    const loaded = loadConfig(configPath);
+    const resolved = getRepoConfig(loaded, resolve(repoA));
+    expect(resolved.copyFiles).toEqual([".env.workspace"]);
+    expect(resolved.postCreate).toEqual(["workspace-post"]);
+    expect(resolved.worktreeDir).toBe("~/.omw/global/{repo}-{branch}");
+  });
+
+  it("loadConfig without workspaces behaves unchanged", async () => {
+    const configDir = createTempDir("omw-load-ws-none-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        repos: [{ path: "/tmp/explicit" }],
+      }),
+    );
+
+    const loaded = loadConfig(configPath);
+    expect(loaded.repos).toEqual([{ path: "/tmp/explicit" }]);
+  });
+
+  it("throws validation error for invalid workspaces config", () => {
+    const configDir = createTempDir("omw-load-ws-invalid-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        workspaces: [{ depth: 1 }],
+      }),
+    );
+
+    expect(() => loadConfig(configPath)).toThrow("Config validation failed");
   });
 });
 

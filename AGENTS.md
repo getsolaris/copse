@@ -33,12 +33,13 @@ src/
     themes.ts          # Theme definitions
   core/
     git.ts             # GitWorktree static class — all git subprocess operations
-    config.ts          # Config loading, validation, expansion
+    config.ts          # Config loading, validation, expansion (calls expandWorkspaces after validation)
+    workspace.ts       # Parent-directory repo auto-discovery and workspace expansion
     hooks.ts           # Hook execution (postCreate, postRemove)
     doctor.ts          # Health check functions
     focus.ts           # Focus metadata (stored in git internals)
     files.ts           # File copy/symlink operations
-    monorepo.ts        # Monorepo detection and package discovery
+    monorepo.ts        # Monorepo package detection (pnpm/turbo/nx/lerna/yarn)
     glob-hooks.ts      # Glob-matched per-package hooks
     session.ts         # Tmux session management (stored in git internals)
     types.ts           # Shared types and custom error classes

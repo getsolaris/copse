@@ -8,11 +8,12 @@ Shared business logic for both CLI and TUI. No UI, no process.exit, no console o
 |------|---------------|-------------|
 | `git.ts` | All git subprocess operations | `GitWorktree` (static class), `invalidateGitCache()` |
 | `config.ts` | Config load/validate/expand | `loadConfig()`, `getRepoConfig()`, `expandTemplate()`, `validateConfig()` |
+| `workspace.ts` | Parent-directory repo auto-discovery | `discoverRepos()`, `expandWorkspaces()` |
 | `doctor.ts` | Health checks + auto-fix | `runAllChecks()`, `runFixes()`, check functions |
 | `hooks.ts` | Shell command execution | `executeHooks()`, `HookError`, `HookTimeoutError` |
 | `focus.ts` | Monorepo focus metadata + open-target resolution | `readFocus()`, `writeFocus()`, `hasFocus()`, `resolveFocusOpenTarget()`, `FocusNotFoundError` |
 | `files.ts` | File copy/symlink ops | `copyFiles()`, `linkFiles()`, `cleanupFiles()` |
-| `monorepo.ts` | Workspace detection | `detectMonorepoTools()`, `discoverPackages()`, `validateFocusPaths()` |
+| `monorepo.ts` | Monorepo package detection (pnpm/turbo/nx/lerna/yarn) | `detectMonorepoTools()`, `discoverPackages()`, `validateFocusPaths()` |
 | `glob-hooks.ts` | Per-package hook matching | `matchHooksForFocus()`, `executeGlobHooks()` |
 | `skill-templates.ts` | AI agent skill file generation | `writeSkillFile()`, `generateSkillContent()`, `generateReferenceFiles()`, `getSkillFilePath()` |
 | `session.ts` | Tmux session management | `openSession()`, `closeSession()`, `listSessions()`, `SessionError` |
