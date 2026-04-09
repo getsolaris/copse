@@ -315,24 +315,36 @@ export async function launchTUI() {
     process.stdout.write("\u001b]0;Oh My Worktree\u0007");
   }
 
-  const repoPath = await GitWorktree.getMainRepoPath().catch(() => process.cwd());
+  let gitRepoPath: string | null = null;
+  try {
+    gitRepoPath = await GitWorktree.getMainRepoPath();
+  } catch {}
 
-  let repoPaths = [repoPath];
+  let configuredPaths: string[] = [];
+  let configuredTheme: string | undefined;
   try {
     const cfg: Record<string, unknown> & { theme?: string } = { ...loadConfig() };
-    const configPaths = getConfiguredRepoPaths(cfg as any);
-    const seen = new Set([resolve(repoPath)]);
-    for (const p of configPaths) {
-      const resolved = resolve(p);
-      if (!seen.has(resolved)) {
-        seen.add(resolved);
-        repoPaths.push(p);
-      }
-    }
-    if (cfg.theme && THEME_NAMES.includes(cfg.theme as ThemeName)) {
-      setCurrentThemeName(cfg.theme as ThemeName);
+    configuredPaths = getConfiguredRepoPaths(cfg as any);
+    if (typeof cfg.theme === "string") {
+      configuredTheme = cfg.theme;
     }
   } catch {}
+
+  const repoPath = gitRepoPath ?? configuredPaths[0] ?? process.cwd();
+
+  const repoPaths = [repoPath];
+  const seen = new Set([resolve(repoPath)]);
+  for (const p of configuredPaths) {
+    const resolved = resolve(p);
+    if (!seen.has(resolved)) {
+      seen.add(resolved);
+      repoPaths.push(p);
+    }
+  }
+
+  if (configuredTheme && THEME_NAMES.includes(configuredTheme as ThemeName)) {
+    setCurrentThemeName(configuredTheme as ThemeName);
+  }
 
   await render(
     () => (

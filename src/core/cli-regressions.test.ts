@@ -155,6 +155,39 @@ describe("CLI regressions", () => {
     expect(result.stderr).toContain("profile 'missing' does not exist");
   });
 
+  it("omw (TUI) launches without crashing when started outside a git repo with no configured repos", async () => {
+    const nonGitDir = createTempDir("omw-cli-non-git-");
+    const root = createTempDir("omw-cli-non-git-env-");
+    const xdgConfigHome = join(root, "xdg");
+    mkdirSync(xdgConfigHome, { recursive: true });
+
+    const proc = (Bun as any).spawn(["bun", "run", cliPath], {
+      cwd: nonGitDir,
+      stdout: "pipe",
+      stderr: "pipe",
+      env: {
+        ...(Bun as any).env,
+        XDG_CONFIG_HOME: xdgConfigHome,
+        HOME: root,
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 1500));
+
+    const exitedEarly = proc.exitCode !== null && proc.exitCode !== undefined;
+    proc.kill("SIGKILL");
+    await proc.exited;
+
+    const stderr = await new Response(proc.stderr).text();
+
+    expect(exitedEarly).toBe(false);
+    expect(stderr).not.toContain("[KeyHandler]");
+    expect(stderr).not.toContain("Error in global keypress handler");
+    expect(stderr).not.toContain("GitError");
+    expect(stderr).not.toContain("TypeError");
+    expect(stderr).not.toContain("UnhandledPromiseRejection");
+  });
+
   it("session --kill-all kills orphan sessions for the configured prefix", async () => {
     if (!(await isTmuxAvailable())) {
       return;

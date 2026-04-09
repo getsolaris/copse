@@ -30,8 +30,20 @@ export function GitProvider(props: { children: JSX.Element; repoPaths: string[] 
     rawRefetch();
   };
 
+  // Solid's createResource accessor re-throws the stored error inside reactive
+  // contexts when no ErrorBoundary wraps it. Without this gate, `git.worktrees()`
+  // crashes keyboard/effect handlers whenever list() fails (e.g. non-git cwd).
+  const safeWorktrees = () => {
+    if (worktrees.error) return undefined;
+    try {
+      return worktrees();
+    } catch {
+      return undefined;
+    }
+  };
+
   const repoNames = createMemo(() => {
-    const wts = worktrees() ?? [];
+    const wts = safeWorktrees() ?? [];
     const seen = new Set<string>();
     const names: string[] = [];
     for (const wt of wts) {
@@ -48,7 +60,7 @@ export function GitProvider(props: { children: JSX.Element; repoPaths: string[] 
   return (
     <GitContext.Provider
       value={{
-        worktrees: () => worktrees(),
+        worktrees: safeWorktrees,
         refetch,
         loading: () => worktrees.loading,
         error: () => worktrees.error as Error | undefined,

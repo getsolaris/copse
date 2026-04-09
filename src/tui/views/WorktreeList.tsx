@@ -146,12 +146,17 @@ export function WorktreeList() {
         </Show>
 
         <Show when={!git.loading() && !!git.error()}>
-          <text x={2} y={2} fg={theme.text.error}>
-            Error: {git.error()?.message}
-          </text>
-          <text x={2} y={3} fg={theme.text.secondary}>
-            Not in a git repository?
-          </text>
+          <box flexDirection="column" paddingX={2} paddingY={1} gap={0}>
+            <text fg={theme.text.error}>Unable to list worktrees</text>
+            <text fg={theme.text.secondary}>{" "}</text>
+            <text fg={theme.text.secondary}>{git.error()?.message}</text>
+            <text fg={theme.text.secondary}>{" "}</text>
+            <text fg={theme.text.secondary}>omw needs a git repository to manage worktrees.</text>
+            <text fg={theme.text.secondary}>{"  \u00B7 cd into a git repository and relaunch omw, or"}</text>
+            <text fg={theme.text.secondary}>{"  \u00B7 configure repos in ~/.config/oh-my-worktree/config.json"}</text>
+            <text fg={theme.text.secondary}>{" "}</text>
+            <text fg={theme.text.accent}>Press q to quit, or ^P to open the command palette.</text>
+          </box>
         </Show>
 
         <Show when={!git.loading() && !git.error() && !!selectedWt()}>
