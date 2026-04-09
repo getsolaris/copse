@@ -511,11 +511,21 @@ omw init --skill opencode       # → ~/.config/opencode/skill/omw/
 `--skill` 없이 실행하면 기존 설정 초기화 로직을 재사용하여 `config.json`만 생성합니다.
 멱등성 — 다시 실행하면 스킬 디렉토리를 업데이트합니다.
 
+#### 첫 실행 시 자동 초기화
+
+`omw init`을 직접 실행할 필요가 없습니다. 처음으로 `omw` 명령어(또는 TUI)를 실행할 때 `~/.config/oh-my-worktree/config.json`이 없으면, omw가 기본 설정으로 자동 생성하고 stderr에 한 줄짜리 알림을 출력합니다:
+
+```
+omw: created default config at /Users/you/.config/oh-my-worktree/config.json
+```
+
+이 알림은 stdout이 TTY가 아닐 때(파이프, 스크립트, CI 환경)와 `omw init`을 명시적으로 실행할 때(중복 메시지 방지)는 표시되지 않습니다. 자동 초기화는 멱등성을 가지므로 이후 실행에서는 아무 동작도 하지 않습니다.
+
 ## 설정
 
 설정 파일: `~/.config/oh-my-worktree/config.json`
 
-초기화: `omw config --init`
+초기화: `omw config --init` (또는 아무 `omw` 명령어 실행 — [첫 실행 시 자동 초기화](#첫-실행-시-자동-초기화) 참조)
 
 ### 전체 예시
 
@@ -701,6 +711,8 @@ omw init --skill opencode       # → ~/.config/opencode/skill/omw/
 4. 내장 기본값.
 
 **`workspaces[].defaults`는 `monorepo` 필드를 지원하지 않습니다.** 발견된 레포에 monorepo 훅이 필요하면 명시적 `repos[]` 엔트리를 추가하세요.
+
+**TUI 표시:** Config 뷰(Ctrl+P → Open Config)는 파일에 *작성된 그대로* 보여줍니다. 워크스페이스에서 자동 발견된 레포는 `Repos (N)`가 아닌 별도의 `Workspaces (N)` 섹션에 표시됩니다. 따라서 `Repos` 카운트는 워크스페이스 자동 발견과 무관하게 명시적인 `repos[]` 엔트리만 반영합니다. Config 뷰에서 어떤 필드를 편집하든 사용자가 작성한 원본 형태가 디스크에 저장되므로, 자동 발견된 레포가 `repos[]`로 영구화되는 일은 없습니다.
 
 #### `monorepo`
 

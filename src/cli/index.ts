@@ -2,6 +2,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { ensureConfigInitialized } from "../core/config.ts";
 
 function findPackageJson(): string {
   let dir = import.meta.dir;
@@ -16,6 +17,16 @@ function findPackageJson(): string {
 const pkg = JSON.parse(
   readFileSync(findPackageJson(), "utf-8"),
 ) as { version: string };
+
+const isInitCommand = process.argv[2] === "init";
+if (!isInitCommand) {
+  try {
+    const ensured = ensureConfigInitialized();
+    if (ensured.created && process.stdout.isTTY) {
+      process.stderr.write(`omw: created default config at ${ensured.path}\n`);
+    }
+  } catch {}
+}
 
 if (process.argv.length === 2) {
   const { launchTUI } = await import("../tui/App.tsx");

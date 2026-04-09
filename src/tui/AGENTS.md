@@ -16,7 +16,7 @@ App.tsx (launchTUI → render)
     │   ├── WorktreeCreate (views/WorktreeCreate.tsx) — branch + focus input form
     │   ├── WorktreeRemove (views/WorktreeRemove.tsx) — confirmation dialog
     │   ├── DoctorView (views/DoctorView.tsx) — health checks + auto-fix
-    │   ├── ConfigView (views/ConfigView.tsx) — full config display + inline editing (string, strArray as JSON, boolean, theme, enum) with Tab-cycle through field-specific presets, via setNestedValue + writeAtomically
+    │   ├── ConfigView (views/ConfigView.tsx) — full config display + inline editing (string, strArray as JSON, boolean, theme, enum) with Tab-cycle through field-specific presets, via setNestedValue + writeAtomically. Loads via `loadRawConfig()` (NOT `loadConfig()`) so workspace-discovered repos are not shown in the `Repos` section nor serialized back to disk on edit. Renders a dedicated `Workspaces` section above `Repos` listing each `workspaces[]` entry (path, depth, exclude, defaults).
     │   ├── CommandPalette (views/CommandPalette.tsx) — Ctrl+P fuzzy search
     │   ├── FocusPicker (views/FocusPicker.tsx) — modal picker for `o` key when worktree has 2+ focus paths
     │   └── Spinner (views/Spinner.tsx) — animated braille dots spinner

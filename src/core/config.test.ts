@@ -2,10 +2,12 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 import {
+  ensureConfigInitialized,
   expandTemplate,
   getRepoConfig,
   initConfig,
   loadConfig,
+  loadRawConfig,
   setNestedValue,
   type OmwConfig,
   validateConfig,
@@ -663,6 +665,194 @@ describe("loadConfig - workspaces expansion", () => {
     );
 
     expect(() => loadConfig(configPath)).toThrow("Config validation failed");
+  });
+});
+
+describe("loadRawConfig", () => {
+  async function initTempRepo(dir: string): Promise<void> {
+    writeFileSync(join(dir, "README.md"), "# tmp\n");
+    await runGit(["init", "-b", "main"], dir);
+    await runGit(["add", "."], dir);
+    await runGit(["commit", "-m", "init"], dir);
+  }
+
+  it("returns default config when no file exists", () => {
+    const dir = createTempDir("omw-raw-missing-");
+    const configPath = join(dir, "no-config.json");
+
+    const loaded = loadRawConfig(configPath);
+    expect(loaded.repos).toEqual([]);
+    expect(loaded.version).toBe(1);
+  });
+
+  it("does NOT expand workspace-discovered repos into repos[]", async () => {
+    const parent = createTempDir("omw-raw-no-expand-");
+    const repoA = join(parent, "discovered-a");
+    const repoB = join(parent, "discovered-b");
+    mkdirSync(repoA);
+    mkdirSync(repoB);
+    await initTempRepo(repoA);
+    await initTempRepo(repoB);
+
+    const configDir = createTempDir("omw-raw-no-expand-config-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        workspaces: [{ path: parent }],
+        repos: [{ path: "/tmp/explicit-only" }],
+      }),
+    );
+
+    const raw = loadRawConfig(configPath);
+    expect(raw.repos).toHaveLength(1);
+    expect(raw.repos![0]!.path).toBe("/tmp/explicit-only");
+    expect(raw.workspaces).toHaveLength(1);
+
+    const expanded = loadConfig(configPath);
+    expect(expanded.repos!.length).toBeGreaterThanOrEqual(3);
+    const expandedPaths = expanded.repos!.map((r) => r.path);
+    expect(expandedPaths).toContain(resolve(repoA));
+    expect(expandedPaths).toContain(resolve(repoB));
+  });
+
+  it("returns empty repos when only workspaces are configured", async () => {
+    const parent = createTempDir("omw-raw-only-ws-");
+    const repoA = join(parent, "alpha");
+    mkdirSync(repoA);
+    await initTempRepo(repoA);
+
+    const configDir = createTempDir("omw-raw-only-ws-config-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        workspaces: [{ path: parent }],
+      }),
+    );
+
+    const raw = loadRawConfig(configPath);
+    expect(raw.repos ?? []).toEqual([]);
+    expect(raw.workspaces).toHaveLength(1);
+  });
+
+  it("preserves explicit repos exactly as authored", () => {
+    const dir = createTempDir("omw-raw-explicit-");
+    const configPath = join(dir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        repos: [
+          { path: "/tmp/repo-a", copyFiles: [".env"] },
+          { path: "/tmp/repo-b" },
+        ],
+      }),
+    );
+
+    const raw = loadRawConfig(configPath);
+    expect(raw.repos).toEqual([
+      { path: "/tmp/repo-a", copyFiles: [".env"] },
+      { path: "/tmp/repo-b" },
+    ]);
+  });
+
+  it("throws on invalid JSON", () => {
+    const dir = createTempDir("omw-raw-invalid-json-");
+    const configPath = join(dir, "config.json");
+    writeFileSync(configPath, "{ invalid json", "utf-8");
+
+    expect(() => loadRawConfig(configPath)).toThrow("Invalid JSON in config file");
+  });
+
+  it("throws on schema validation failure", () => {
+    const dir = createTempDir("omw-raw-invalid-schema-");
+    const configPath = join(dir, "config.json");
+    writeFileSync(configPath, JSON.stringify({ version: 2 }, null, 2), "utf-8");
+
+    expect(() => loadRawConfig(configPath)).toThrow("Config validation failed");
+  });
+
+  it("applies activeProfile but skips workspace expansion", async () => {
+    const parent = createTempDir("omw-raw-profile-");
+    const repoA = join(parent, "discovered");
+    mkdirSync(repoA);
+    await initTempRepo(repoA);
+
+    const configDir = createTempDir("omw-raw-profile-config-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        defaults: { autoUpstream: true },
+        workspaces: [{ path: parent }],
+        profiles: {
+          work: { defaults: { autoUpstream: false }, theme: "nord" },
+        },
+        activeProfile: "work",
+      }),
+    );
+
+    const raw = loadRawConfig(configPath);
+    expect(raw.defaults?.autoUpstream).toBeFalse();
+    expect(raw.theme).toBe("nord");
+    expect(raw.repos ?? []).toEqual([]);
+  });
+});
+
+describe("ensureConfigInitialized", () => {
+  it("creates config file when missing and reports created=true", () => {
+    const dir = createTempDir("omw-ensure-create-");
+    const configPath = join(dir, "nested", "config.json");
+    expect(existsSync(configPath)).toBeFalse();
+
+    const result = ensureConfigInitialized(configPath);
+    expect(result.path).toBe(configPath);
+    expect(result.created).toBeTrue();
+    expect(existsSync(configPath)).toBeTrue();
+  });
+
+  it("is idempotent: second call reports created=false", () => {
+    const dir = createTempDir("omw-ensure-idempotent-");
+    const configPath = join(dir, "config.json");
+
+    const first = ensureConfigInitialized(configPath);
+    expect(first.created).toBeTrue();
+
+    const second = ensureConfigInitialized(configPath);
+    expect(second.created).toBeFalse();
+    expect(second.path).toBe(configPath);
+  });
+
+  it("does not overwrite an existing config file", async () => {
+    const dir = createTempDir("omw-ensure-no-overwrite-");
+    const configPath = join(dir, "config.json");
+    const customConfig = JSON.stringify(
+      { version: 1, defaults: { worktreeDir: "custom-marker" } },
+      null,
+      2,
+    );
+    writeFileSync(configPath, customConfig, "utf-8");
+
+    const result = ensureConfigInitialized(configPath);
+    expect(result.created).toBeFalse();
+
+    const content = await Bun.file(configPath).text();
+    expect(content).toContain("custom-marker");
+  });
+
+  it("respects XDG_CONFIG_HOME when no override path is given", () => {
+    const dir = createTempDir("omw-ensure-xdg-");
+    Bun.env.XDG_CONFIG_HOME = dir;
+    Bun.env.HOME = dir;
+
+    const result = ensureConfigInitialized();
+    expect(result.created).toBeTrue();
+    expect(result.path).toBe(join(dir, "oh-my-worktree", "config.json"));
+    expect(existsSync(result.path)).toBeTrue();
   });
 });
 

@@ -528,11 +528,21 @@ Each skill directory contains:
 Without `--skill`, the command reuses the normal config initializer and creates only `config.json`.
 The command is idempotent — running it again updates the skill directory.
 
+#### Auto-init on first run
+
+You don't have to run `omw init` manually. The first time you run any `omw` command (including launching the TUI), if `~/.config/oh-my-worktree/config.json` does not exist, omw creates it with the default template and prints a one-line notice to stderr:
+
+```
+omw: created default config at /Users/you/.config/oh-my-worktree/config.json
+```
+
+The notice is suppressed when stdout is not a TTY (so pipes, scripts, and CI stay quiet) and when you run `omw init` explicitly (to avoid duplicate messages with init's own success line). Auto-init is fully idempotent — subsequent runs do nothing.
+
 ## Configuration
 
 Config file: `~/.config/oh-my-worktree/config.json`
 
-Initialize with: `omw config --init`
+Initialize with: `omw config --init` (or just run any `omw` command — see [Auto-init on first run](#auto-init-on-first-run))
 
 ### Full Example
 
@@ -718,6 +728,8 @@ Auto-discover git repositories under parent directories. Each discovered repo is
 4. Built-in defaults.
 
 **`workspaces[].defaults` does NOT support `monorepo`.** If you need monorepo hooks for a discovered repo, add an explicit `repos[]` entry for it.
+
+**TUI display:** The Config view (Ctrl+P → Open Config) shows the file *as authored*. Workspace-discovered repos appear under their own `Workspaces (N)` section, not under `Repos (N)`. The `Repos` count therefore reflects only your explicit `repos[]` entries, even when workspace discovery is adding more repos at runtime. Editing any field via the Config view writes back the raw, user-authored shape — auto-discovered repos are never serialized into `repos[]` on disk.
 
 #### `monorepo`
 

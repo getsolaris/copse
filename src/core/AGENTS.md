@@ -7,7 +7,7 @@ Shared business logic for both CLI and TUI. No UI, no process.exit, no console o
 | File | Responsibility | Key Exports |
 |------|---------------|-------------|
 | `git.ts` | All git subprocess operations | `GitWorktree` (static class), `invalidateGitCache()` |
-| `config.ts` | Config load/validate/expand | `loadConfig()`, `getRepoConfig()`, `expandTemplate()`, `validateConfig()` |
+| `config.ts` | Config load/validate/expand | `loadConfig()`, `loadRawConfig()`, `getRepoConfig()`, `expandTemplate()`, `validateConfig()`, `initConfig()`, `ensureConfigInitialized()` |
 | `workspace.ts` | Parent-directory repo auto-discovery | `discoverRepos()`, `expandWorkspaces()` |
 | `doctor.ts` | Health checks + auto-fix | `runAllChecks()`, `runFixes()`, check functions |
 | `hooks.ts` | Shell command execution | `executeHooks()`, `HookError`, `HookTimeoutError` |
@@ -31,6 +31,23 @@ Shared business logic for both CLI and TUI. No UI, no process.exit, no console o
 - Any operation that changes git state
 
 **MUST NOT** cache write operations or assume stale data is safe.
+
+## Config Loading: `loadConfig` vs `loadRawConfig`
+
+`config.ts` exposes **two** loaders. They share the same parse/validate path but differ on a single critical step — **whether `expandWorkspaces()` runs**:
+
+| Function | Workspace expansion | Use for |
+|---|---|---|
+| `loadConfig()` | ✓ runs (discovered repos merged into `repos[]`) | Operational code that needs the full set of known repos: CLI commands, TUI worktree list, git operations |
+| `loadRawConfig()` | ✗ skipped | Code that displays or **writes back** the user-authored config file: `ConfigView.tsx` |
+
+**Why this split is mandatory:** writing an expanded config back to disk via `writeAtomically()` would serialize every workspace-discovered repo as if the user had typed it into `repos[]`, permanently. Subsequent loads then see them as explicit entries even after the workspace is removed. `loadRawConfig()` exists to prevent that footgun.
+
+**Rule of thumb:** if your code path eventually calls `writeAtomically(getConfigPath(), …)`, it MUST use `loadRawConfig()` to read the current state first. All other read paths use `loadConfig()`.
+
+## First-Run Auto-Init
+
+`ensureConfigInitialized(overridePath?)` is called once per process from `src/cli/index.ts` (skipped only when the user explicitly runs `omw init`). It is idempotent: returns `{ path, created: false }` when the file already exists, otherwise creates `DEFAULT_CONFIG` and returns `{ path, created: true }`. The CLI prints a one-line stderr notice only when `created === true` AND `process.stdout.isTTY` (so pipes and CI stay quiet).
 
 ## Doctor Pattern
 

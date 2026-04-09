@@ -1,7 +1,7 @@
 import { createSignal, createMemo, createEffect, on, onCleanup, For, Show } from "solid-js";
 import { useApp } from "../context/AppContext.tsx";
 import {
-  loadConfig,
+  loadRawConfig,
   getConfigPath,
   initConfig,
   writeAtomically,
@@ -113,6 +113,11 @@ function formatStrArray(arr: string[] | undefined | null): string {
   if (!arr) return "(inherits)";
   if (arr.length === 0) return "[]";
   return JSON.stringify(arr);
+}
+
+function isPlaceholderValue(value: string | undefined): boolean {
+  if (!value) return false;
+  return /^\(.+\)$/.test(value);
 }
 
 function inheritedOrArray(arr: string[] | undefined): string {
@@ -266,6 +271,137 @@ function buildRows(cfg: OmwConfig | null): Row[] {
       editKind: "strArray",
       depth: 2,
       suggestions: SHARED_DEPS_INVALIDATE_PRESETS,
+    });
+  }
+
+  const workspaces = cfg.workspaces ?? [];
+  if (workspaces.length > 0) {
+    rows.push({ key: "sp.workspaces", kind: "spacer", label: "", depth: 0 });
+    rows.push({
+      key: "sec.workspaces",
+      kind: "section",
+      label: `Workspaces (${workspaces.length})`,
+      depth: 0,
+    });
+
+    workspaces.forEach((ws, wi) => {
+      const wsName = ws.path.split("/").pop() || ws.path;
+      rows.push({ key: `w${wi}.header`, kind: "section", label: wsName, depth: 1 });
+      rows.push({
+        key: `w${wi}.path`,
+        kind: "field",
+        label: "path",
+        value: ws.path,
+        rawValue: ws.path,
+        path: ["workspaces", wi, "path"],
+        editKind: null,
+        depth: 2,
+      });
+      rows.push({
+        key: `w${wi}.depth`,
+        kind: "field",
+        label: "depth",
+        value: ws.depth === undefined ? "(default: 1)" : String(ws.depth),
+        rawValue: ws.depth,
+        path: ["workspaces", wi, "depth"],
+        editKind: null,
+        depth: 2,
+      });
+      rows.push({
+        key: `w${wi}.exclude`,
+        kind: "field",
+        label: "exclude",
+        value: inheritedOrArray(ws.exclude),
+        rawValue: ws.exclude,
+        path: ["workspaces", wi, "exclude"],
+        editKind: "strArray",
+        depth: 2,
+        suggestions: [
+          EMPTY_ARRAY_PRESET,
+          '["node_modules"]',
+          '["node_modules", ".cache"]',
+          '["node_modules", ".cache", "archived"]',
+        ],
+      });
+
+      const wsDefaults = ws.defaults;
+      if (wsDefaults) {
+        rows.push({
+          key: `w${wi}.defaults.header`,
+          kind: "section",
+          label: "defaults",
+          depth: 2,
+        });
+        rows.push({
+          key: `w${wi}.defaults.worktreeDir`,
+          kind: "field",
+          label: "worktreeDir",
+          value: wsDefaults.worktreeDir ?? "(inherits)",
+          rawValue: wsDefaults.worktreeDir,
+          path: ["workspaces", wi, "defaults", "worktreeDir"],
+          editKind: "string",
+          depth: 3,
+          suggestions: WORKTREE_DIR_PRESETS,
+        });
+        rows.push({
+          key: `w${wi}.defaults.copyFiles`,
+          kind: "field",
+          label: "copyFiles",
+          value: inheritedOrArray(wsDefaults.copyFiles),
+          rawValue: wsDefaults.copyFiles,
+          path: ["workspaces", wi, "defaults", "copyFiles"],
+          editKind: "strArray",
+          depth: 3,
+          suggestions: COPY_FILES_PRESETS,
+        });
+        rows.push({
+          key: `w${wi}.defaults.linkFiles`,
+          kind: "field",
+          label: "linkFiles",
+          value: inheritedOrArray(wsDefaults.linkFiles),
+          rawValue: wsDefaults.linkFiles,
+          path: ["workspaces", wi, "defaults", "linkFiles"],
+          editKind: "strArray",
+          depth: 3,
+          suggestions: LINK_FILES_PRESETS,
+        });
+        rows.push({
+          key: `w${wi}.defaults.postCreate`,
+          kind: "field",
+          label: "postCreate",
+          value: inheritedOrArray(wsDefaults.postCreate),
+          rawValue: wsDefaults.postCreate,
+          path: ["workspaces", wi, "defaults", "postCreate"],
+          editKind: "strArray",
+          depth: 3,
+          suggestions: POST_CREATE_PRESETS,
+        });
+        rows.push({
+          key: `w${wi}.defaults.postRemove`,
+          kind: "field",
+          label: "postRemove",
+          value: inheritedOrArray(wsDefaults.postRemove),
+          rawValue: wsDefaults.postRemove,
+          path: ["workspaces", wi, "defaults", "postRemove"],
+          editKind: "strArray",
+          depth: 3,
+          suggestions: POST_REMOVE_PRESETS,
+        });
+        rows.push({
+          key: `w${wi}.defaults.autoUpstream`,
+          kind: "field",
+          label: "autoUpstream",
+          value: inheritedOrBool(wsDefaults.autoUpstream),
+          rawValue: wsDefaults.autoUpstream,
+          path: ["workspaces", wi, "defaults", "autoUpstream"],
+          editKind: "boolean",
+          depth: 3,
+        });
+      }
+
+      if (wi < workspaces.length - 1) {
+        rows.push({ key: `sp.w${wi}`, kind: "spacer", label: "", depth: 0 });
+      }
     });
   }
 
@@ -723,7 +859,7 @@ export function ConfigView() {
 
   const loadSafe = (): { cfg: OmwConfig | null; error: string } => {
     try {
-      return { cfg: loadConfig(), error: "" };
+      return { cfg: loadRawConfig(), error: "" };
     } catch (err) {
       return { cfg: null, error: (err as Error).message };
     }
@@ -886,7 +1022,7 @@ export function ConfigView() {
 
     try {
       initConfig();
-      const current = loadConfig();
+      const current = loadRawConfig();
       setNestedValue(current as unknown as Record<string, unknown>, path, value);
 
       const errors = validateConfig(current);
@@ -1173,7 +1309,7 @@ export function ConfigView() {
                       fallback={
                         <text
                           fg={
-                            row.editKind === null
+                            isPlaceholderValue(row.value)
                               ? theme.text.secondary
                               : theme.text.primary
                           }

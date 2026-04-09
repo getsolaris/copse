@@ -672,7 +672,7 @@ function applyActiveProfile(config: OmwConfig): OmwConfig {
   return deepMerge(config, profile) as OmwConfig;
 }
 
-export function loadConfig(overridePath?: string): OmwConfig {
+function loadConfigCore(overridePath?: string): OmwConfig {
   const configPath = overridePath ?? getConfigPath();
 
   if (!fs.existsSync(configPath)) {
@@ -709,7 +709,15 @@ export function loadConfig(overridePath?: string): OmwConfig {
     throw new Error(`Config validation failed after applying activeProfile: ${message}`);
   }
 
-  return expandWorkspaces(resolved);
+  return resolved;
+}
+
+export function loadConfig(overridePath?: string): OmwConfig {
+  return expandWorkspaces(loadConfigCore(overridePath));
+}
+
+export function loadRawConfig(overridePath?: string): OmwConfig {
+  return loadConfigCore(overridePath);
 }
 
 export function getRepoConfig(config: OmwConfig, repoPath: string): ResolvedRepoConfig {
@@ -759,6 +767,18 @@ export function initConfig(overridePath?: string): string {
 
   writeAtomically(configPath, `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n`);
   return configPath;
+}
+
+export interface EnsureConfigResult {
+  path: string;
+  created: boolean;
+}
+
+export function ensureConfigInitialized(overridePath?: string): EnsureConfigResult {
+  const path = overridePath ?? getConfigPath();
+  const existed = fs.existsSync(path);
+  const finalPath = initConfig(overridePath);
+  return { path: finalPath, created: !existed };
 }
 
 export function resolveTemplate(
