@@ -14,19 +14,19 @@ afterEach(cleanupTempDirs);
 
 describe("toSessionName", () => {
   it("converts branch with slashes to safe session name", () => {
-    expect(toSessionName("feat/auth-token")).toBe("oml_feat-auth-token");
+    expect(toSessionName("feat/auth-token")).toBe("copse_feat-auth-token");
   });
 
   it("converts branch with multiple slashes", () => {
-    expect(toSessionName("fix/ui/sidebar")).toBe("oml_fix-ui-sidebar");
+    expect(toSessionName("fix/ui/sidebar")).toBe("copse_fix-ui-sidebar");
   });
 
   it("handles simple branch name", () => {
-    expect(toSessionName("main")).toBe("oml_main");
+    expect(toSessionName("main")).toBe("copse_main");
   });
 
   it("replaces special characters with underscore", () => {
-    expect(toSessionName("feat/auth@v2#test")).toBe("oml_feat-auth_v2_test");
+    expect(toSessionName("feat/auth@v2#test")).toBe("copse_feat-auth_v2_test");
   });
 
   it("uses custom prefix", () => {
@@ -40,14 +40,14 @@ describe("toSessionName", () => {
 
 describe("fromSessionName", () => {
   it("extracts branch from session name", () => {
-    expect(fromSessionName("oml_feat-auth-token")).toBe("feat-auth-token");
+    expect(fromSessionName("copse_feat-auth-token")).toBe("feat-auth-token");
   });
 
   it("supports legacy colon session names", () => {
-    expect(fromSessionName("oml:feat-auth-token")).toBe("feat-auth-token");
+    expect(fromSessionName("copse:feat-auth-token")).toBe("feat-auth-token");
   });
 
-  it("returns null for non-oml session", () => {
+  it("returns null for non-copse session", () => {
     expect(fromSessionName("other:session")).toBeNull();
   });
 
@@ -64,7 +64,7 @@ describe("session metadata", () => {
   it("writes and reads metadata for main worktree", async () => {
     const repoPath = await createTempRepo();
     const info = {
-      name: "oml_test-branch",
+      name: "copse_test-branch",
       branch: "test-branch",
       worktreePath: repoPath,
       createdAt: "2025-01-01T00:00:00.000Z",
@@ -77,11 +77,11 @@ describe("session metadata", () => {
 
   it("writes and reads metadata for linked worktree", async () => {
     const repoPath = await createTempRepo();
-    const wtPath = createTempDir("oml-session-wt-");
+    const wtPath = createTempDir("copse-session-wt-");
     await runGit(["worktree", "add", wtPath, "-b", "test-session"], repoPath);
 
     const info = {
-      name: "oml_test-session",
+      name: "copse_test-session",
       branch: "test-session",
       worktreePath: wtPath,
       createdAt: "2025-01-01T00:00:00.000Z",
@@ -92,7 +92,7 @@ describe("session metadata", () => {
     const result = readSessionMeta(wtPath);
     expect(result).toEqual(info);
 
-    expect(existsSync(join(wtPath, ".oml-session"))).toBeFalse();
+    expect(existsSync(join(wtPath, ".copse-session"))).toBeFalse();
   });
 
   it("returns null when no metadata exists", async () => {
@@ -103,7 +103,7 @@ describe("session metadata", () => {
   it("removes metadata", async () => {
     const repoPath = await createTempRepo();
     writeSessionMeta(repoPath, {
-      name: "oml_test",
+      name: "copse_test",
       branch: "test",
       worktreePath: repoPath,
       createdAt: "2025-01-01T00:00:00.000Z",

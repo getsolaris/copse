@@ -110,7 +110,7 @@ export interface ValidationError {
   message: string;
 }
 
-const DEFAULT_WORKTREE_DIR = "~/.oml/worktrees/{repo}-{branch}";
+const DEFAULT_WORKTREE_DIR = "~/.copse/worktrees/{repo}-{branch}";
 
 const DEFAULT_CONFIG: OmlConfig = {
   version: 1,
@@ -148,7 +148,7 @@ function validateStringArray(
 export function getConfigDir(): string {
   const xdgConfig = Bun.env.XDG_CONFIG_HOME;
   const base = xdgConfig ?? join(Bun.env.HOME ?? "~", ".config");
-  return join(base, "oh-my-lemontree");
+  return join(base, "copse");
 }
 
 export function getConfigPath(): string {

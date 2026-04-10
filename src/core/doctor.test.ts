@@ -73,7 +73,7 @@ describe("checkStaleWorktrees", () => {
 
   it("warns when a worktree directory was deleted", async () => {
     const repoPath = await createTempRepo();
-    const wtPath = createTempDir("oml-wt-");
+    const wtPath = createTempDir("copse-wt-");
     await runGit(["worktree", "add", wtPath, "-b", "test-stale"], repoPath);
     rmSync(wtPath, { recursive: true, force: true });
 
@@ -99,7 +99,7 @@ describe("checkDirtyWorktrees", () => {
 
   it("warns when a non-main worktree is dirty", async () => {
     const repoPath = await createTempRepo();
-    const wtPath = createTempDir("oml-dirty-");
+    const wtPath = createTempDir("copse-dirty-");
     await runGit(["worktree", "add", wtPath, "-b", "test-dirty"], repoPath);
     writeFileSync(join(wtPath, "dirty.txt"), "dirty content");
 
@@ -125,7 +125,7 @@ describe("checkLockStatus", () => {
 
   it("warns when a worktree is locked", async () => {
     const repoPath = await createTempRepo();
-    const wtPath = createTempDir("oml-lock-");
+    const wtPath = createTempDir("copse-lock-");
     await runGit(["worktree", "add", wtPath, "-b", "test-lock"], repoPath);
     await runGit(["worktree", "lock", wtPath], repoPath);
 
@@ -150,9 +150,9 @@ describe("checkOrphanedDirectories", () => {
 
   it("detects orphaned directories under configured custom worktreeDir", async () => {
     const repoPath = await createTempRepo();
-    const configRoot = createTempDir("oml-doctor-config-");
+    const configRoot = createTempDir("copse-doctor-config-");
     const xdgConfigHome = join(configRoot, "xdg");
-    const configDir = join(xdgConfigHome, "oh-my-lemontree");
+    const configDir = join(xdgConfigHome, "copse");
     const customWorktreeBase = join(configRoot, "custom-worktrees");
     const orphanPath = join(customWorktreeBase, `${basename(repoPath)}-orphan`);
 
@@ -180,9 +180,9 @@ describe("checkOrphanedDirectories", () => {
 describe("fixOrphanedDirectories", () => {
   it("removes orphaned directories under configured custom worktreeDir", async () => {
     const repoPath = await createTempRepo();
-    const configRoot = createTempDir("oml-doctor-fix-");
+    const configRoot = createTempDir("copse-doctor-fix-");
     const xdgConfigHome = join(configRoot, "xdg");
-    const configDir = join(xdgConfigHome, "oh-my-lemontree");
+    const configDir = join(xdgConfigHome, "copse");
     const customWorktreeBase = join(configRoot, "custom-worktrees");
     const orphanPath = join(customWorktreeBase, `${basename(repoPath)}-orphan`);
 
@@ -231,7 +231,7 @@ describe("runAllChecks", () => {
 
   it("returns healthy=false when issues exist", async () => {
     const repoPath = await createTempRepo();
-    const wtPath = createTempDir("oml-unhealthy-");
+    const wtPath = createTempDir("copse-unhealthy-");
     await runGit(["worktree", "add", wtPath, "-b", "test-unhealthy"], repoPath);
     await runGit(["worktree", "lock", wtPath], repoPath);
 

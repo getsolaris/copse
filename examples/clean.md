@@ -1,11 +1,11 @@
-# oml clean
+# copse clean
 
 Remove merged worktrees and prune stale entries.
 
 ## Usage
 
 ```
-oml clean
+copse clean
 ```
 
 ## Options
@@ -21,29 +21,29 @@ oml clean
 ### Preview what would be cleaned
 
 ```bash
-oml clean --dry-run
+copse clean --dry-run
 ```
 
 ### Clean merged worktrees
 
 ```bash
-oml clean
+copse clean
 ```
 
 ### Clean without confirmation
 
 ```bash
-oml clean -y
+copse clean -y
 ```
 
 ### Include stale worktrees in cleanup
 
 ```bash
-oml clean --stale
+copse clean --stale
 ```
 
 ### Preview stale worktrees without removing
 
 ```bash
-oml clean --stale --dry-run
+copse clean --stale --dry-run
 ```

@@ -40,7 +40,7 @@ afterEach(() => {
 describe("validateImportTarget", () => {
   it("returns valid for linked git worktree and resolves branch", async () => {
     const repoPath = await createTempRepo();
-    const worktreePath = createTempDir("oml-import-valid-");
+    const worktreePath = createTempDir("copse-import-valid-");
     await runGit(["worktree", "add", worktreePath, "-b", "feature/import-valid"], repoPath);
 
     const result = validateImportTarget(worktreePath);
@@ -50,7 +50,7 @@ describe("validateImportTarget", () => {
   });
 
   it("rejects non-existent path", () => {
-    const result = validateImportTarget("/tmp/does-not-exist-oml-import");
+    const result = validateImportTarget("/tmp/does-not-exist-copse-import");
 
     expect(result.valid).toBeFalse();
     expect(result.reason).toContain("does not exist");
@@ -66,7 +66,7 @@ describe("validateImportTarget", () => {
   });
 
   it("rejects non-git directory", () => {
-    const dir = createTempDir("oml-import-not-git-");
+    const dir = createTempDir("copse-import-not-git-");
 
     const result = validateImportTarget(dir);
 
@@ -78,7 +78,7 @@ describe("validateImportTarget", () => {
 describe("getWorktreeGitDir", () => {
   it("resolves linked worktree .git file to metadata directory", async () => {
     const repoPath = await createTempRepo();
-    const worktreePath = createTempDir("oml-import-gitdir-");
+    const worktreePath = createTempDir("copse-import-gitdir-");
     await runGit(["worktree", "add", worktreePath, "-b", "feature/import-gitdir"], repoPath);
 
     const gitDir = getWorktreeGitDir(worktreePath);
@@ -91,7 +91,7 @@ describe("getWorktreeGitDir", () => {
 describe("importWorktree", () => {
   it("imports a valid linked worktree", async () => {
     const repoPath = await createTempRepo();
-    const worktreePath = createTempDir("oml-import-worktree-");
+    const worktreePath = createTempDir("copse-import-worktree-");
     await runGit(["worktree", "add", worktreePath, "-b", "feature/import-me"], repoPath);
 
     const imported = await importWorktree(worktreePath);
@@ -105,12 +105,12 @@ describe("importWorktree", () => {
   });
 
   it("throws ImportError when target is invalid", async () => {
-    expect(importWorktree("/tmp/does-not-exist-oml-import-2")).rejects.toBeInstanceOf(ImportError);
+    expect(importWorktree("/tmp/does-not-exist-copse-import-2")).rejects.toBeInstanceOf(ImportError);
   });
 
   it("writes focus metadata when focus is provided", async () => {
     const repoPath = await createTempRepo();
-    const worktreePath = createTempDir("oml-import-focus-");
+    const worktreePath = createTempDir("copse-import-focus-");
     await runGit(["worktree", "add", worktreePath, "-b", "feature/import-focus"], repoPath);
 
     const imported = await importWorktree(worktreePath, { focus: ["apps/web", "apps/api"] });
@@ -121,7 +121,7 @@ describe("importWorktree", () => {
 
   it("writes pin metadata when pin option is enabled", async () => {
     const repoPath = await createTempRepo();
-    const worktreePath = createTempDir("oml-import-pin-");
+    const worktreePath = createTempDir("copse-import-pin-");
     await runGit(["worktree", "add", worktreePath, "-b", "feature/import-pin"], repoPath);
 
     await importWorktree(worktreePath, { pin: true });

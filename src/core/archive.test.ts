@@ -8,7 +8,7 @@ let originalHome: string | undefined;
 
 function setTestHome(): void {
   originalHome = (Bun as any).env.HOME;
-  const home = createTempDir("oml-archive-home-");
+  const home = createTempDir("copse-archive-home-");
   (Bun as any).env.HOME = home;
   process.env.HOME = home;
 }
@@ -22,16 +22,16 @@ afterEach(() => {
 });
 
 describe("getArchiveDir", () => {
-  it("returns ~/.oml/archives under HOME", () => {
+  it("returns ~/.copse/archives under HOME", () => {
     setTestHome();
-    expect(getArchiveDir()).toBe(`${(Bun as any).env.HOME}/.oml/archives`);
+    expect(getArchiveDir()).toBe(`${(Bun as any).env.HOME}/.copse/archives`);
   });
 });
 
 describe("createArchive", () => {
   it("archives a dirty worktree with uncommitted changes", async () => {
     setTestHome();
-    const repoPath = await createTempRepo("oml-archive-dirty-repo-");
+    const repoPath = await createTempRepo("copse-archive-dirty-repo-");
 
     await Bun.write(`${repoPath}/README.md`, "# temp repo\n\nDirty change\n");
 
@@ -47,7 +47,7 @@ describe("createArchive", () => {
 
   it("archives a clean worktree and still includes recent commits", async () => {
     setTestHome();
-    const repoPath = await createTempRepo("oml-archive-clean-repo-");
+    const repoPath = await createTempRepo("copse-archive-clean-repo-");
 
     const entry = await createArchive(repoPath, repoPath);
     expect(existsSync(entry.patchPath)).toBeTrue();
@@ -58,7 +58,7 @@ describe("createArchive", () => {
 
   it("sanitizes branch names with slashes for filenames", async () => {
     setTestHome();
-    const repoPath = await createTempRepo("oml-archive-branch-repo-");
+    const repoPath = await createTempRepo("copse-archive-branch-repo-");
     await runGit(["checkout", "-b", "feature/archive-test"], repoPath);
 
     const entry = await createArchive(repoPath, repoPath);
@@ -70,8 +70,8 @@ describe("createArchive", () => {
 describe("listArchives and getArchiveDetail", () => {
   it("lists archives sorted by archivedAt desc and supports repo filter", async () => {
     setTestHome();
-    const repoA = await createTempRepo("oml-archive-list-a-");
-    const repoB = await createTempRepo("oml-archive-list-b-");
+    const repoA = await createTempRepo("copse-archive-list-a-");
+    const repoB = await createTempRepo("copse-archive-list-b-");
 
     const first = await createArchive(repoA, repoA);
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -89,7 +89,7 @@ describe("listArchives and getArchiveDetail", () => {
 
   it("returns patch detail content", async () => {
     setTestHome();
-    const repoPath = await createTempRepo("oml-archive-detail-repo-");
+    const repoPath = await createTempRepo("copse-archive-detail-repo-");
     await Bun.write(`${repoPath}/README.md`, "# temp repo\n\nArchive detail\n");
 
     const entry = await createArchive(repoPath, repoPath);

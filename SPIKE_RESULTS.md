@@ -1,14 +1,14 @@
 # Spike Results: OpenTUI + bun build --compile
 
 ## Summary
-- **Dev mode works**: YES (bunfig.toml preload registers Babel JSX transform)
+- **Dev mode works**: YES (bunfig.tcop preload registers Babel JSX transform)
 - **Standalone binary compile result**: FAIL (SolidJS JSX transform not applied at compile time)
 - **Binary size**: 63 MB (compiled but non-functional)
-- **Final distribution decision**: npm global package (`bun install -g oh-my-lemontree`)
+- **Final distribution decision**: npm global package (`bun install -g copse`)
 
 ## Dev Mode Test
 ```text
-  Hello from oml!
+  Hello from copse!
 
   OpenTUI + SolidJS is working!
 ```
@@ -28,23 +28,23 @@ Result: exit 1 (top-level await in @opentui/core Yoga WASM loader)
 ```
 [26ms]  minify  -4.79 MB (estimate)
 [11ms]  bundle  31 modules
-[185ms] compile  /tmp/oml-spike-no-bytecode
+[185ms] compile  /tmp/copse-spike-no-bytecode
 ```
 Result: exit 0 — binary created (63MB)
 
 ### Binary Runtime Test
 ```
-$ cd /tmp && ./oml-spike-no-bytecode
+$ cd /tmp && ./copse-spike-no-bytecode
 [TUI launches, shows OpenTUI Console panel with error stack]
-at VZ (/$bunfs/root/oml-spike-no-bytecode:160:51856)
-at render (/$bunfs/root/oml-spike-no-bytecode:160:95126)
+at VZ (/$bunfs/root/copse-spike-no-bytecode:160:51856)
+at render (/$bunfs/root/copse-spike-no-bytecode:160:95126)
 ```
 Result: TUI loads but crashes — SolidJS JSX was compiled as React-style JSX (wrong transform)
 
 ## Root Cause Analysis
 
 OpenTUI SolidJS requires a **Babel JSX transform** (babel-preset-solid) that:
-- In dev mode: Registered via `bunfig.toml` preload → Bun plugin intercepts module loading
+- In dev mode: Registered via `bunfig.tcop` preload → Bun plugin intercepts module loading
 - In compiled binary: The preload mechanism doesn't survive compilation
 
 The `bun-plugin` approach for build-time JSX transform fails due to:
@@ -62,25 +62,25 @@ Babel's `debug` module has CJS/ESM incompatibility in Bun's bundler context.
 
 ## Final Distribution Decision
 
-**npm global package** — ship as `bun install -g oh-my-lemontree`
+**npm global package** — ship as `bun install -g copse`
 
 Rationale:
-- oml targets developers who already use git worktrees and modern JS tools
+- copse targets developers who already use git worktrees and modern JS tools
 - Requiring Bun is reasonable (like requiring Node for npm tools)
 - This is how `degit`, `vite`, `tsx`, and other developer tools distribute
 - Homebrew formula: `depends_on "oven-sh/bun/bun"` + install via bun
-- curl install: install Bun if not present, then `bun install -g oh-my-lemontree`
+- curl install: install Bun if not present, then `bun install -g copse`
 
 ## Impact on Task 20 (Build Script)
 
 Task 20 MUST be updated to:
 - NOT use `bun build --compile`
-- Instead: `bun build --outfile dist/oml.js` (bundle without compile)
+- Instead: `bun build --outfile dist/copse.js` (bundle without compile)
 - Set shebang `#!/usr/bin/env bun` in the bundled output
-- package.json `bin.oml` → `dist/oml.js`
-- GitHub releases: upload the bundled `dist/oml.js` (not compiled binaries)
-- Homebrew formula: download `dist/oml.js` from GitHub release, use bun as dependency
-- curl install: install bun if needed + download dist/oml.js to ~/.local/bin/oml
+- package.json `bin.copse` → `dist/copse.js`
+- GitHub releases: upload the bundled `dist/copse.js` (not compiled binaries)
+- Homebrew formula: download `dist/copse.js` from GitHub release, use bun as dependency
+- curl install: install bun if needed + download dist/copse.js to ~/.local/bin/copse
 
 ## Impact on Tasks 15-19 (TUI)
 

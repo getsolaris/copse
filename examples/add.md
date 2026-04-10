@@ -1,11 +1,11 @@
-# oml add
+# copse add
 
 Create a new worktree for a branch.
 
 ## Usage
 
 ```
-oml add <branch> [path]
+copse add <branch> [path]
 ```
 
 ## Options
@@ -25,55 +25,55 @@ oml add <branch> [path]
 ### Create a worktree for an existing branch
 
 ```bash
-oml add feature/login
+copse add feature/login
 ```
 
 ### Create a worktree with a new branch
 
 ```bash
-oml add feature/auth
+copse add feature/auth
 ```
 
 ### Create a new branch based on a specific branch
 
 ```bash
-oml add feature/api --base develop
+copse add feature/api --base develop
 ```
 
 ### Specify a custom path for the worktree
 
 ```bash
-oml add feature/login ../my-project-login
+copse add feature/login ../my-project-login
 ```
 
 ### Create a worktree from a GitHub PR
 
 ```bash
-oml add --pr 42
+copse add --pr 42
 ```
 
 ### Use a config template
 
 ```bash
-oml add feature/dashboard --template frontend
+copse add feature/dashboard --template frontend
 ```
 
 ### Focus on specific monorepo packages
 
 ```bash
-oml add feature/auth --focus @app/web,@app/api
+copse add feature/auth --focus @app/web,@app/api
 ```
 
 ### Combine multiple options
 
 ```bash
-oml add feature/payments --base main --focus @app/billing --template backend
+copse add feature/payments --base main --focus @app/billing --template backend
 ```
 
 ### Create a worktree with a tmux session
 
 ```bash
-oml add feature/review --session --layout dev
+copse add feature/review --session --layout dev
 ```
 
 `--create` remains supported for backward compatibility, but new branches are now created automatically when missing.

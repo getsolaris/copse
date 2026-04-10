@@ -207,7 +207,7 @@ function AppShell(props: { repoPath: string }) {
     <box width={w()} height={h()} backgroundColor={theme.bg.base} flexDirection="column">
       <box height={1} backgroundColor={theme.bg.overlay}>
         <text x={1} y={0} fg={theme.text.accent}>
-          {"\uD83C\uDF33 oh-my-lemontree"}
+          {"\uD83C\uDF33 copse"}
         </text>
         <text x={w() - headerRight().length - 2} y={0} fg={theme.text.secondary}>
           {headerRight()}
@@ -312,7 +312,7 @@ function AppShell(props: { repoPath: string }) {
 
 export async function launchTUI() {
   if (process.stdout.isTTY) {
-    process.stdout.write("\u001b]0;Oh My Lemontree\u0007");
+    process.stdout.write("\u001b]0;Copse\u0007");
   }
 
   let gitRepoPath: string | null = null;

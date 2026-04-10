@@ -21,11 +21,11 @@ export function getSkillDir(platform: SkillPlatform): string {
   const home = process.env.HOME || process.env.USERPROFILE || "~";
   switch (platform) {
     case "claude-code":
-      return join(home, ".claude", "skills", "oml");
+      return join(home, ".claude", "skills", "copse");
     case "codex":
-      return join(home, ".agents", "skills", "oml");
+      return join(home, ".agents", "skills", "copse");
     case "opencode":
-      return join(home, ".config", "opencode", "skill", "oml");
+      return join(home, ".config", "opencode", "skill", "copse");
   }
 }
 
@@ -73,20 +73,20 @@ const commandOverview: CommandOverview[] = [
   { command: "log", aliases: "logs", description: "Read or clear the activity log." },
   { command: "archive", aliases: "-", description: "Archive worktree changes as patch files." },
   { command: "rename", aliases: "-", description: "Rename a worktree branch and optionally move its path." },
-  { command: "clone", aliases: "-", description: "Clone a repository and initialize oml setup." },
-  { command: "import", aliases: "-", description: "Import an existing worktree into oml metadata." },
+  { command: "clone", aliases: "-", description: "Clone a repository and initialize copse setup." },
+  { command: "import", aliases: "-", description: "Import an existing worktree into copse metadata." },
   { command: "session", aliases: "ss", description: "Manage tmux sessions for worktrees." },
   { command: "config", aliases: "-", description: "Initialize, inspect, validate, and manage config profiles." },
   { command: "open", aliases: "-", description: "Open a worktree path in your preferred editor." },
   { command: "shell-init", aliases: "-", description: "Generate shell integration and completions." },
-  { command: "init", aliases: "-", description: "Initialize config or install/update oml AI agent skill files." },
+  { command: "init", aliases: "-", description: "Initialize config or install/update copse AI agent skill files." },
 ];
 
 const referenceSpecs: ReferenceSpec[] = [
   {
     command: "add",
     summary: "Create a new worktree from a branch, template, or GitHub PR.",
-    synopsis: "oml add [branch] [path]",
+    synopsis: "copse add [branch] [path]",
     options: [
       { flag: "--create", type: "boolean", alias: "-c", description: "Optional compatibility flag; missing branches are created automatically" },
       { flag: "--base", type: "string", alias: "-b", description: "Base branch/commit for new branch" },
@@ -97,8 +97,8 @@ const referenceSpecs: ReferenceSpec[] = [
       { flag: "--layout", type: "string", alias: "-", description: "Session layout name from config" },
     ],
     examples: [
-      ["Create a feature branch worktree", "oml add feature/auth --base main"],
-      ["Create from PR with session layout", "oml add feature/review --pr 123 --session --layout dev"],
+      ["Create a feature branch worktree", "copse add feature/auth --base main"],
+      ["Create from PR with session layout", "copse add feature/review --pr 123 --session --layout dev"],
     ],
     notes: [
       "Creates the branch automatically when it does not already exist.",
@@ -123,14 +123,14 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "remove",
     summary: "Remove a worktree by branch name or path.",
-    synopsis: "oml remove <branch-or-path>",
+    synopsis: "copse remove <branch-or-path>",
     options: [
       { flag: "--force", type: "boolean", alias: "-f", description: "Force removal even with uncommitted changes" },
       { flag: "--yes", type: "boolean", alias: "-y", description: "Skip confirmation prompt" },
     ],
     examples: [
-      ["Remove a branch worktree", "oml remove feature/auth"],
-      ["Force remove without prompt", "oml remove feature/auth --force --yes"],
+      ["Remove a branch worktree", "copse remove feature/auth"],
+      ["Force remove without prompt", "copse remove feature/auth --force --yes"],
     ],
     notes: [
       "Runs postRemove hooks and monorepo postRemove hooks before removal.",
@@ -146,15 +146,15 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "list",
     summary: "List worktrees with branch, path, status, and focus details.",
-    synopsis: "oml list",
+    synopsis: "copse list",
     options: [
       { flag: "--json", type: "boolean", alias: "-j", description: "Output as JSON" },
       { flag: "--porcelain", type: "boolean", alias: "-p", description: "Machine-readable output" },
       { flag: "--all", type: "boolean", alias: "-a", description: "List worktrees from all configured repos" },
     ],
     examples: [
-      ["Show all worktrees", "oml list"],
-      ["Get machine-readable output", "oml list --porcelain"],
+      ["Show all worktrees", "copse list"],
+      ["Get machine-readable output", "copse list --porcelain"],
     ],
     notes: [
       "Shows branch, path, status (clean/dirty/locked), focus paths.",
@@ -169,15 +169,15 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "switch",
     summary: "Switch shell context to a worktree by branch or path.",
-    synopsis: "oml switch <branch-or-path>",
+    synopsis: "copse switch <branch-or-path>",
     options: [],
     examples: [
-      ["Switch using branch name", "oml switch feature/auth"],
-      ["Switch using path", "oml switch ~/.oml/worktrees/repo-feature-auth"],
+      ["Switch using branch name", "copse switch feature/auth"],
+      ["Switch using path", "copse switch ~/.copse/worktrees/repo-feature-auth"],
     ],
     notes: [
       "Outputs cd command for shell eval.",
-      "Requires shell integration (oml shell-init).",
+      "Requires shell integration (copse shell-init).",
       "Auto-switches tmux session if sessions.enabled and inside tmux.",
       "Logs switch activity.",
     ],
@@ -189,14 +189,14 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "status",
     summary: "Show branch health, sync state, commit info, and focus.",
-    synopsis: "oml status",
+    synopsis: "copse status",
     options: [
       { flag: "--json", type: "boolean", alias: "-j", description: "Output as JSON" },
       { flag: "--all", type: "boolean", alias: "-a", description: "Show worktrees from all configured repos" },
     ],
     examples: [
-      ["Print status table", "oml status"],
-      ["Parse status in scripts", "oml status --json"],
+      ["Print status table", "copse status"],
+      ["Parse status in scripts", "copse status --json"],
     ],
     notes: [
       "Shows branch, dirty count, sync status (ahead/behind), last commit info, focus paths.",
@@ -211,15 +211,15 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "clean",
     summary: "Remove merged worktrees and optionally inspect stale candidates.",
-    synopsis: "oml clean",
+    synopsis: "copse clean",
     options: [
       { flag: "--dry-run", type: "boolean", alias: "-n", description: "Show what would be removed" },
       { flag: "--yes", type: "boolean", alias: "-y", description: "Skip confirmation" },
       { flag: "--stale", type: "boolean", alias: "-", description: "Also show stale worktrees based on lifecycle config" },
     ],
     examples: [
-      ["Preview merged cleanup", "oml clean --dry-run"],
-      ["Run cleanup without prompts", "oml clean --yes"],
+      ["Preview merged cleanup", "copse clean --dry-run"],
+      ["Run cleanup without prompts", "copse clean --yes"],
     ],
     notes: [
       "Only removes merged worktrees.",
@@ -236,14 +236,14 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "doctor",
     summary: "Run health checks for worktree state and configuration.",
-    synopsis: "oml doctor",
+    synopsis: "copse doctor",
     options: [
       { flag: "--json", type: "boolean", alias: "-j", description: "Output as JSON" },
       { flag: "--fix", type: "boolean", alias: "-", description: "Auto-fix issues" },
     ],
     examples: [
-      ["Run health checks", "oml doctor"],
-      ["Auto-fix detectable issues", "oml doctor --fix"],
+      ["Run health checks", "copse doctor"],
+      ["Auto-fix detectable issues", "copse doctor --fix"],
     ],
     notes: [
       "Checks: git version (>=2.17), config validity, stale worktrees, orphaned directories, lock status, dirty worktrees.",
@@ -255,7 +255,7 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "exec",
     summary: "Run a shell command across filtered non-main worktrees.",
-    synopsis: "oml exec <command>",
+    synopsis: "copse exec <command>",
     options: [
       { flag: "--all", type: "boolean", alias: "-a", description: "Run across all configured repos" },
       { flag: "--dirty", type: "boolean", alias: "-", description: "Only run in dirty worktrees" },
@@ -265,12 +265,12 @@ const referenceSpecs: ReferenceSpec[] = [
       { flag: "--json", type: "boolean", alias: "-j", description: "Output results as JSON" },
     ],
     examples: [
-      ["Run tests in parallel", 'oml exec "bun test" --parallel'],
-      ["Pull only behind worktrees", 'oml exec "git pull" --behind'],
+      ["Run tests in parallel", 'copse exec "bun test" --parallel'],
+      ["Pull only behind worktrees", 'copse exec "git pull" --behind'],
     ],
     notes: [
       "Runs in non-main worktrees only.",
-      "Sets env vars: OML_BRANCH, OML_WORKTREE_PATH, OML_REPO_PATH.",
+      "Sets env vars: COPSE_BRANCH, COPSE_WORKTREE_PATH, COPSE_REPO_PATH.",
       "Exit code 1 if any command fails.",
       "--all also includes repos auto-discovered via the `workspaces` config.",
     ],
@@ -282,14 +282,14 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "diff",
     summary: "Diff two refs or worktree branches.",
-    synopsis: "oml diff <ref1> [ref2]",
+    synopsis: "copse diff <ref1> [ref2]",
     options: [
       { flag: "--stat", type: "boolean", alias: "-s", description: "Show diffstat summary only" },
       { flag: "--name-only", type: "boolean", alias: "-n", description: "Show only names of changed files" },
     ],
     examples: [
-      ["Show diffstat only", "oml diff feature/a feature/b --stat"],
-      ["List changed file names", "oml diff feature/a --name-only"],
+      ["Show diffstat only", "copse diff feature/a feature/b --stat"],
+      ["List changed file names", "copse diff feature/a --name-only"],
     ],
     notes: [
       "ref2 defaults to HEAD.",
@@ -300,7 +300,7 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "pin",
     summary: "Pin or unpin worktrees and inspect pin metadata.",
-    synopsis: "oml pin [branch]",
+    synopsis: "copse pin [branch]",
     options: [
       { flag: "--reason", type: "string", alias: "-", description: "Reason for pinning" },
       { flag: "--list", type: "boolean", alias: "-", description: "List pinned worktrees" },
@@ -308,12 +308,12 @@ const referenceSpecs: ReferenceSpec[] = [
       { flag: "--unpin", type: "boolean", alias: "-", description: "Unpin instead of pinning" },
     ],
     examples: [
-      ["Pin with a reason", 'oml pin feature/auth --reason "active sprint"'],
-      ["Unpin a branch", "oml pin feature/auth --unpin"],
+      ["Pin with a reason", 'copse pin feature/auth --reason "active sprint"'],
+      ["Unpin a branch", "copse pin feature/auth --unpin"],
     ],
     notes: [
-      "Pinned worktrees are excluded from oml clean.",
-      "Also invokable as oml unpin <branch>.",
+      "Pinned worktrees are excluded from copse clean.",
+      "Also invokable as copse unpin <branch>.",
       "Pin metadata stored in git internals.",
     ],
     configKeys: [],
@@ -321,15 +321,15 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "log",
     summary: "View or clear activity log events.",
-    synopsis: "oml log",
+    synopsis: "copse log",
     options: [
       { flag: "--limit", type: "number", alias: "-", description: "default 20, Show the last N entries" },
       { flag: "--json", type: "boolean", alias: "-j", description: "Output as JSON" },
       { flag: "--clear", type: "boolean", alias: "-", description: "Clear the activity log" },
     ],
     examples: [
-      ["Show recent entries", "oml log --limit 50"],
-      ["Clear the log", "oml log --clear"],
+      ["Show recent entries", "copse log --limit 50"],
+      ["Clear the log", "copse log --clear"],
     ],
     notes: [
       "Events: create (green), delete (red), switch (blue), rename (yellow), archive (magenta), import (cyan).",
@@ -340,7 +340,7 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "archive",
     summary: "Archive worktree changes as patch files before optional removal.",
-    synopsis: "oml archive [branch]",
+    synopsis: "copse archive [branch]",
     options: [
       { flag: "--yes", type: "boolean", alias: "-y", description: "Skip confirmation prompt" },
       { flag: "--keep", type: "boolean", alias: "-", description: "Archive without removing the worktree" },
@@ -348,11 +348,11 @@ const referenceSpecs: ReferenceSpec[] = [
       { flag: "--json", type: "boolean", alias: "-j", description: "Output as JSON with --list" },
     ],
     examples: [
-      ["Archive and remove", "oml archive feature/done --yes"],
-      ["List archive records", "oml archive --list --json"],
+      ["Archive and remove", "copse archive feature/done --yes"],
+      ["List archive records", "copse archive --list --json"],
     ],
     notes: [
-      "Archives stored as patch files in ~/.oml/archives/.",
+      "Archives stored as patch files in ~/.copse/archives/.",
       "Cannot archive main worktree.",
       "Runs postRemove hooks before removal unless --keep.",
     ],
@@ -361,13 +361,13 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "rename",
     summary: "Rename a worktree branch and optionally move its directory path.",
-    synopsis: "oml rename <old> <new>",
+    synopsis: "copse rename <old> <new>",
     options: [
       { flag: "--move-path", type: "boolean", alias: "-", description: "Also rename the worktree directory path" },
     ],
     examples: [
-      ["Rename a worktree branch", "oml rename feature/old feature/new"],
-      ["Rename branch and directory", "oml rename feature/old feature/new --move-path"],
+      ["Rename a worktree branch", "copse rename feature/old feature/new"],
+      ["Rename branch and directory", "copse rename feature/old feature/new --move-path"],
     ],
     notes: [
       "Cannot rename main worktree.",
@@ -379,15 +379,15 @@ const referenceSpecs: ReferenceSpec[] = [
   },
   {
     command: "clone",
-    summary: "Clone a repository and optionally apply oml template setup.",
-    synopsis: "oml clone <url> [path]",
+    summary: "Clone a repository and optionally apply copse template setup.",
+    synopsis: "copse clone <url> [path]",
     options: [
       { flag: "--template", type: "string", alias: "-t", description: "Apply a named template after cloning" },
-      { flag: "--init-config", type: "boolean", alias: "-", description: "default true, Initialize oml config after cloning" },
+      { flag: "--init-config", type: "boolean", alias: "-", description: "default true, Initialize copse config after cloning" },
     ],
     examples: [
-      ["Clone and initialize", "oml clone https://github.com/user/repo.git"],
-      ["Clone with template and no config init", "oml clone https://github.com/user/repo.git --template review --no-init-config"],
+      ["Clone and initialize", "copse clone https://github.com/user/repo.git"],
+      ["Clone with template and no config init", "copse clone https://github.com/user/repo.git --template review --no-init-config"],
     ],
     notes: [
       "Auto-detects target path from URL.",
@@ -398,15 +398,15 @@ const referenceSpecs: ReferenceSpec[] = [
   },
   {
     command: "import",
-    summary: "Import an existing git worktree into oml metadata.",
-    synopsis: "oml import <path>",
+    summary: "Import an existing git worktree into copse metadata.",
+    synopsis: "copse import <path>",
     options: [
       { flag: "--focus", type: "array", alias: "-f", description: "Focus packages for monorepo" },
       { flag: "--pin", type: "boolean", alias: "-", description: "Pin the worktree" },
     ],
     examples: [
-      ["Import a worktree path", "oml import /path/to/worktree"],
-      ["Import with focus and pin", "oml import /path/to/worktree --focus apps/web,apps/api --pin"],
+      ["Import a worktree path", "copse import /path/to/worktree"],
+      ["Import with focus and pin", "copse import /path/to/worktree --focus apps/web,apps/api --pin"],
     ],
     notes: [
       "Validates that path is a valid git worktree.",
@@ -418,21 +418,21 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "session",
     summary: "Manage tmux sessions for worktrees.",
-    synopsis: "oml session [branch-or-path]",
+    synopsis: "copse session [branch-or-path]",
     options: [
-      { flag: "--list", type: "boolean", alias: "-l", description: "List active oml tmux sessions" },
+      { flag: "--list", type: "boolean", alias: "-l", description: "List active copse tmux sessions" },
       { flag: "--kill", type: "boolean", alias: "-k", description: "Kill the session for the specified worktree" },
-      { flag: "--kill-all", type: "boolean", alias: "-", description: "Kill all oml tmux sessions" },
+      { flag: "--kill-all", type: "boolean", alias: "-", description: "Kill all copse tmux sessions" },
       { flag: "--layout", type: "string", alias: "-", description: "Use a named layout from config" },
       { flag: "--json", type: "boolean", alias: "-j", description: "Output in JSON format" },
     ],
     examples: [
-      ["Attach or create a session", "oml session feature/auth"],
-      ["List sessions as JSON", "oml session --list --json"],
+      ["Attach or create a session", "copse session feature/auth"],
+      ["List sessions as JSON", "copse session --list --json"],
     ],
     notes: [
       "Requires tmux.",
-      "Session naming: branch feat/auth-token → tmux session oml_feat-auth-token.",
+      "Session naming: branch feat/auth-token → tmux session cop_feat-auth-token.",
       "Supports layout templates with multiple windows.",
     ],
     configKeys: [
@@ -447,7 +447,7 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "config",
     summary: "Initialize, inspect, edit, validate, and manage profiles.",
-    synopsis: "oml config",
+    synopsis: "copse config",
     options: [
       { flag: "--init", type: "boolean", alias: "-", description: "Create default config file" },
       { flag: "--show", type: "boolean", alias: "-s", description: "Print current config as JSON" },
@@ -460,16 +460,16 @@ const referenceSpecs: ReferenceSpec[] = [
       { flag: "--delete", type: "boolean", alias: "-", description: "Delete the specified profile" },
     ],
     examples: [
-      ["Initialize config", "oml config --init"],
-      ["Activate a profile", "oml config --profile work --activate"],
+      ["Initialize config", "copse config --init"],
+      ["Activate a profile", "copse config --profile work --activate"],
     ],
-    notes: ["Config path: ~/.config/oh-my-lemontree/config.json.", "XDG-compliant."],
+    notes: ["Config path: ~/.config/copse/config.json.", "XDG-compliant."],
     configKeys: [],
   },
   {
     command: "open",
     summary: "Open the target or current worktree in an editor (focus-aware).",
-    synopsis: "oml open [branch-or-path]",
+    synopsis: "copse open [branch-or-path]",
     options: [
       { flag: "--editor", type: "string", alias: "-e", description: "Editor command to use" },
       { flag: "--focus", type: "string", alias: "-f", description: "Open a specific focus path (must match an existing focus entry)" },
@@ -477,10 +477,10 @@ const referenceSpecs: ReferenceSpec[] = [
       { flag: "--list-editors", type: "boolean", alias: "-", description: "List detected editors" },
     ],
     examples: [
-      ["Open current worktree", "oml open"],
-      ["Open with specific editor", "oml open feature/auth --editor nvim"],
-      ["Open a specific focus path", "oml open feature/auth --focus apps/web"],
-      ["Force open the worktree root", "oml open feature/auth --root"],
+      ["Open current worktree", "copse open"],
+      ["Open with specific editor", "copse open feature/auth --editor nvim"],
+      ["Open a specific focus path", "copse open feature/auth --focus apps/web"],
+      ["Force open the worktree root", "copse open feature/auth --root"],
     ],
     notes: [
       "Auto-detects editors: code, cursor, vim, nvim, emacs, nano, subl, zed, idea, webstorm.",
@@ -493,32 +493,32 @@ const referenceSpecs: ReferenceSpec[] = [
   {
     command: "shell-init",
     summary: "Generate shell integration wrappers and completions.",
-    synopsis: "oml shell-init [shell]",
+    synopsis: "copse shell-init [shell]",
     options: [
       { flag: "--completions", type: "string", alias: "-", description: "Generate shell completions: bash, zsh, fish" },
     ],
     examples: [
-      ["Generate shell wrapper", "oml shell-init zsh"],
-      ["Generate completion script", "oml shell-init --completions fish"],
+      ["Generate shell wrapper", "copse shell-init zsh"],
+      ["Generate completion script", "copse shell-init --completions fish"],
     ],
     notes: [
       "Shell arg is auto-detected if omitted.",
-      "Generates wrapper function for oml switch to work with shell cd.",
+      "Generates wrapper function for copse switch to work with shell cd.",
       "Supports bash, zsh, fish.",
     ],
     configKeys: [],
   },
   {
     command: "init",
-    summary: "Initialize oml config or install AI agent skill files.",
-    synopsis: "oml init",
+    summary: "Initialize copse config or install AI agent skill files.",
+    synopsis: "copse init",
     options: [
       { flag: "--skill", type: "string", alias: "-s", description: "Install AI agent skill: claude-code, codex, opencode" },
     ],
     examples: [
-      ["Initialize config", "oml init"],
-      ["Install Claude Code skill", "oml init --skill claude-code"],
-      ["Install Codex skill", "oml init --skill codex"],
+      ["Initialize config", "copse init"],
+      ["Install Claude Code skill", "copse init --skill claude-code"],
+      ["Install Codex skill", "copse init --skill codex"],
     ],
     notes: ["Without --skill, reuses config initialization and creates only config.json.", "With --skill, installs or updates SKILL.md + references/ directory.", "Idempotent — running again updates existing files without breaking existing setup."],
     configKeys: [],
@@ -538,82 +538,82 @@ function generateOptionsTable(options: OptionSpec[]): string {
 
 export function generateSkillContent(): string {
   const commandRows = commandOverview.map((entry) => `| \`${entry.command}\` | ${entry.aliases} | ${entry.description} |`);
-  const references = referenceSpecs.map((spec) => `- [\`oml ${spec.command}\`](references/${spec.command}.md)`);
+  const references = referenceSpecs.map((spec) => `- [\`copse ${spec.command}\`](references/${spec.command}.md)`);
 
   return [
     "---",
-    "name: oml",
+    "name: copse",
     `description: ${SKILL_DESCRIPTION}`,
     "metadata:",
     "  author: getsolaris",
     '  version: "1.0.0"',
     "---",
     "",
-    "# oh-my-lemontree (oml)",
+    "# copse (copse)",
     "",
     "## Quick Start",
     "",
     "### Create a feature worktree",
     "",
     "```bash",
-    "oml add feature/my-feature --base main",
+    "copse add feature/my-feature --base main",
     "```",
     "",
     "### List and check status",
     "",
     "```bash",
-    "oml list",
-    "oml status",
+    "copse list",
+    "copse status",
     "```",
     "",
     "### Clean up merged worktrees",
     "",
     "```bash",
-    "oml clean --dry-run",
-    "oml clean --yes",
+    "copse clean --dry-run",
+    "copse clean --yes",
     "```",
     "",
     "### Run commands across worktrees",
     "",
     "```bash",
-    'oml exec "bun test" --parallel',
+    'copse exec "bun test" --parallel',
     "```",
     "",
     "### Review a GitHub PR",
     "",
     "```bash",
-    "oml add pr-review --pr 42",
-    "oml open pr-review",
+    "copse add pr-review --pr 42",
+    "copse open pr-review",
     "```",
     "",
     "### Use templates",
     "",
     "```bash",
     "# Create worktree with predefined template (hooks, base branch, settings)",
-    "oml add feature/new --template frontend",
+    "copse add feature/new --template frontend",
     "```",
     "",
     "### Tmux session management",
     "",
     "```bash",
     "# Create worktree with tmux session",
-    "oml add feature/api --session --layout dev",
+    "copse add feature/api --session --layout dev",
     "",
     "# List active sessions",
-    "oml session --list",
+    "copse session --list",
     "",
     "# Attach to existing session",
-    "oml session feature/api",
+    "copse session feature/api",
     "```",
     "",
     "### Shell integration setup",
     "",
     "```bash",
     "# Add to ~/.zshrc or ~/.bashrc",
-    "eval \"$(oml shell-init)\"",
+    "eval \"$(copse shell-init)\"",
     "",
     "# Then switch worktrees with cd",
-    "oml switch feature/auth",
+    "copse switch feature/auth",
     "```",
     "",
     "## Command Overview",
@@ -627,18 +627,18 @@ export function generateSkillContent(): string {
     "Use focus paths to target packages and trigger matching monorepo hooks.",
     "",
     "```bash",
-    "oml add feature/web-auth --focus apps/web,apps/api",
-    "oml import /path/to/worktree --focus packages/core --pin",
-    "oml list --json",
+    "copse add feature/web-auth --focus apps/web,apps/api",
+    "copse import /path/to/worktree --focus packages/core --pin",
+    "copse list --json",
     "```",
     "",
     "Focus accepts comma-separated values, space-separated values, or repeated --focus flags.",
     "",
     "## Configuration",
     "",
-    "- Config path: `~/.config/oh-my-lemontree/config.json`",
+    "- Config path: `~/.config/copse/config.json`",
     "- Use `--json` output flags for scripting and automation",
-    "- Environment variables in `oml exec`: `OML_BRANCH`, `OML_WORKTREE_PATH`, `OML_REPO_PATH`",
+    "- Environment variables in `copse exec`: `COPSE_BRANCH`, `COPSE_WORKTREE_PATH`, `COPSE_REPO_PATH`",
     "",
     "## Command Reference",
     "",
@@ -654,7 +654,7 @@ export function generateReferenceFiles(): Map<string, string> {
   const files = new Map<string, string>();
   for (const spec of referenceSpecs) {
     const lines = [
-      `# oml ${spec.command}`,
+      `# copse ${spec.command}`,
       "",
       spec.summary,
       "",
@@ -686,7 +686,7 @@ export function generateReferenceFiles(): Map<string, string> {
         ? [
             "## Configuration",
             "",
-            "Related config keys in `~/.config/oh-my-lemontree/config.json`:",
+            "Related config keys in `~/.config/copse/config.json`:",
             "",
             ...spec.configKeys.map((key) => `- ${key}`),
             "",
@@ -706,7 +706,7 @@ function generateConfigSchemaContent(): string {
   return [
     "# Configuration Schema",
     "",
-    "Config file path: `~/.config/oh-my-lemontree/config.json`",
+    "Config file path: `~/.config/copse/config.json`",
     "",
     "## Minimal Example",
     "",
@@ -714,7 +714,7 @@ function generateConfigSchemaContent(): string {
     "{",
     '  "version": 1,',
     '  "defaults": {',
-    '    "worktreeDir": "~/.oml/worktrees/{repo}-{branch}",',
+    '    "worktreeDir": "~/.copse/worktrees/{repo}-{branch}",',
     '    "copyFiles": [".env", ".env.local"],',
     '    "linkFiles": ["node_modules"],',
     '    "postCreate": ["bun install"],',
@@ -730,7 +730,7 @@ function generateConfigSchemaContent(): string {
     "{",
     '  "version": 1,',
     '  "defaults": {',
-    '    "worktreeDir": "~/.oml/worktrees/{repo}-{branch}",',
+    '    "worktreeDir": "~/.copse/worktrees/{repo}-{branch}",',
     '    "copyFiles": [".env"],',
     '    "linkFiles": [],',
     '    "postCreate": ["bun install"],',
@@ -771,7 +771,7 @@ function generateConfigSchemaContent(): string {
     '    "enabled": true,',
     '    "autoCreate": false,',
     '    "autoKill": true,',
-    '    "prefix": "oml",',
+    '    "prefix": "copse",',
     '    "defaultLayout": "dev",',
     '    "layouts": {',
     '      "dev": {',
@@ -798,7 +798,7 @@ function generateConfigSchemaContent(): string {
     "",
     "| Key | Type | Default | Description |",
     "|-----|------|---------|-------------|",
-    "| `worktreeDir` | string | `~/.oml/worktrees/{repo}-{branch}` | Directory pattern. Supports `{repo}` and `{branch}` variables |",
+    "| `worktreeDir` | string | `~/.copse/worktrees/{repo}-{branch}` | Directory pattern. Supports `{repo}` and `{branch}` variables |",
     "| `copyFiles` | string[] | `[]` | Files to copy from main worktree on creation |",
     "| `linkFiles` | string[] | `[]` | Files to symlink from main worktree on creation |",
     "| `postCreate` | string[] | `[]` | Shell commands to run after worktree creation |",
@@ -838,7 +838,7 @@ function generateConfigSchemaContent(): string {
     "",
     "### templates",
     "",
-    "Named presets applied via `oml add --template <name>` or `oml clone --template <name>`.",
+    "Named presets applied via `copse add --template <name>` or `copse clone --template <name>`.",
     "",
     "| Key | Type | Description |",
     "|-----|------|-------------|",
@@ -855,9 +855,9 @@ function generateConfigSchemaContent(): string {
     "| Key | Type | Default | Description |",
     "|-----|------|---------|-------------|",
     "| `enabled` | boolean | `false` | Enable tmux session integration |",
-    "| `autoCreate` | boolean | `false` | Auto-create session on `oml add` |",
-    "| `autoKill` | boolean | `false` | Auto-kill session on `oml remove` |",
-    "| `prefix` | string | `oml` | Prefix for tmux session names |",
+    "| `autoCreate` | boolean | `false` | Auto-create session on `copse add` |",
+    "| `autoKill` | boolean | `false` | Auto-kill session on `copse remove` |",
+    "| `prefix` | string | `copse` | Prefix for tmux session names |",
     "| `defaultLayout` | string | - | Default layout name |",
     "| `layouts.<name>.windows[]` | object[] | - | Window definitions |",
     "| `layouts.<name>.windows[].name` | string | **Required.** | Window name |",

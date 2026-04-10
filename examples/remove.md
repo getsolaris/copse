@@ -1,12 +1,12 @@
-# oml remove
+# copse remove
 
 Remove a worktree.
 
 ## Usage
 
 ```
-oml remove <branch-or-path>
-oml rm <branch-or-path>
+copse remove <branch-or-path>
+copse rm <branch-or-path>
 ```
 
 ## Options
@@ -21,29 +21,29 @@ oml rm <branch-or-path>
 ### Remove a worktree by branch name
 
 ```bash
-oml remove feature/login
+copse remove feature/login
 ```
 
 ### Use the short alias
 
 ```bash
-oml rm feature/login
+copse rm feature/login
 ```
 
 ### Force remove a worktree with uncommitted changes
 
 ```bash
-oml rm feature/experiment -f
+copse rm feature/experiment -f
 ```
 
 ### Skip the confirmation prompt
 
 ```bash
-oml rm feature/old-branch -y
+copse rm feature/old-branch -y
 ```
 
 ### Force remove without any prompts
 
 ```bash
-oml rm feature/abandoned -f -y
+copse rm feature/abandoned -f -y
 ```

@@ -9,7 +9,7 @@ import type { SkillPlatform } from "../../core/skill-templates.ts";
 
 const cmd: CommandModule = {
   command: "init",
-  describe: "Initialize config or install oml integrations",
+  describe: "Initialize config or install copse integrations",
   builder: (yargs) =>
     yargs.option("skill", {
       type: "string",

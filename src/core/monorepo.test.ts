@@ -13,13 +13,13 @@ afterEach(cleanupTempDirs);
 
 describe("detectMonorepoTools", () => {
   it("returns empty when no config files found", () => {
-    const dir = createTempDir("oml-mono-empty-");
+    const dir = createTempDir("copse-mono-empty-");
     const results = detectMonorepoTools(dir);
     expect(results).toHaveLength(0);
   });
 
   it("detects pnpm workspace", () => {
-    const dir = createTempDir("oml-mono-pnpm-");
+    const dir = createTempDir("copse-mono-pnpm-");
     writeFileSync(join(dir, "pnpm-workspace.yaml"), 'packages:\n  - "packages/*"\n');
     mkdirSync(join(dir, "packages", "ui"), { recursive: true });
     mkdirSync(join(dir, "packages", "utils"), { recursive: true });
@@ -32,7 +32,7 @@ describe("detectMonorepoTools", () => {
   });
 
   it("detects nx workspace via project.json files", () => {
-    const dir = createTempDir("oml-mono-nx-");
+    const dir = createTempDir("copse-mono-nx-");
     writeFileSync(join(dir, "nx.json"), JSON.stringify({ version: 2 }));
     mkdirSync(join(dir, "apps", "web"), { recursive: true });
     writeFileSync(join(dir, "apps", "web", "project.json"), JSON.stringify({ name: "web" }));
@@ -44,7 +44,7 @@ describe("detectMonorepoTools", () => {
   });
 
   it("detects lerna workspace", () => {
-    const dir = createTempDir("oml-mono-lerna-");
+    const dir = createTempDir("copse-mono-lerna-");
     writeFileSync(join(dir, "lerna.json"), JSON.stringify({ packages: ["packages/*"] }));
     mkdirSync(join(dir, "packages", "core"), { recursive: true });
 
@@ -55,7 +55,7 @@ describe("detectMonorepoTools", () => {
   });
 
   it("detects npm workspaces in package.json", () => {
-    const dir = createTempDir("oml-mono-npm-");
+    const dir = createTempDir("copse-mono-npm-");
     writeFileSync(join(dir, "package.json"), JSON.stringify({ workspaces: ["packages/*"] }));
     mkdirSync(join(dir, "packages", "shared"), { recursive: true });
 
@@ -66,7 +66,7 @@ describe("detectMonorepoTools", () => {
   });
 
   it("detects yarn workspaces when yarn.lock present", () => {
-    const dir = createTempDir("oml-mono-yarn-");
+    const dir = createTempDir("copse-mono-yarn-");
     writeFileSync(join(dir, "package.json"), JSON.stringify({ workspaces: ["packages/*"] }));
     writeFileSync(join(dir, "yarn.lock"), "");
     mkdirSync(join(dir, "packages", "lib"), { recursive: true });
@@ -78,7 +78,7 @@ describe("detectMonorepoTools", () => {
   });
 
   it("detects turbo workspace with package.json workspaces", () => {
-    const dir = createTempDir("oml-mono-turbo-");
+    const dir = createTempDir("copse-mono-turbo-");
     writeFileSync(join(dir, "turbo.json"), JSON.stringify({ pipeline: {} }));
     writeFileSync(join(dir, "package.json"), JSON.stringify({ workspaces: ["apps/*"] }));
     mkdirSync(join(dir, "apps", "web"), { recursive: true });
@@ -90,7 +90,7 @@ describe("detectMonorepoTools", () => {
   });
 
   it("detects multiple tools in same repo", () => {
-    const dir = createTempDir("oml-mono-multi-");
+    const dir = createTempDir("copse-mono-multi-");
     writeFileSync(join(dir, "pnpm-workspace.yaml"), 'packages:\n  - "packages/*"\n');
     writeFileSync(join(dir, "turbo.json"), JSON.stringify({}));
     writeFileSync(join(dir, "package.json"), JSON.stringify({ workspaces: ["packages/*"] }));
@@ -105,7 +105,7 @@ describe("detectMonorepoTools", () => {
 
 describe("expandPackageGlobs", () => {
   it("expands single-level glob", () => {
-    const dir = createTempDir("oml-glob-");
+    const dir = createTempDir("copse-glob-");
     mkdirSync(join(dir, "apps", "web"), { recursive: true });
     mkdirSync(join(dir, "apps", "api"), { recursive: true });
 
@@ -115,7 +115,7 @@ describe("expandPackageGlobs", () => {
   });
 
   it("expands two-level glob for msa-style structure", () => {
-    const dir = createTempDir("oml-glob-2-");
+    const dir = createTempDir("copse-glob-2-");
     mkdirSync(join(dir, "apps", "core", "auth"), { recursive: true });
     mkdirSync(join(dir, "apps", "domain", "coupon"), { recursive: true });
 
@@ -125,13 +125,13 @@ describe("expandPackageGlobs", () => {
   });
 
   it("returns empty for non-matching patterns", () => {
-    const dir = createTempDir("oml-glob-empty-");
+    const dir = createTempDir("copse-glob-empty-");
     const result = expandPackageGlobs(dir, ["nonexistent/*"]);
     expect(result).toHaveLength(0);
   });
 
   it("returns sorted results", () => {
-    const dir = createTempDir("oml-glob-sort-");
+    const dir = createTempDir("copse-glob-sort-");
     mkdirSync(join(dir, "packages", "zlib"), { recursive: true });
     mkdirSync(join(dir, "packages", "alpha"), { recursive: true });
 
@@ -141,7 +141,7 @@ describe("expandPackageGlobs", () => {
   });
 
   it("handles multiple patterns", () => {
-    const dir = createTempDir("oml-glob-multi-");
+    const dir = createTempDir("copse-glob-multi-");
     mkdirSync(join(dir, "apps", "web"), { recursive: true });
     mkdirSync(join(dir, "packages", "ui"), { recursive: true });
 
@@ -151,7 +151,7 @@ describe("expandPackageGlobs", () => {
   });
 
   it("skips files, only returns directories", () => {
-    const dir = createTempDir("oml-glob-files-");
+    const dir = createTempDir("copse-glob-files-");
     mkdirSync(join(dir, "packages", "ui"), { recursive: true });
     writeFileSync(join(dir, "packages", "README.md"), "# readme");
 
@@ -163,7 +163,7 @@ describe("expandPackageGlobs", () => {
 
 describe("discoverPackages", () => {
   it("combines auto-detected and extra patterns (msa-style)", () => {
-    const dir = createTempDir("oml-discover-");
+    const dir = createTempDir("copse-discover-");
     writeFileSync(join(dir, "pnpm-workspace.yaml"), 'packages:\n  - "packages/*"\n');
     mkdirSync(join(dir, "packages", "ui"), { recursive: true });
     mkdirSync(join(dir, "apps", "core", "auth"), { recursive: true });
@@ -176,7 +176,7 @@ describe("discoverPackages", () => {
   });
 
   it("deduplicates when same path in auto-detect and extra", () => {
-    const dir = createTempDir("oml-dedup-");
+    const dir = createTempDir("copse-dedup-");
     writeFileSync(join(dir, "pnpm-workspace.yaml"), 'packages:\n  - "packages/*"\n');
     mkdirSync(join(dir, "packages", "ui"), { recursive: true });
 
@@ -186,7 +186,7 @@ describe("discoverPackages", () => {
   });
 
   it("returns detected results separately", () => {
-    const dir = createTempDir("oml-discover-det-");
+    const dir = createTempDir("copse-discover-det-");
     writeFileSync(join(dir, "pnpm-workspace.yaml"), 'packages:\n  - "packages/*"\n');
     mkdirSync(join(dir, "packages", "ui"), { recursive: true });
 
@@ -197,7 +197,7 @@ describe("discoverPackages", () => {
   });
 
   it("returns extra patterns separately", () => {
-    const dir = createTempDir("oml-discover-extra-");
+    const dir = createTempDir("copse-discover-extra-");
     mkdirSync(join(dir, "services", "api"), { recursive: true });
 
     const result = discoverPackages(dir, ["services/*"]);
@@ -209,7 +209,7 @@ describe("discoverPackages", () => {
 
 describe("validateFocusPaths", () => {
   it("separates valid from invalid paths", () => {
-    const dir = createTempDir("oml-validate-");
+    const dir = createTempDir("copse-validate-");
     mkdirSync(join(dir, "apps", "web"), { recursive: true });
 
     const result = validateFocusPaths(dir, ["apps/web", "apps/nonexistent"]);
@@ -218,7 +218,7 @@ describe("validateFocusPaths", () => {
   });
 
   it("returns all valid when all paths exist", () => {
-    const dir = createTempDir("oml-validate-all-");
+    const dir = createTempDir("copse-validate-all-");
     mkdirSync(join(dir, "packages", "ui"), { recursive: true });
 
     const result = validateFocusPaths(dir, ["packages/ui"]);
@@ -227,14 +227,14 @@ describe("validateFocusPaths", () => {
   });
 
   it("marks empty strings as invalid", () => {
-    const dir = createTempDir("oml-validate-empty-");
+    const dir = createTempDir("copse-validate-empty-");
     const result = validateFocusPaths(dir, ["", "  "]);
     expect(result.valid).toHaveLength(0);
     expect(result.invalid).toHaveLength(2);
   });
 
   it("marks files (not directories) as invalid", () => {
-    const dir = createTempDir("oml-validate-file-");
+    const dir = createTempDir("copse-validate-file-");
     writeFileSync(join(dir, "somefile.txt"), "content");
 
     const result = validateFocusPaths(dir, ["somefile.txt"]);

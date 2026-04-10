@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { executeHooks, HookError, HookTimeoutError } from "./hooks";
 import { cleanupTempDirs, createTempDir } from "./test-helpers";
 
-const cwd = createTempDir("oml-hooks-");
+const cwd = createTempDir("copse-hooks-");
 
 afterEach(cleanupTempDirs);
 
@@ -54,9 +54,9 @@ describe("executeHooks", () => {
 
   it("passes environment variables to the command", async () => {
     const lines: string[] = [];
-    await executeHooks(["echo $OML_BRANCH"], {
+    await executeHooks(["echo $COPSE_BRANCH"], {
       cwd,
-      env: { OML_BRANCH: "main" },
+      env: { COPSE_BRANCH: "main" },
       onOutput: (line) => lines.push(line),
     });
     expect(lines.some((l) => l.includes("main"))).toBe(true);

@@ -111,9 +111,9 @@ const cmd: CommandModule = {
           stderr: "pipe",
           env: {
             ...(Bun as any).env,
-            OML_BRANCH: wt.branch ?? "",
-            OML_WORKTREE_PATH: wt.path,
-            OML_REPO_PATH: wt.repoPath,
+            COPSE_BRANCH: wt.branch ?? "",
+            COPSE_WORKTREE_PATH: wt.path,
+            COPSE_REPO_PATH: wt.repoPath,
           },
         });
 

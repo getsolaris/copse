@@ -1,20 +1,20 @@
-# oml session
+# copse session
 
 Manage tmux sessions for worktrees. Requires tmux.
 
 ## Usage
 
 ```
-oml session [branch-or-path]
+copse session [branch-or-path]
 ```
 
 ## Options
 
 | Flag | Alias | Description |
 |------|-------|-------------|
-| `--list` | `-l` | List active oml tmux sessions |
+| `--list` | `-l` | List active copse tmux sessions |
 | `--kill` | `-k` | Kill the session for the specified worktree |
-| `--kill-all` | | Kill all oml tmux sessions |
+| `--kill-all` | | Kill all copse tmux sessions |
 | `--layout` | | Use a named layout from config |
 | `--json` | `-j` | Output in JSON format |
 
@@ -23,7 +23,7 @@ oml session [branch-or-path]
 ### Open a session for a worktree
 
 ```bash
-oml session feature/auth
+copse session feature/auth
 ```
 
 If a session exists, attaches to it. Otherwise creates one and attaches.
@@ -31,46 +31,46 @@ If a session exists, attaches to it. Otherwise creates one and attaches.
 ### Open with a specific layout
 
 ```bash
-oml session feature/auth --layout api
+copse session feature/auth --layout api
 ```
 
 ### List active sessions
 
 ```bash
-oml session --list
+copse session --list
 ```
 
 ```
 Active sessions (3):
 
-  oml_feat-auth-token  feat/auth-token  3 windows [api]
-  oml_feat-user-api    feat/user-api    3 windows [api] (attached)
-  oml_fix-gateway      fix/gateway      1 windows
+  copse_feat-auth-token  feat/auth-token  3 windows [api]
+  copse_feat-user-api    feat/user-api    3 windows [api] (attached)
+  copse_fix-gateway      fix/gateway      1 windows
 ```
 
 ### List as JSON
 
 ```bash
-oml session --list --json
+copse session --list --json
 ```
 
 ### Kill a session
 
 ```bash
-oml session feature/auth --kill
+copse session feature/auth --kill
 ```
 
-### Kill all oml sessions
+### Kill all copse sessions
 
 ```bash
-oml session --kill-all
+copse session --kill-all
 ```
 
 ### Create worktree with session
 
 ```bash
-oml add feature/login --session
-oml add feature/login --session --layout api
+copse add feature/login --session
+copse add feature/login --session --layout api
 ```
 
 ### Auto-create/kill via config
@@ -94,9 +94,9 @@ oml add feature/login --session --layout api
 }
 ```
 
-With `autoCreate: true`, every `oml add` automatically creates a tmux session.
-With `autoKill: true`, every `oml remove` automatically kills the associated session.
+With `autoCreate: true`, every `copse add` automatically creates a tmux session.
+With `autoKill: true`, every `copse remove` automatically kills the associated session.
 
 ### Auto-switch in tmux
 
-With `sessions.enabled: true`, running `oml switch` inside tmux automatically switches to the target worktree's tmux session instead of outputting a `cd` command.
+With `sessions.enabled: true`, running `copse switch` inside tmux automatically switches to the target worktree's tmux session instead of outputting a `cd` command.

@@ -1,12 +1,12 @@
-# oml list
+# copse list
 
 List all worktrees with their status.
 
 ## Usage
 
 ```
-oml list
-oml ls
+copse list
+copse ls
 ```
 
 ## Options
@@ -22,35 +22,35 @@ oml ls
 ### List worktrees in the current repo
 
 ```bash
-oml list
+copse list
 ```
 
 ### Use the short alias
 
 ```bash
-oml ls
+copse ls
 ```
 
 ### Output as JSON (useful for scripting)
 
 ```bash
-oml list --json
+copse list --json
 ```
 
 ### Machine-readable output
 
 ```bash
-oml list --porcelain
+copse list --porcelain
 ```
 
 ### List worktrees across all configured repos
 
 ```bash
-oml list --all
+copse list --all
 ```
 
 ### Pipe JSON output to jq for filtering
 
 ```bash
-oml list --json | jq '.[] | select(.dirty == true)'
+copse list --json | jq '.[] | select(.dirty == true)'
 ```

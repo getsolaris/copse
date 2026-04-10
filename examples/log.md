@@ -1,12 +1,12 @@
-# oml log
+# copse log
 
 Show the worktree activity log. Tracks events like create, delete, switch, rename, archive, and import.
 
 ## Usage
 
 ```
-oml log
-oml logs
+copse log
+copse logs
 ```
 
 ## Options
@@ -22,35 +22,35 @@ oml logs
 ### Show recent activity
 
 ```bash
-oml log
+copse log
 ```
 
 ### Show the last 5 entries
 
 ```bash
-oml log --limit 5
+copse log --limit 5
 ```
 
 ### Show the last 50 entries
 
 ```bash
-oml log --limit 50
+copse log --limit 50
 ```
 
 ### Output as JSON
 
 ```bash
-oml log --json
+copse log --json
 ```
 
 ### Clear the activity log
 
 ```bash
-oml log --clear
+copse log --clear
 ```
 
 ### Use the alias
 
 ```bash
-oml logs
+copse logs
 ```

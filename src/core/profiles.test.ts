@@ -26,9 +26,9 @@ const originalXdgConfigHome = Bun.env.XDG_CONFIG_HOME;
 const originalHome = Bun.env.HOME;
 
 function setupTempConfig(initial: ProfileConfig): string {
-  const dir = createTempDir("oml-profiles-");
+  const dir = createTempDir("copse-profiles-");
   const xdgConfigHome = join(dir, "xdg");
-  const configDir = join(xdgConfigHome, "oh-my-lemontree");
+  const configDir = join(xdgConfigHome, "copse");
   const configPath = join(configDir, "config.json");
 
   mkdirSync(configDir, { recursive: true });

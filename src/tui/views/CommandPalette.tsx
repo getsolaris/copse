@@ -137,7 +137,7 @@ export function CommandPalette() {
     {
       id: "quit",
       label: "Quit",
-      description: "Exit oh-my-lemontree",
+      description: "Exit copse",
       action: () => process.exit(0),
     },
   ]);

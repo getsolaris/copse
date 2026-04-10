@@ -3,6 +3,8 @@
 Use this file as a convenience reference. Re-check the registry before large smoke runs.
 Trust the source code over this file if they diverge.
 
+**Note:** All references to `oml` should be replaced with `copse`, and `oh-my-lemontree` with `copse`.
+
 ## TUI Startup
 
 - `bun run src/index.ts`
@@ -30,7 +32,7 @@ Trust the source code over this file if they diverge.
 ```bash
 # --init: creates config file
 bun run src/index.ts config --init
-# expect: exit 0, config file created at $XDG_CONFIG_HOME/oh-my-lemontree/config.json
+# expect: exit 0, config file created at $XDG_CONFIG_HOME/copse/config.json
 
 # --path: prints config path
 bun run src/index.ts config --path
@@ -82,7 +84,7 @@ bun run src/index.ts config --delete
 ```bash
 # no flags: creates config.json
 bun run src/index.ts init
-# expect: exit 0, config.json created at $XDG_CONFIG_HOME/oh-my-lemontree/config.json
+# expect: exit 0, config.json created at $XDG_CONFIG_HOME/copse/config.json
 
 # --skill claude-code: installs claude-code skill
 bun run src/index.ts init --skill claude-code
@@ -562,56 +564,8 @@ bun run src/index.ts diff feature/does-not-exist
 **Test invocations:**
 
 ```bash
-# basic exec
-bun run src/index.ts exec "echo hello"
-# expect: exit 0, "hello" printed for each worktree
-
-# --all
-bun run src/index.ts exec "echo hello" --all
-# expect: exit 0, runs across all configured repos
-
-# -a alias
-bun run src/index.ts exec "echo hello" -a
-# expect: exit 0, same as --all
-
-# --dirty: only dirty worktrees
-bun run src/index.ts exec "git status" --dirty
-# expect: exit 0, runs only in worktrees with uncommitted changes
-
-# --clean: only clean worktrees
-bun run src/index.ts exec "git status" --clean
-# expect: exit 0, runs only in clean worktrees
-
-# --behind: only worktrees behind upstream
-bun run src/index.ts exec "git pull" --behind
-# expect: exit 0, runs only in worktrees behind their upstream
-
-# --parallel
-bun run src/index.ts exec "echo hello" --parallel
-# expect: exit 0, all worktrees run concurrently
-
-# -p alias
-bun run src/index.ts exec "echo hello" -p
-# expect: exit 0, same as --parallel
-
-# --json
-bun run src/index.ts exec "echo hello" --json
-# expect: exit 0, valid JSON array with per-worktree results
-
-# -j alias
-bun run src/index.ts exec "echo hello" -j
-# expect: exit 0, same as --json
-
-# combined: --parallel --json
-bun run src/index.ts exec "echo hello" --parallel --json
-# expect: exit 0, JSON output from parallel execution
-
-# negative: --dirty and --clean together
-bun run src/index.ts exec "echo hello" --dirty --clean
-# expect: exit 1 or empty result (mutually exclusive filters)
-
 # env vars available in command
-bun run src/index.ts exec "echo \$OML_BRANCH"
+bun run src/index.ts exec "echo \$COPSE_BRANCH"
 # expect: exit 0, branch name printed for each worktree
 ```
 
@@ -888,7 +842,7 @@ bun run src/index.ts import $TMPDIR/not-a-worktree
 ```bash
 # archive and remove
 bun run src/index.ts archive feature/smoke-test --yes
-# expect: exit 0, patch file created in ~/.oml/archives/, worktree removed
+# expect: exit 0, patch file created in ~/.copse/archives/, worktree removed
 
 # -y alias
 bun run src/index.ts archive feature/smoke-test -y
@@ -929,7 +883,7 @@ bun run src/index.ts archive feature/smoke-test < /dev/null
 |------|------|-------|-------------|
 | `--list` | boolean | `-l` | List active sessions |
 | `--kill` | boolean | `-k` | Kill session for given worktree |
-| `--kill-all` | boolean | — | Kill all oml-managed sessions |
+| `--kill-all` | boolean | — | Kill all copse-managed sessions |
 | `--layout` | string | — | Layout name from config |
 | `--json` | boolean | `-j` | JSON output |
 
@@ -946,7 +900,7 @@ bun run src/index.ts ss feature/smoke-test
 
 # --list: list active sessions
 bun run src/index.ts session --list
-# expect: exit 0, lists oml-managed tmux sessions
+# expect: exit 0, lists copse-managed tmux sessions
 
 # -l alias
 bun run src/index.ts session -l
@@ -970,7 +924,7 @@ bun run src/index.ts session feature/smoke-test -k
 
 # --kill-all: kill all oml sessions
 bun run src/index.ts session --kill-all
-# expect: exit 0, all oml-prefixed tmux sessions killed
+# expect: exit 0, all copse-prefixed tmux sessions killed
 
 # --layout: use named layout
 bun run src/index.ts session feature/smoke-test --layout dev

@@ -1,11 +1,11 @@
-# oml rename
+# copse rename
 
 Rename a worktree's branch.
 
 ## Usage
 
 ```
-oml rename <old> <new>
+copse rename <old> <new>
 ```
 
 ## Options
@@ -19,11 +19,11 @@ oml rename <old> <new>
 ### Rename a branch
 
 ```bash
-oml rename feature/old-name feature/new-name
+copse rename feature/old-name feature/new-name
 ```
 
 ### Rename a branch and move the directory
 
 ```bash
-oml rename feature/login feature/authentication --move-path
+copse rename feature/login feature/authentication --move-path
 ```

@@ -1,13 +1,13 @@
-# oml config
+# copse config
 
-Manage oh-my-lemontree configuration.
+Manage copse configuration.
 
-Configuration is stored at `~/.config/oh-my-lemontree/config.json` (XDG-compliant).
+Configuration is stored at `~/.config/copse/config.json` (XDG-compliant).
 
 ## Usage
 
 ```
-oml config [flags]
+copse config [flags]
 ```
 
 ## Options
@@ -29,47 +29,47 @@ oml config [flags]
 ### Create a default config file
 
 ```bash
-oml config --init
+copse config --init
 ```
 
 ### Show current configuration
 
 ```bash
-oml config --show
+copse config --show
 ```
 
 ### Open config in your editor
 
 ```bash
-oml config --edit
+copse config --edit
 ```
 
 ### Print the config file path
 
 ```bash
-oml config --path
+copse config --path
 ```
 
 ### Validate your config
 
 ```bash
-oml config --validate
+copse config --validate
 ```
 
 ### List available profiles
 
 ```bash
-oml config --profiles
+copse config --profiles
 ```
 
 ### Activate a profile
 
 ```bash
-oml config --profile work --activate
+copse config --profile work --activate
 ```
 
 ### Delete a profile
 
 ```bash
-oml config --profile old-setup --delete
+copse config --profile old-setup --delete
 ```

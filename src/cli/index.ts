@@ -23,7 +23,7 @@ if (!isInitCommand) {
   try {
     const ensured = ensureConfigInitialized();
     if (ensured.created && process.stdout.isTTY) {
-      process.stderr.write(`oml: created default config at ${ensured.path}\n`);
+      process.stderr.write(`copse: created default config at ${ensured.path}\n`);
     }
   } catch {}
 }
@@ -58,8 +58,8 @@ if (process.argv.length === 2) {
 
   yargs(hideBin(process.argv))
     .locale("en")
-    .scriptName("oml")
-    .version(`oh-my-lemontree v${pkg.version}`)
+    .scriptName("copse")
+    .version(`copse v${pkg.version}`)
     .alias("version", "v")
     .help("help")
     .alias("help", "h")

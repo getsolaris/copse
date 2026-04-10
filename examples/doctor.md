@@ -1,4 +1,4 @@
-# oml doctor
+# copse doctor
 
 Check worktree health and diagnose issues.
 
@@ -7,7 +7,7 @@ Runs checks for git version, config validity, stale worktrees, orphaned director
 ## Usage
 
 ```
-oml doctor
+copse doctor
 ```
 
 ## Options
@@ -22,17 +22,17 @@ oml doctor
 ### Run all health checks
 
 ```bash
-oml doctor
+copse doctor
 ```
 
 ### Auto-fix detected issues
 
 ```bash
-oml doctor --fix
+copse doctor --fix
 ```
 
 ### Output results as JSON
 
 ```bash
-oml doctor --json
+copse doctor --json
 ```

@@ -1,11 +1,11 @@
-# oml import
+# copse import
 
-Adopt an existing worktree into oml management with metadata tracking.
+Adopt an existing worktree into copse management with metadata tracking.
 
 ## Usage
 
 ```
-oml import <path>
+copse import <path>
 ```
 
 ## Options
@@ -20,23 +20,23 @@ oml import <path>
 ### Import an existing worktree
 
 ```bash
-oml import ../my-project-feature
+copse import ../my-project-feature
 ```
 
 ### Import with monorepo focus
 
 ```bash
-oml import ../my-project-feature --focus @app/web,@app/api
+copse import ../my-project-feature --focus @app/web,@app/api
 ```
 
 ### Import and pin immediately
 
 ```bash
-oml import ../my-project-feature --pin
+copse import ../my-project-feature --pin
 ```
 
 ### Import with focus and pin
 
 ```bash
-oml import ../my-project-hotfix --focus @app/core --pin
+copse import ../my-project-hotfix --focus @app/core --pin
 ```

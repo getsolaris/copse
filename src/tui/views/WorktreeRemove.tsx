@@ -47,9 +47,9 @@ export function WorktreeRemove() {
         await executeHooks(repoConfig.postRemove, {
           cwd: wt.path,
           env: {
-            OML_BRANCH: wt.branch ?? "",
-            OML_WORKTREE_PATH: wt.path,
-            OML_REPO_PATH: wt.repoPath,
+            COPSE_BRANCH: wt.branch ?? "",
+            COPSE_WORKTREE_PATH: wt.path,
+            COPSE_REPO_PATH: wt.repoPath,
           },
         }).catch(() => {});
       }

@@ -41,8 +41,8 @@ const INDENT_SIZE = 2;
 const LABEL_WIDTH = 30;
 
 const WORKTREE_DIR_PRESETS = [
-  "~/.oml/worktrees/{repo}-{branch}",
-  "~/.oml/worktree/{repo}-{branch}",
+  "~/.copse/worktrees/{repo}-{branch}",
+  "~/.copse/worktree/{repo}-{branch}",
   "../{repo}-{branch}",
   "~/code/worktrees/{repo}/{branch}",
 ];
@@ -92,7 +92,7 @@ const HOOK_POST_CREATE_PRESETS = [
   '["cd {packagePath} && pnpm install && pnpm build"]',
 ];
 
-const SESSIONS_PREFIX_PRESETS = ["oml", "wt"];
+const SESSIONS_PREFIX_PRESETS = ["copse", "wt"];
 
 const SHARED_DEPS_STRATEGY_VALUES = ["hardlink", "symlink", "copy"];
 

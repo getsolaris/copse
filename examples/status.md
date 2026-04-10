@@ -1,12 +1,12 @@
-# oml status
+# copse status
 
 Show a status overview of all worktrees.
 
 ## Usage
 
 ```
-oml status
-oml st
+copse status
+copse st
 ```
 
 ## Options
@@ -21,29 +21,29 @@ oml st
 ### Show status of all worktrees
 
 ```bash
-oml status
+copse status
 ```
 
 ### Use the short alias
 
 ```bash
-oml st
+copse st
 ```
 
 ### Output as JSON
 
 ```bash
-oml status --json
+copse status --json
 ```
 
 ### Show status across all configured repos
 
 ```bash
-oml status --all
+copse status --all
 ```
 
 ### Combine flags
 
 ```bash
-oml st -a -j
+copse st -a -j
 ```

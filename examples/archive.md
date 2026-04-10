@@ -1,11 +1,11 @@
-# oml archive
+# copse archive
 
 Archive worktree changes as a patch file and optionally remove the worktree.
 
 ## Usage
 
 ```
-oml archive [branch]
+copse archive [branch]
 ```
 
 ## Options
@@ -22,35 +22,35 @@ oml archive [branch]
 ### Archive and remove the current worktree
 
 ```bash
-oml archive
+copse archive
 ```
 
 ### Archive a specific worktree
 
 ```bash
-oml archive feature/experiment
+copse archive feature/experiment
 ```
 
 ### Archive without removing
 
 ```bash
-oml archive feature/wip --keep
+copse archive feature/wip --keep
 ```
 
 ### Archive without confirmation
 
 ```bash
-oml archive feature/old -y
+copse archive feature/old -y
 ```
 
 ### List all archives
 
 ```bash
-oml archive --list
+copse archive --list
 ```
 
 ### List archives as JSON
 
 ```bash
-oml archive --list --json
+copse archive --list --json
 ```

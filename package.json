@@ -1,17 +1,25 @@
 {
-  "name": "oh-my-lemontree",
-  "version": "1.0.0",
+  "name": "@getsolaris/copse",
+  "version": "1.0.1",
   "description": "Git worktree manager with a beautiful TUI",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/getsolaris/oh-my-lemontree.git"
+    "url": "git+https://github.com/getsolaris/copse.git"
   },
-  "keywords": ["git", "worktree", "tui", "cli", "git-worktree"],
+  "keywords": [
+    "git",
+    "worktree",
+    "tui",
+    "cli",
+    "git-worktree"
+  ],
   "bin": {
-    "oml": "./dist/oml.js"
+    "copse": "dist/copse.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },

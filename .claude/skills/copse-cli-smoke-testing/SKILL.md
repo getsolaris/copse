@@ -1,12 +1,12 @@
 ---
 name: oml-cli-smoke-testing
-description: This skill should be used when the user asks to "run all commands", "smoke test the CLI", "test every oml command", "do manual QA", "verify commands in isolation", or "exhaustively test oh-my-lemontree".
+description: This skill should be used when the user asks to "run all commands", "smoke test the CLI", "test every copse command", "do manual QA", "verify commands in isolation", or "exhaustively test copse".
 version: 0.2.0
 ---
 
-# oml CLI Smoke Testing
+# copse CLI Smoke Testing
 
-Use this skill to run exhaustive, real-command QA for `oh-my-lemontree` without touching the developer's real repo, shell config, or tmux state.
+Use this skill to run exhaustive, real-command QA for `copse` without touching the developer's real repo, shell config, or tmux state.
 
 ## Purpose
 

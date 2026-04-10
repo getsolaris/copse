@@ -9,7 +9,7 @@ export interface PRMeta {
 }
 
 function getPRMetaPath(worktreePath: string): string {
-  return getMetadataFilePath(worktreePath, "oml-pr");
+  return getMetadataFilePath(worktreePath, "copse-pr");
 }
 
 export function writePRMeta(worktreePath: string, meta: PRMeta): void {

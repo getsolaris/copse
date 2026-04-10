@@ -131,7 +131,7 @@ const cmd: CommandModule = {
       if (!editor) {
         console.error("Error: no editor detected.");
         console.error("Set $VISUAL or $EDITOR, or use --editor <command>.");
-        console.error("Detected editors can be listed with: oml open --list-editors");
+        console.error("Detected editors can be listed with: copse open --list-editors");
         process.exit(1);
       }
 

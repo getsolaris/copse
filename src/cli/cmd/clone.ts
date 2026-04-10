@@ -7,7 +7,7 @@ import { executeHooks, HookError, HookTimeoutError } from "../../core/hooks.ts";
 
 const cmd: CommandModule = {
   command: "clone <url> [path]",
-  describe: "Clone a repository and initialize oml config",
+  describe: "Clone a repository and initialize copse config",
   builder: (yargs) =>
     yargs
       .positional("url", {
@@ -26,7 +26,7 @@ const cmd: CommandModule = {
       })
       .option("init-config", {
         type: "boolean",
-        describe: "Initialize oml config after cloning",
+        describe: "Initialize copse config after cloning",
         default: true,
       }),
   handler: async (argv) => {
@@ -99,7 +99,7 @@ const cmd: CommandModule = {
           await executeHooks(merged.postCreate, {
             cwd: clonedPath,
             env: {
-              OML_REPO_PATH: clonedPath,
+              COPSE_REPO_PATH: clonedPath,
             },
             onOutput: (line) => console.log(`    ${line}`),
           });

@@ -151,9 +151,9 @@ export function WorktreeList() {
             <text fg={theme.text.secondary}>{" "}</text>
             <text fg={theme.text.secondary}>{git.error()?.message}</text>
             <text fg={theme.text.secondary}>{" "}</text>
-            <text fg={theme.text.secondary}>oml needs a git repository to manage worktrees.</text>
-            <text fg={theme.text.secondary}>{"  \u00B7 cd into a git repository and relaunch oml, or"}</text>
-            <text fg={theme.text.secondary}>{"  \u00B7 configure repos in ~/.config/oh-my-lemontree/config.json"}</text>
+            <text fg={theme.text.secondary}>copse needs a git repository to manage worktrees.</text>
+            <text fg={theme.text.secondary}>{"  \u00B7 cd into a git repository and relaunch copse, or"}</text>
+            <text fg={theme.text.secondary}>{"  \u00B7 configure repos in ~/.config/copse/config.json"}</text>
             <text fg={theme.text.secondary}>{" "}</text>
             <text fg={theme.text.accent}>Press q to quit, or ^P to open the command palette.</text>
           </box>

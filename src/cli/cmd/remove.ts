@@ -60,9 +60,9 @@ const cmd: CommandModule = {
         await executeHooks(repoConfig.postRemove, {
           cwd: target.path,
           env: {
-            OML_BRANCH: target.branch ?? "",
-            OML_WORKTREE_PATH: target.path,
-            OML_REPO_PATH: mainRepoPath,
+            COPSE_BRANCH: target.branch ?? "",
+            COPSE_WORKTREE_PATH: target.path,
+            COPSE_REPO_PATH: mainRepoPath,
           },
           onOutput: (line) => console.log(`  ${line}`),
         }).catch((err) => console.warn(`Warning: postRemove hook failed: ${(err as Error).message}`));
@@ -78,10 +78,10 @@ const cmd: CommandModule = {
           await executeGlobHooks(matches, "postRemove", {
             cwd: target.path,
             env: {
-              OML_BRANCH: removeBranch,
-              OML_WORKTREE_PATH: target.path,
-              OML_REPO_PATH: mainRepoPath,
-              OML_FOCUS_PATHS: focusPaths.join(","),
+              COPSE_BRANCH: removeBranch,
+              COPSE_WORKTREE_PATH: target.path,
+              COPSE_REPO_PATH: mainRepoPath,
+              COPSE_FOCUS_PATHS: focusPaths.join(","),
             },
             repo: repoName,
             branch: removeBranch,

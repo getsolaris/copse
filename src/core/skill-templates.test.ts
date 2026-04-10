@@ -15,7 +15,7 @@ let origHome: string | undefined;
 
 beforeEach(() => {
   origHome = process.env.HOME;
-  process.env.HOME = createTempDir("oml-skill-home-");
+  process.env.HOME = createTempDir("copse-skill-home-");
 });
 
 afterEach(() => {
@@ -33,19 +33,19 @@ describe("SUPPORTED_PLATFORMS", () => {
 });
 
 describe("getSkillDir", () => {
-  it("returns ~/.claude/skills/oml for claude-code", () => {
+  it("returns ~/.claude/skills/copse for claude-code", () => {
     const dir = getSkillDir("claude-code");
-    expect(dir).toEndWith(join(".claude", "skills", "oml"));
+    expect(dir).toEndWith(join(".claude", "skills", "copse"));
   });
 
-  it("returns ~/.agents/skills/oml for codex", () => {
+  it("returns ~/.agents/skills/copse for codex", () => {
     const dir = getSkillDir("codex");
-    expect(dir).toEndWith(join(".agents", "skills", "oml"));
+    expect(dir).toEndWith(join(".agents", "skills", "copse"));
   });
 
-  it("returns ~/.config/opencode/skill/oml for opencode", () => {
+  it("returns ~/.config/opencode/skill/copse for opencode", () => {
     const dir = getSkillDir("opencode");
-    expect(dir).toEndWith(join(".config", "opencode", "skill", "oml"));
+    expect(dir).toEndWith(join(".config", "opencode", "skill", "copse"));
   });
 });
 
@@ -62,7 +62,7 @@ describe("generateSkillContent", () => {
   it("includes SKILL.md frontmatter with metadata", () => {
     const content = generateSkillContent();
     expect(content).toStartWith("---\n");
-    expect(content).toContain("name: oml");
+    expect(content).toContain("name: copse");
     expect(content).toContain("description:");
     expect(content).toContain("metadata:");
     expect(content).toContain("author: getsolaris");
@@ -73,7 +73,7 @@ describe("generateSkillContent", () => {
     const content = generateSkillContent();
     expect(content).toContain("## Quick Start");
     expect(content).toContain("Create a feature worktree");
-    expect(content).toContain("oml add feature/my-feature --base main");
+    expect(content).toContain("copse add feature/my-feature --base main");
     expect(content).toContain("Clean up merged worktrees");
     expect(content).toContain("Run commands across worktrees");
     expect(content).toContain("Review a GitHub PR");
@@ -93,7 +93,7 @@ describe("generateSkillContent", () => {
     expect(content).toContain("--focus");
     expect(content).toContain("## Configuration");
     expect(content).toContain("--json");
-    expect(content).toContain("~/.config/oh-my-lemontree/config.json");
+    expect(content).toContain("~/.config/copse/config.json");
     expect(content).toContain("## Command Reference");
     expect(content).toContain("For detailed options and examples for each command:");
     expect(content).toContain("references/add.md");
@@ -122,7 +122,7 @@ describe("generateReferenceFiles", () => {
         continue;
       }
       const command = name.replace(".md", "");
-      expect(content).toContain(`# oml ${command}`);
+      expect(content).toContain(`# copse ${command}`);
       expect(content).toContain("## Synopsis");
       expect(content).toContain("## Options");
       expect(content).toContain("## Examples");
@@ -140,7 +140,7 @@ describe("generateReferenceFiles", () => {
     expect(addRef).toContain("missing branches are created automatically");
     expect(addRef).toContain("--base only applies when a new branch is created");
     expect(addRef).toContain("## Configuration");
-    expect(addRef).toContain("Related config keys in `~/.config/oh-my-lemontree/config.json`:");
+    expect(addRef).toContain("Related config keys in `~/.config/copse/config.json`:");
     expect(addRef).toContain("`defaults.worktreeDir` — Directory pattern for new worktrees");
     expect(addRef).toContain("`sessions.layouts` — Tmux session layout definitions");
   });
@@ -151,7 +151,7 @@ describe("generateReferenceFiles", () => {
 
     expect(initRef).toBeDefined();
     expect(initRef).toContain("# Initialize config");
-    expect(initRef).toContain("oml init");
+    expect(initRef).toContain("copse init");
     expect(initRef).toContain("Without --skill, reuses config initialization and creates only config.json.");
   });
 
@@ -183,15 +183,15 @@ describe("writeSkillFile", () => {
 
     expect(result.action).toBe("created");
     expect(result.platform).toBe("codex");
-    expect(result.filePath).toContain(join(".agents", "skills", "oml", "SKILL.md"));
-    expect(result.referenceDir).toContain(join(".agents", "skills", "oml", "references"));
+    expect(result.filePath).toContain(join(".agents", "skills", "copse", "SKILL.md"));
+    expect(result.referenceDir).toContain(join(".agents", "skills", "copse", "references"));
     expect(result.referenceCount).toBe(21);
     expect(existsSync(result.filePath)).toBeTrue();
     expect(existsSync(result.referenceDir)).toBeTrue();
 
     const content = readFileSync(result.filePath, "utf-8");
-    expect(content).toContain("name: oml");
-    expect(content).toContain("oh-my-lemontree");
+    expect(content).toContain("name: copse");
+    expect(content).toContain("copse");
 
     const referenceFiles = readdirSync(result.referenceDir);
     expect(referenceFiles).toHaveLength(21);
@@ -200,23 +200,23 @@ describe("writeSkillFile", () => {
     expect(referenceFiles).toContain("config-schema.md");
   });
 
-  it("creates claude-code skill in ~/.claude/skills/oml/", () => {
+  it("creates claude-code skill in ~/.claude/skills/copse/", () => {
     const result = writeSkillFile("claude-code");
 
     expect(result.action).toBe("created");
-    expect(result.filePath).toContain(join(".claude", "skills", "oml", "SKILL.md"));
-    expect(result.referenceDir).toContain(join(".claude", "skills", "oml", "references"));
+    expect(result.filePath).toContain(join(".claude", "skills", "copse", "SKILL.md"));
+    expect(result.referenceDir).toContain(join(".claude", "skills", "copse", "references"));
     expect(result.referenceCount).toBe(21);
     expect(existsSync(result.filePath)).toBeTrue();
     expect(existsSync(result.referenceDir)).toBeTrue();
   });
 
-  it("creates opencode skill in ~/.config/opencode/skill/oml/", () => {
+  it("creates opencode skill in ~/.config/opencode/skill/copse/", () => {
     const result = writeSkillFile("opencode");
 
     expect(result.action).toBe("created");
-    expect(result.filePath).toContain(join(".config", "opencode", "skill", "oml", "SKILL.md"));
-    expect(result.referenceDir).toContain(join(".config", "opencode", "skill", "oml", "references"));
+    expect(result.filePath).toContain(join(".config", "opencode", "skill", "copse", "SKILL.md"));
+    expect(result.referenceDir).toContain(join(".config", "opencode", "skill", "copse", "references"));
     expect(result.referenceCount).toBe(21);
     expect(existsSync(result.filePath)).toBeTrue();
     expect(existsSync(result.referenceDir)).toBeTrue();
@@ -257,7 +257,7 @@ describe("writeSkillFile", () => {
       const content = readFileSync(result.filePath, "utf-8");
 
       expect(content).toStartWith("---\n");
-      expect(content).toContain("name: oml");
+      expect(content).toContain("name: copse");
       expect(content).toContain("description:");
       expect(content).toContain("## Command Overview");
       expect(existsSync(result.referenceDir)).toBeTrue();

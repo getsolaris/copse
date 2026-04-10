@@ -1,11 +1,11 @@
-# oml shell-init
+# copse shell-init
 
-Print shell integration code for `oml switch`. Required for automatic directory switching.
+Print shell integration code for `copse switch`. Required for automatic directory switching.
 
 ## Usage
 
 ```
-oml shell-init [shell]
+copse shell-init [shell]
 ```
 
 Supported shells: `bash`, `zsh`, `fish`
@@ -23,7 +23,7 @@ Supported shells: `bash`, `zsh`, `fish`
 Add to your `~/.zshrc`:
 
 ```bash
-eval "$(oml shell-init zsh)"
+eval "$(copse shell-init zsh)"
 ```
 
 ### Set up bash integration
@@ -31,7 +31,7 @@ eval "$(oml shell-init zsh)"
 Add to your `~/.bashrc`:
 
 ```bash
-eval "$(oml shell-init bash)"
+eval "$(copse shell-init bash)"
 ```
 
 ### Set up fish integration
@@ -39,23 +39,23 @@ eval "$(oml shell-init bash)"
 Add to your `~/.config/fish/config.fish`:
 
 ```fish
-oml shell-init fish | source
+copse shell-init fish | source
 ```
 
 ### Generate zsh completions
 
 ```bash
-oml shell-init --completions zsh > ~/.zsh/completions/_oml
+copse shell-init --completions zsh > ~/.zsh/completions/_copse
 ```
 
 ### Generate bash completions
 
 ```bash
-oml shell-init --completions bash > /etc/bash_completion.d/oml
+copse shell-init --completions bash > /etc/bash_completion.d/copse
 ```
 
 ### Generate fish completions
 
 ```bash
-oml shell-init --completions fish > ~/.config/fish/completions/oml.fish
+copse shell-init --completions fish > ~/.config/fish/completions/copse.fish
 ```

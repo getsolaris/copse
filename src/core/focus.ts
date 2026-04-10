@@ -3,7 +3,7 @@ import { dirname, join } from 'path';
 import { getMetadataFilePath } from "./metadata.ts";
 
 export function getFocusFilePath(worktreePath: string): string {
-  return getMetadataFilePath(worktreePath, "oml-focus");
+  return getMetadataFilePath(worktreePath, "copse-focus");
 }
 
 export function writeFocus(worktreePath: string, focusPaths: string[]): void {

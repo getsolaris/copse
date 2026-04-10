@@ -22,7 +22,7 @@ async function runGit(args: string[], cwd: string): Promise<string> {
 
 export function getArchiveDir(): string {
   const home = (Bun as any).env.HOME ?? homedir();
-  return join(home, ".oml", "archives");
+  return join(home, ".copse", "archives");
 }
 
 export async function createArchive(worktreePath: string, repoPath: string): Promise<ArchiveEntry> {
@@ -50,7 +50,7 @@ export async function createArchive(worktreePath: string, repoPath: string): Pro
     ]);
 
     const patchContent = [
-      "# OML archive",
+      "# COP archive",
       `# repo: ${repoName}`,
       `# branch: ${branch}`,
       `# archivedAt: ${archivedAt}`,

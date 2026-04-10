@@ -67,10 +67,10 @@ afterEach(async () => {
 
 describe("CLI regressions", () => {
   it("doctor --fix exits cleanly after removing orphaned directories from configured worktreeDir", async () => {
-    const repoPath = await createTempRepo("oml-cli-doctor-");
-    const root = createTempDir("oml-cli-doctor-env-");
+    const repoPath = await createTempRepo("copse-cli-doctor-");
+    const root = createTempDir("copse-cli-doctor-env-");
     const xdgConfigHome = join(root, "xdg");
-    const configDir = join(xdgConfigHome, "oh-my-lemontree");
+    const configDir = join(xdgConfigHome, "copse");
     const customWorktreeBase = join(root, "custom-worktrees");
     const orphanPath = join(customWorktreeBase, `${basename(repoPath)}-orphan`);
 
@@ -102,8 +102,8 @@ describe("CLI regressions", () => {
   });
 
   it("clean --dry-run does not prune prunable worktree metadata", async () => {
-    const repoPath = await createTempRepo("oml-cli-clean-");
-    const worktreePath = createTempDir("oml-cli-clean-wt-");
+    const repoPath = await createTempRepo("copse-cli-clean-");
+    const worktreePath = createTempDir("copse-cli-clean-wt-");
 
     await runGit(["worktree", "add", worktreePath, "-b", "feature/test"], repoPath);
     rmSync(worktreePath, { recursive: true, force: true });
@@ -119,9 +119,9 @@ describe("CLI regressions", () => {
   });
 
   it("config rejects activating a missing profile", async () => {
-    const root = createTempDir("oml-cli-config-");
+    const root = createTempDir("copse-cli-config-");
     const xdgConfigHome = join(root, "xdg");
-    const configDir = join(xdgConfigHome, "oh-my-lemontree");
+    const configDir = join(xdgConfigHome, "copse");
 
     mkdirSync(configDir, { recursive: true });
     writeFileSync(
@@ -155,9 +155,9 @@ describe("CLI regressions", () => {
     expect(result.stderr).toContain("profile 'missing' does not exist");
   });
 
-  it("oml (TUI) launches without crashing when started outside a git repo with no configured repos", async () => {
-    const nonGitDir = createTempDir("oml-cli-non-git-");
-    const root = createTempDir("oml-cli-non-git-env-");
+  it("copse (TUI) launches without crashing when started outside a git repo with no configured repos", async () => {
+    const nonGitDir = createTempDir("copse-cli-non-git-");
+    const root = createTempDir("copse-cli-non-git-env-");
     const xdgConfigHome = join(root, "xdg");
     mkdirSync(xdgConfigHome, { recursive: true });
 
@@ -193,11 +193,11 @@ describe("CLI regressions", () => {
       return;
     }
 
-    const repoPath = await createTempRepo("oml-cli-session-");
-    const root = createTempDir("oml-cli-session-env-");
+    const repoPath = await createTempRepo("copse-cli-session-");
+    const root = createTempDir("copse-cli-session-env-");
     const xdgConfigHome = join(root, "xdg");
-    const configDir = join(xdgConfigHome, "oh-my-lemontree");
-    const prefix = `omlqa${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const configDir = join(xdgConfigHome, "copse");
+    const prefix = `copqa${Date.now()}${Math.floor(Math.random() * 1000)}`;
     const sessionName = `${prefix}_orphan`;
 
     mkdirSync(configDir, { recursive: true });

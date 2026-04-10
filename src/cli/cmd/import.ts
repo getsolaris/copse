@@ -8,7 +8,7 @@ import { resolveMainRepo } from "../utils.ts";
 
 const cmd: CommandModule = {
   command: "import <path>",
-  describe: "Adopt a worktree with oml metadata",
+  describe: "Adopt a worktree with copse metadata",
   builder: (yargs) =>
     yargs
       .positional("path", {

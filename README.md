@@ -1,46 +1,46 @@
 <p align="center">
-  <img src="./banner.png" alt="oh-my-lemontree" />
+  <img src="./banner.png" alt="copse" />
 </p>
 
-# 🌳 oh-my-lemontree
+# 🌲 copse
 
 **English** | [Korean](./README.ko.md)
 
-> Git worktree manager with a beautiful TUI — inspired by the oh-my-\* family
+> Git worktree manager with a beautiful TUI
 
 Manage git worktrees with ease. Create, switch, and clean up worktrees with config-driven automation, monorepo support, and built-in health checks.
 
 ## Features
 
-- **TUI mode** — interactive terminal UI (`oml`)
-- **CLI mode** — scriptable commands (`oml add`, `oml list`, etc.)
+- **TUI mode** — interactive terminal UI (`copse`)
+- **CLI mode** — scriptable commands (`copse add`, `copse list`, etc.)
 - **Config-driven** — per-repo hooks, file copying, symlinks
 - **Monorepo support** — auto-detect packages, per-package hooks, focus tracking
-- **Health checks** — `oml doctor` diagnoses worktree issues
-- **Centralized worktrees** — all worktrees under `~/.oml/worktrees/` by default
+- **Health checks** — `copse doctor` diagnoses worktree issues
+- **Centralized worktrees** — all worktrees under `~/.copse/worktrees/` by default
 - **Smart cleanup** — auto-detect and remove merged worktrees
 - **Themes** — 9 built-in color themes (OpenCode, Tokyo Night, Dracula, Nord, Catppuccin, GitHub Dark, One Dark, Monokai, GitHub Light)
-- **Templates** — reusable worktree presets (`oml add --template review`)
-- **Cross-worktree exec** — run commands across all worktrees (`oml exec "bun test"`)
-- **GitHub PR integration** — create worktrees from PRs (`oml add --pr 123`)
+- **Templates** — reusable worktree presets (`copse add --template review`)
+- **Cross-worktree exec** — run commands across all worktrees (`copse exec "bun test"`)
+- **GitHub PR integration** — create worktrees from PRs (`copse add --pr 123`)
 - **Fuzzy branch picker** — interactive branch selection in TUI with type-ahead filtering
 - **Lifecycle management** — auto-detect stale/merged worktrees, configurable limits
 - **Shared dependencies** — save disk with hardlink/symlink strategies for `node_modules`
-- **Worktree diff** — compare changes between worktrees (`oml diff feature/a feature/b`)
-- **Pin protection** — protect worktrees from auto-cleanup (`oml pin`)
-- **Activity log** — track create/delete/switch/rename/archive/import events (`oml log`)
-- **Archive** — preserve worktree changes as patches before removal (`oml archive`)
-- **Branch rename** — rename worktree branches with metadata migration (`oml rename`)
-- **Clone & init** — clone repos with oml config initialization (`oml clone`)
-- **Import worktrees** — adopt manually-created worktrees (`oml import`)
+- **Worktree diff** — compare changes between worktrees (`copse diff feature/a feature/b`)
+- **Pin protection** — protect worktrees from auto-cleanup (`copse pin`)
+- **Activity log** — track create/delete/switch/rename/archive/import events (`copse log`)
+- **Archive** — preserve worktree changes as patches before removal (`copse archive`)
+- **Branch rename** — rename worktree branches with metadata migration (`copse rename`)
+- **Clone & init** — clone repos with copse config initialization (`copse clone`)
+- **Import worktrees** — adopt manually-created worktrees (`copse import`)
 - **Detail view** — expanded worktree info with commits, diff stats, upstream status (TUI)
 - **Bulk actions** — multi-select and batch operations on worktrees (TUI)
 - **Toast notifications** — non-blocking operation feedback (TUI)
-- **Shell completions** — tab completion for bash/zsh/fish (`oml shell-init --completions`)
-- **Config profiles** — switch between configuration sets (`oml config --profiles`)
-- **Tmux sessions** — auto-create/kill tmux sessions per worktree with layout templates (`oml session`)
+- **Shell completions** — tab completion for bash/zsh/fish (`copse shell-init --completions`)
+- **Config profiles** — switch between configuration sets (`copse config --profiles`)
+- **Tmux sessions** — auto-create/kill tmux sessions per worktree with layout templates (`copse session`)
 - **Workspaces** — auto-discover git repos under parent directories with per-workspace defaults (`workspaces` config)
-- **AI agent init** — create config by default or install oml skill for Claude Code, Codex, OpenCode (`oml init`, `oml init --skill`)
+- **AI agent init** — create config by default or install copse skill for Claude Code, Codex, OpenCode (`copse init`, `copse init --skill`)
 
 ## Requirements
 
@@ -48,28 +48,28 @@ Manage git worktrees with ease. Create, switch, and clean up worktrees with conf
 - git 2.17+
 - macOS or Linux
 - [gh CLI](https://cli.github.com) (optional, for `--pr` flag)
-- [tmux](https://github.com/tmux/tmux) (optional, for `oml session`)
+- [tmux](https://github.com/tmux/tmux) (optional, for `copse session`)
 
 ## Installation
 
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew install getsolaris/tap/oh-my-lemontree
+brew install getsolaris/tap/copse
 ```
 
 ### curl (one-liner)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/getsolaris/oh-my-lemontree/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/getsolaris/copse/main/install.sh | bash
 ```
 
 ### npm / bun
 
 ```bash
-bun install -g oh-my-lemontree
+bun install -g @getsolaris/copse
 # or
-npm install -g oh-my-lemontree
+npm install -g @getsolaris/copse
 ```
 
 ## Local Development
@@ -91,75 +91,75 @@ Prefer targeted tests first when you change covered code, then run the full chec
 
 ```bash
 # Launch TUI
-oml
+copse
 
 # List worktrees
-oml list
+copse list
 
 # Create a new worktree
-oml add feature/my-feature
+copse add feature/my-feature
 
 # Create with monorepo focus
-oml add feature/my-feature --focus apps/web,apps/api
+copse add feature/my-feature --focus apps/web,apps/api
 
 # Create from a GitHub PR
-oml add --pr 123
+copse add --pr 123
 
 # Use a template
-oml add feature/login --template review
+copse add feature/login --template review
 
 # Pin a worktree to protect from cleanup
-oml pin feature/important --reason "active sprint"
+copse pin feature/important --reason "active sprint"
 
 # View activity log
-oml log
+copse log
 
 # Archive worktree changes before removing
-oml archive feature/done --yes
+copse archive feature/done --yes
 
 # Rename a worktree branch
-oml rename old-name new-name
+copse rename old-name new-name
 
-# Clone and initialize oml
-oml clone https://github.com/user/repo.git
+# Clone and initialize copse
+copse clone https://github.com/user/repo.git
 
 # Import an existing worktree
-oml import /path/to/worktree
+copse import /path/to/worktree
 
 # Open/attach tmux session for a worktree
-oml session feature/my-feature
+copse session feature/my-feature
 
 # Create worktree with tmux session
-oml add feature/new --session
+copse add feature/new --session
 
 # Run command across all worktrees
-oml exec "bun test"
+copse exec "bun test"
 
 # Compare two worktrees
-oml diff feature/a feature/b --stat
+copse diff feature/a feature/b --stat
 
 # Check worktree health
-oml doctor
+copse doctor
 
 # Switch to a worktree (requires shell integration)
-oml switch feature/my-feature
+copse switch feature/my-feature
 
 # Remove a worktree
-oml remove feature/my-feature --yes
+copse remove feature/my-feature --yes
 
 # Clean up merged worktrees
-oml clean --dry-run
+copse clean --dry-run
 
 # Initialize config file
-oml init
+copse init
 
 # Generate AI agent skill file
-oml init --skill claude-code
+copse init --skill claude-code
 ```
 
 ## TUI Usage
 
-Launch with `oml` (no arguments).
+Launch with `copse` (no arguments).
 
 ### Keyboard Shortcuts
 
@@ -231,7 +231,7 @@ Press `r` to recheck, `Esc` to go back.
 
 ### Config View
 
-Open with `Ctrl+P` → `Open Config`. The Config tab renders the full contents of `~/.config/oh-my-lemontree/config.json`, including:
+Open with `Ctrl+P` → `Open Config`. The Config tab renders the full contents of `~/.config/copse/config.json`, including:
 
 - Top-level: `version`, `theme`, `activeProfile`
 - `defaults` (including `postRemove`, `autoUpstream`, `sharedDeps`)
@@ -270,56 +270,56 @@ Every commit runs `validateConfig` before writing. Invalid input surfaces as an 
 
 | Command                  | Description                          |
 | ------------------------ | ------------------------------------ |
-| `oml`                    | Launch TUI                           |
-| `oml list`               | List all worktrees (with focus info) |
-| `oml add <branch>`       | Create worktree                      |
-| `oml remove <branch>`    | Remove worktree                      |
-| `oml switch <branch>`    | Switch to worktree                   |
-| `oml clean`              | Remove merged worktrees              |
-| `oml doctor`             | Check worktree health                |
-| `oml config`             | Manage configuration                 |
-| `oml exec <command>`     | Run command in each worktree         |
-| `oml diff <ref1> [ref2]` | Diff between worktrees/branches      |
-| `oml pin <branch>`       | Pin/unpin worktree (protect from cleanup) |
-| `oml log`                | Show worktree activity log           |
-| `oml archive <branch>`   | Archive changes and optionally remove |
-| `oml rename <old> <new>` | Rename worktree branch               |
-| `oml clone <url>`        | Clone repo and initialize oml        |
-| `oml import <path>`      | Adopt worktree with oml metadata     |
-| `oml session [branch]`   | Manage tmux sessions for worktrees   |
-| `oml open [branch]`      | Open a worktree in your editor (focus-aware) |
-| `oml init`               | Initialize config or install AI agent skills |
+| `copse`                    | Launch TUI                           |
+| `copse list`               | List all worktrees (with focus info) |
+| `copse add <branch>`       | Create worktree                      |
+| `copse remove <branch>`    | Remove worktree                      |
+| `copse switch <branch>`    | Switch to worktree                   |
+| `copse clean`              | Remove merged worktrees              |
+| `copse doctor`             | Check worktree health                |
+| `copse config`             | Manage configuration                 |
+| `copse exec <command>`     | Run command in each worktree         |
+| `copse diff <ref1> [ref2]` | Diff between worktrees/branches      |
+| `copse pin <branch>`       | Pin/unpin worktree (protect from cleanup) |
+| `copse log`                | Show worktree activity log           |
+| `copse archive <branch>`   | Archive changes and optionally remove |
+| `copse rename <old> <new>` | Rename worktree branch               |
+| `copse clone <url>`        | Clone repo and initialize copse        |
+| `copse import <path>`      | Adopt worktree with copse metadata     |
+| `copse session [branch]`   | Manage tmux sessions for worktrees   |
+| `copse open [branch]`      | Open a worktree in your editor (focus-aware) |
+| `copse init`               | Initialize config or install AI agent skills |
 
-### `oml add`
+### `copse add`
 
 ```bash
-oml add feature/login                        # Create branch if needed + worktree
-oml add feature/login --base main            # New branches start from main
-oml add existing-branch                      # Worktree for existing branch
+copse add feature/login                        # Create branch if needed + worktree
+copse add feature/login --base main            # New branches start from main
+copse add existing-branch                      # Worktree for existing branch
 
 # Monorepo: create with focus packages
-oml add feature/login --focus apps/web,apps/api
-oml add feature/login --focus apps/web --focus apps/api
+copse add feature/login --focus apps/web,apps/api
+copse add feature/login --focus apps/web --focus apps/api
 
 # Use a template
-oml add feature/login --template review
+copse add feature/login --template review
 
 # Create from a GitHub PR (requires gh CLI)
-oml add --pr 123
-oml add --pr 456 --template review
+copse add --pr 123
+copse add --pr 456 --template review
 ```
 
-### `oml doctor`
+### `copse doctor`
 
 ```bash
-oml doctor              # Human-readable output
-oml doctor --json       # JSON output for scripting
+copse doctor              # Human-readable output
+copse doctor --json       # JSON output for scripting
 ```
 
 Exit code: `0` if healthy, `1` if any warnings or errors.
 
 ```
-oh-my-lemontree doctor
+copse doctor
 
 ✓ Git version: 2.39.0 (>= 2.17 required)
 ✓ Configuration: valid
@@ -331,43 +331,43 @@ oh-my-lemontree doctor
 All checks passed.
 ```
 
-### `oml list`
+### `copse list`
 
 ```bash
-oml list                # Table with Focus column
-oml list --json         # JSON with focus array
-oml list --porcelain    # Machine-readable
+copse list                # Table with Focus column
+copse list --json         # JSON with focus array
+copse list --porcelain    # Machine-readable
 ```
 
 Output includes a `Focus` column showing monorepo focus paths per worktree.
 
-### `oml remove`
+### `copse remove`
 
 ```bash
-oml remove feature/login               # Remove by branch name
-oml remove feature/login --force        # Force remove (dirty worktree)
-oml remove feature/login --yes          # Skip confirmation
+copse remove feature/login               # Remove by branch name
+copse remove feature/login --force        # Force remove (dirty worktree)
+copse remove feature/login --yes          # Skip confirmation
 ```
 
-### `oml clean`
+### `copse clean`
 
 ```bash
-oml clean --dry-run    # Preview what would be removed
-oml clean              # Remove all merged worktrees
-oml clean --stale      # Also show stale worktrees (uses lifecycle config)
+copse clean --dry-run    # Preview what would be removed
+copse clean              # Remove all merged worktrees
+copse clean --stale      # Also show stale worktrees (uses lifecycle config)
 ```
 
-### `oml exec`
+### `copse exec`
 
 Run a shell command in every non-main worktree.
 
 ```bash
-oml exec "bun test"                   # Run in all worktrees (sequential)
-oml exec "bun test" --parallel        # Run in parallel
-oml exec "git pull" --all             # Across all configured repos
-oml exec "bun install" --dirty        # Only dirty worktrees
-oml exec "git rebase main" --behind   # Only worktrees behind upstream
-oml exec "bun test" --json            # JSON output
+copse exec "bun test"                   # Run in all worktrees (sequential)
+copse exec "bun test" --parallel        # Run in parallel
+copse exec "git pull" --all             # Across all configured repos
+copse exec "bun install" --dirty        # Only dirty worktrees
+copse exec "git rebase main" --behind   # Only worktrees behind upstream
+copse exec "bun test" --json            # JSON output
 ```
 
 | Flag                | Description                           |
@@ -379,116 +379,116 @@ oml exec "bun test" --json            # JSON output
 | `--behind`          | Only run in worktrees behind upstream |
 | `--json` / `-j`     | Output results as JSON                |
 
-Environment variables available in commands: `OML_BRANCH`, `OML_WORKTREE_PATH`, `OML_REPO_PATH`.
+Environment variables available in commands: `COPSE_BRANCH`, `COPSE_WORKTREE_PATH`, `COPSE_REPO_PATH`.
 
-### `oml diff`
+### `copse diff`
 
 Show diff between two worktree branches.
 
 ```bash
-oml diff feature/a feature/b         # Full diff
-oml diff feature/a feature/b --stat  # Diffstat summary
-oml diff feature/a --name-only       # Changed file names only
-oml diff feature/a                   # Compare against current HEAD
+copse diff feature/a feature/b         # Full diff
+copse diff feature/a feature/b --stat  # Diffstat summary
+copse diff feature/a --name-only       # Changed file names only
+copse diff feature/a                   # Compare against current HEAD
 ```
 
-### `oml pin`
+### `copse pin`
 
 ```bash
-oml pin feature/auth --reason "active sprint"  # Pin with reason
-oml pin --list                                  # List pinned worktrees
-oml pin --list --json                           # JSON output
-oml unpin feature/auth                          # Unpin
+copse pin feature/auth --reason "active sprint"  # Pin with reason
+copse pin --list                                  # List pinned worktrees
+copse pin --list --json                           # JSON output
+copse unpin feature/auth                          # Unpin
 ```
 
-Pinned worktrees are excluded from `oml clean` and lifecycle auto-cleanup.
+Pinned worktrees are excluded from `copse clean` and lifecycle auto-cleanup.
 
-### `oml log`
+### `copse log`
 
 ```bash
-oml log                # Show last 20 events
-oml log --limit 50     # Show last 50 events
-oml log --json         # JSON output
-oml log --clear        # Clear activity log
+copse log                # Show last 20 events
+copse log --limit 50     # Show last 50 events
+copse log --json         # JSON output
+copse log --clear        # Clear activity log
 ```
 
 Events are color-coded: create (green), delete (red), switch (blue), rename (yellow), archive (magenta), import (cyan).
 
-### `oml archive`
+### `copse archive`
 
 ```bash
-oml archive feature/done --yes       # Archive and remove
-oml archive feature/wip --keep       # Archive without removing
-oml archive --list                   # List all archives
-oml archive --list --json            # JSON output
+copse archive feature/done --yes       # Archive and remove
+copse archive feature/wip --keep       # Archive without removing
+copse archive --list                   # List all archives
+copse archive --list --json            # JSON output
 ```
 
-Archives are stored as patch files in `~/.oml/archives/`.
+Archives are stored as patch files in `~/.copse/archives/`.
 
-### `oml rename`
+### `copse rename`
 
 ```bash
-oml rename old-branch new-branch             # Rename branch
-oml rename old-branch new-branch --move-path # Also move worktree directory
+copse rename old-branch new-branch             # Rename branch
+copse rename old-branch new-branch --move-path # Also move worktree directory
 ```
 
-### `oml clone`
+### `copse clone`
 
 ```bash
-oml clone https://github.com/user/repo.git              # Clone and init
-oml clone https://github.com/user/repo.git ./my-dir     # Custom target path
-oml clone https://github.com/user/repo.git --template review # Apply template
-oml clone https://github.com/user/repo.git --no-init-config  # Skip config init
+copse clone https://github.com/user/repo.git              # Clone and init
+copse clone https://github.com/user/repo.git ./my-dir     # Custom target path
+copse clone https://github.com/user/repo.git --template review # Apply template
+copse clone https://github.com/user/repo.git --no-init-config  # Skip config init
 ```
 
-### `oml import`
+### `copse import`
 
 ```bash
-oml import /path/to/worktree                           # Adopt worktree
-oml import /path/to/worktree --focus apps/web,apps/api # With focus
-oml import /path/to/worktree --pin                     # Pin immediately
+copse import /path/to/worktree                           # Adopt worktree
+copse import /path/to/worktree --focus apps/web,apps/api # With focus
+copse import /path/to/worktree --pin                     # Pin immediately
 ```
 
-### `oml session`
+### `copse session`
 
 Manage tmux sessions for worktrees. Requires tmux.
 
 ```bash
-oml session feature/auth              # Open/attach session (create if needed)
-oml session feature/auth --layout api # Use named layout from config
-oml session --list                    # List active oml sessions
-oml session --list --json             # JSON output
-oml session feature/auth --kill       # Kill session for worktree
-oml session --kill-all                # Kill all oml sessions
+copse session feature/auth              # Open/attach session (create if needed)
+copse session feature/auth --layout api # Use named layout from config
+copse session --list                    # List active copse sessions
+copse session --list --json             # JSON output
+copse session feature/auth --kill       # Kill session for worktree
+copse session --kill-all                # Kill all copse sessions
 ```
 
 Sessions are auto-created/killed when `sessions.autoCreate` / `sessions.autoKill` are enabled in config.
 
 ```bash
 # Create worktree with tmux session
-oml add feature/login --session
-oml add feature/login --session --layout api
+copse add feature/login --session
+copse add feature/login --session --layout api
 ```
 
-When `sessions.enabled` is `true` and you're inside tmux, `oml switch` automatically switches to the target worktree's tmux session.
+When `sessions.enabled` is `true` and you're inside tmux, `copse switch` automatically switches to the target worktree's tmux session.
 
-### `oml open`
+### `copse open`
 
 Open a worktree in your editor or IDE. Auto-detects `$VISUAL` / `$EDITOR` and falls back to a known list (`code`, `cursor`, `vim`, `nvim`, `emacs`, `nano`, `subl`, `zed`, `idea`, `webstorm`).
 
 ```bash
-oml open                              # Open the current worktree
-oml open feature/auth                 # Open a specific worktree
-oml open feature/auth -e nvim         # Override editor
+copse open                              # Open the current worktree
+copse open feature/auth                 # Open a specific worktree
+copse open feature/auth -e nvim         # Override editor
 
 # Focus-aware behavior (when the worktree was created with --focus)
-oml open feature/auth                 # 1 focus path → opens that focus
+copse open feature/auth                 # 1 focus path → opens that focus
                                       # 2+ focus paths → errors with hint
-oml open feature/auth --focus apps/web   # Pick a specific focus path
-oml open feature/auth -f apps/api        # Same with the short alias
-oml open feature/auth --root             # Force the worktree root, ignore focus
+copse open feature/auth --focus apps/web   # Pick a specific focus path
+copse open feature/auth -f apps/api        # Same with the short alias
+copse open feature/auth --root             # Force the worktree root, ignore focus
 
-oml open --list-editors               # List detected editors
+copse open --list-editors               # List detected editors
 ```
 
 | Flag | Alias | Description |
@@ -504,22 +504,22 @@ oml open --list-editors               # List detected editors
 - 1 focus path set → opens `<worktree>/<focus>` automatically.
 - 2+ focus paths set → errors out and asks for `--focus <path>` or `--root` (the TUI shows an interactive picker instead).
 
-### `oml init`
+### `copse init`
 
-Initialize oml config by default, or install oml skill for AI coding agents so they can use oml commands.
+Initialize copse config by default, or install copse skill for AI coding agents so they can use copse commands.
 
 ```bash
-oml init                         # → ~/.config/oh-my-lemontree/config.json
-oml init --skill claude-code   # → ~/.claude/skills/oml/
-oml init --skill codex          # → ~/.agents/skills/oml/
-oml init --skill opencode       # → ~/.config/opencode/skill/oml/
+copse init                         # → ~/.config/copse/config.json
+copse init --skill claude-code   # → ~/.claude/skills/copse/
+copse init --skill codex          # → ~/.agents/skills/copse/
+copse init --skill opencode       # → ~/.config/opencode/skill/copse/
 ```
 
 | Platform | Skill Path |
 |----------|-----------|
-| `claude-code` | `~/.claude/skills/oml/` |
-| `codex` | `~/.agents/skills/oml/` |
-| `opencode` | `~/.config/opencode/skill/oml/` |
+| `claude-code` | `~/.claude/skills/copse/` |
+| `codex` | `~/.agents/skills/copse/` |
+| `opencode` | `~/.config/opencode/skill/copse/` |
 
 Each skill directory contains:
 - `SKILL.md` — overview and common workflows
@@ -530,29 +530,29 @@ The command is idempotent — running it again updates the skill directory.
 
 #### Auto-init on first run
 
-You don't have to run `oml init` manually. The first time you run any `oml` command (including launching the TUI), if `~/.config/oh-my-lemontree/config.json` does not exist, oml creates it with the default template and prints a one-line notice to stderr:
+You don't have to run `copse init` manually. The first time you run any `copse` command (including launching the TUI), if `~/.config/copse/config.json` does not exist, copse creates it with the default template and prints a one-line notice to stderr:
 
 ```
-oml: created default config at /Users/you/.config/oh-my-lemontree/config.json
+copse: created default config at /Users/you/.config/copse/config.json
 ```
 
-The notice is suppressed when stdout is not a TTY (so pipes, scripts, and CI stay quiet) and when you run `oml init` explicitly (to avoid duplicate messages with init's own success line). Auto-init is fully idempotent — subsequent runs do nothing.
+The notice is suppressed when stdout is not a TTY (so pipes, scripts, and CI stay quiet) and when you run `copse init` explicitly (to avoid duplicate messages with init's own success line). Auto-init is fully idempotent — subsequent runs do nothing.
 
 ## Configuration
 
-Config file: `~/.config/oh-my-lemontree/config.json`
+Config file: `~/.config/copse/config.json`
 
-Initialize with: `oml config --init` (or just run any `oml` command — see [Auto-init on first run](#auto-init-on-first-run))
+Initialize with: `copse config --init` (or just run any `copse` command — see [Auto-init on first run](#auto-init-on-first-run))
 
 ### Full Example
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/getsolaris/oh-my-lemontree/main/schema.json",
+  "$schema": "https://raw.githubusercontent.com/getsolaris/copse/main/schema.json",
   "version": 1,
   "theme": "dracula",
   "defaults": {
-    "worktreeDir": "~/.oml/worktrees/{repo}-{branch}",
+    "worktreeDir": "~/.copse/worktrees/{repo}-{branch}",
     "copyFiles": [".env"],
     "linkFiles": ["node_modules"],
     "postCreate": ["bun install"],
@@ -588,7 +588,7 @@ Initialize with: `oml config --init` (or just run any `oml` command — see [Aut
     "enabled": true,
     "autoCreate": false,
     "autoKill": true,
-    "prefix": "oml",
+    "prefix": "copse",
     "defaultLayout": "dev",
     "layouts": {
       "dev": {
@@ -664,7 +664,7 @@ All repos inherit these unless overridden.
 
 | Field         | Type       | Default                            | Description                             |
 | ------------- | ---------- | ---------------------------------- | --------------------------------------- |
-| `worktreeDir` | `string`   | `~/.oml/worktrees/{repo}-{branch}` | Worktree directory pattern              |
+| `worktreeDir` | `string`   | `~/.copse/worktrees/{repo}-{branch}` | Worktree directory pattern              |
 | `copyFiles`   | `string[]` | `[]`                               | Files to copy from main repo            |
 | `linkFiles`   | `string[]` | `[]`                               | Files/dirs to symlink (saves disk)      |
 | `postCreate`  | `string[]` | `[]`                               | Commands to run after worktree creation |
@@ -809,13 +809,13 @@ Named presets for worktree creation. Each template can override any default fiel
 | `autoUpstream` | `boolean`  | Override upstream tracking         |
 | `base`         | `string`   | Default base branch for newly created branches |
 
-Usage: `oml add feature/login --template review`
+Usage: `copse add feature/login --template review`
 
 Template values override the resolved repo config. The `base` field sets a default for `--base` if not explicitly provided.
 
 #### `lifecycle`
 
-Automatic worktree lifecycle management. Used by `oml clean --stale`.
+Automatic worktree lifecycle management. Used by `copse clean --stale`.
 
 ```json
 {
@@ -838,9 +838,9 @@ Automatic worktree lifecycle management. Used by `oml clean --stale`.
 Switch between different configuration sets.
 
 ```bash
-oml config --profiles                    # List profiles
-oml config --profile work --activate     # Activate profile
-oml config --profile personal --delete   # Delete profile
+copse config --profiles                    # List profiles
+copse config --profile work --activate     # Activate profile
+copse config --profile personal --delete   # Delete profile
 ```
 
 #### `sessions`
@@ -853,7 +853,7 @@ Tmux session management for worktrees.
     "enabled": true,
     "autoCreate": true,
     "autoKill": true,
-    "prefix": "oml",
+    "prefix": "copse",
     "defaultLayout": "dev",
     "layouts": {
       "dev": {
@@ -871,9 +871,9 @@ Tmux session management for worktrees.
 | Field           | Type      | Default | Description                                        |
 | --------------- | --------- | ------- | -------------------------------------------------- |
 | `enabled`       | `boolean` | `false` | Enable session integration (auto-switch in tmux)   |
-| `autoCreate`    | `boolean` | `false` | Auto-create tmux session on `oml add`              |
-| `autoKill`      | `boolean` | `false` | Auto-kill tmux session on `oml remove`             |
-| `prefix`        | `string`  | `"oml"` | Prefix for tmux session names                      |
+| `autoCreate`    | `boolean` | `false` | Auto-create tmux session on `copse add`              |
+| `autoKill`      | `boolean` | `false` | Auto-kill tmux session on `copse remove`             |
+| `prefix`        | `string`  | `"copse"` | Prefix for tmux session names                      |
 | `defaultLayout` | `string`  | —       | Default layout name for new sessions               |
 | `layouts`       | `object`  | `{}`    | Named layouts with window definitions              |
 
@@ -884,7 +884,7 @@ Tmux session management for worktrees.
 | `name`    | `string` | Yes      | Window name                    |
 | `command` | `string` | No       | Command to run in the window   |
 
-Session naming: branch `feat/auth-token` → tmux session `oml_feat-auth-token`.
+Session naming: branch `feat/auth-token` → tmux session `copse_feat-auth-token`.
 
 #### `sharedDeps`
 
@@ -919,12 +919,12 @@ Share dependencies between main repo and worktrees to save disk space. Can be se
 Track which monorepo packages a worktree is working on.
 
 ```bash
-oml add feature/login --focus apps/web,apps/api
+copse add feature/login --focus apps/web,apps/api
 ```
 
 - Supports comma-separated, space-separated, or multiple `--focus` flags
 - Focus metadata is stored in git internals (not in the worktree root)
-- `oml list` shows focus paths per worktree
+- `copse list` shows focus paths per worktree
 - Monorepo hooks only fire for matching focus paths
 - Focus is optional — omitting it creates a normal worktree
 
@@ -961,41 +961,41 @@ Available: `opencode`, `tokyo-night`, `dracula`, `nord`, `catppuccin`, `github-d
 
 ## Shell Integration
 
-Use `oml shell-init` to install shell integration for `oml switch`.
+Use `copse shell-init` to install shell integration for `copse switch`.
 
 ### Completions
 
 ```bash
 # Add completions (bash)
-eval "$(oml shell-init --completions bash)"
+eval "$(copse shell-init --completions bash)"
 
 # Add completions (zsh)
-eval "$(oml shell-init --completions zsh)"
+eval "$(copse shell-init --completions zsh)"
 
 # Add completions (fish)
-oml shell-init --completions fish | source
+copse shell-init --completions fish | source
 ```
 
 ### Examples
 
 ```bash
 # zsh
-echo 'eval "$(oml shell-init zsh)"' >> ~/.zshrc
+echo 'eval "$(copse shell-init zsh)"' >> ~/.zshrc
 source ~/.zshrc
 
 # bash
-echo 'eval "$(oml shell-init bash)"' >> ~/.bashrc
+echo 'eval "$(copse shell-init bash)"' >> ~/.bashrc
 source ~/.bashrc
 
 # fish
-oml shell-init fish >> ~/.config/fish/config.fish
+copse shell-init fish >> ~/.config/fish/config.fish
 source ~/.config/fish/config.fish
 ```
 
 You can also preview the generated wrapper before saving it:
 
 ```bash
-oml shell-init zsh
+copse shell-init zsh
 ```
 
 ## License

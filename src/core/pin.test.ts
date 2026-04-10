@@ -37,7 +37,7 @@ describe("writePin and readPin", () => {
 
   it("writes and reads pin metadata for linked worktree", async () => {
     const repoPath = await createTempRepo();
-    const wtPath = createTempDir("oml-pin-linked-");
+    const wtPath = createTempDir("copse-pin-linked-");
     await runGit(["worktree", "add", wtPath, "-b", "feature/pinned"], repoPath);
 
     writePin(wtPath, "linked");
@@ -95,8 +95,8 @@ describe("isPinned and removePin", () => {
 describe("listPinnedWorktrees", () => {
   it("returns only pinned worktrees for main and linked entries", async () => {
     const repoPath = await createTempRepo();
-    const wtPath = createTempDir("oml-pin-list-linked-");
-    const otherPath = createTempDir("oml-pin-list-other-");
+    const wtPath = createTempDir("copse-pin-list-linked-");
+    const otherPath = createTempDir("copse-pin-list-other-");
 
     await runGit(["worktree", "add", wtPath, "-b", "feature/list"], repoPath);
 

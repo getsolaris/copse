@@ -1,11 +1,11 @@
-# oml diff
+# copse diff
 
 Show diff between two worktrees or branches.
 
 ## Usage
 
 ```
-oml diff <ref1> [ref2]
+copse diff <ref1> [ref2]
 ```
 
 If `ref2` is omitted, it defaults to the current HEAD.
@@ -22,29 +22,29 @@ If `ref2` is omitted, it defaults to the current HEAD.
 ### Diff a branch against current HEAD
 
 ```bash
-oml diff feature/login
+copse diff feature/login
 ```
 
 ### Diff between two branches
 
 ```bash
-oml diff feature/login feature/auth
+copse diff feature/login feature/auth
 ```
 
 ### Show only a summary of changes
 
 ```bash
-oml diff feature/login --stat
+copse diff feature/login --stat
 ```
 
 ### Show only changed file names
 
 ```bash
-oml diff feature/login --name-only
+copse diff feature/login --name-only
 ```
 
 ### Compare two branches with stat summary
 
 ```bash
-oml diff develop main --stat
+copse diff develop main --stat
 ```

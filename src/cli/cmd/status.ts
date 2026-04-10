@@ -170,7 +170,7 @@ const cmd: CommandModule = {
       if (err instanceof GitError) {
         if (err.stderr.includes("not a git repository")) {
           console.error("Error: not a git repository (or any of the parent directories): .git");
-          console.error("Run oml from within a git repository.");
+          console.error("Run copse from within a git repository.");
         } else {
           console.error(`Git error: ${err.message}`);
         }

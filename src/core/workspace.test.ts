@@ -22,12 +22,12 @@ afterEach(cleanupTempDirs);
 
 describe("discoverRepos", () => {
   it("returns empty array when workspace path does not exist", () => {
-    const result = discoverRepos("/tmp/oml-nonexistent-workspace-xyz");
+    const result = discoverRepos("/tmp/copse-nonexistent-workspace-xyz");
     expect(result).toEqual([]);
   });
 
   it("returns empty array when workspace path is a file, not a directory", () => {
-    const dir = createTempDir("oml-ws-file-");
+    const dir = createTempDir("copse-ws-file-");
     const filePath = join(dir, "not-a-dir.txt");
     writeFileSync(filePath, "content");
 
@@ -36,13 +36,13 @@ describe("discoverRepos", () => {
   });
 
   it("returns empty array for empty directory", () => {
-    const dir = createTempDir("oml-ws-empty-");
+    const dir = createTempDir("copse-ws-empty-");
     const result = discoverRepos(dir);
     expect(result).toEqual([]);
   });
 
   it("discovers a single git repo at depth 1", async () => {
-    const parent = createTempDir("oml-ws-single-");
+    const parent = createTempDir("copse-ws-single-");
     const repoA = createSubDir(parent, "repo-a");
     await initRepo(repoA);
 
@@ -52,7 +52,7 @@ describe("discoverRepos", () => {
   });
 
   it("discovers multiple git repos at depth 1", async () => {
-    const parent = createTempDir("oml-ws-multi-");
+    const parent = createTempDir("copse-ws-multi-");
     const repoA = createSubDir(parent, "alpha");
     const repoB = createSubDir(parent, "beta");
     const repoC = createSubDir(parent, "gamma");
@@ -68,7 +68,7 @@ describe("discoverRepos", () => {
   });
 
   it("returns sorted results", async () => {
-    const parent = createTempDir("oml-ws-sort-");
+    const parent = createTempDir("copse-ws-sort-");
     const repoZ = createSubDir(parent, "zebra");
     const repoA = createSubDir(parent, "alpha");
     await initRepo(repoZ);
@@ -80,7 +80,7 @@ describe("discoverRepos", () => {
   });
 
   it("skips non-git directories", async () => {
-    const parent = createTempDir("oml-ws-nongit-");
+    const parent = createTempDir("copse-ws-nongit-");
     const repoA = createSubDir(parent, "real-repo");
     createSubDir(parent, "not-a-repo");
     createSubDir(parent, "also-not-a-repo");
@@ -92,7 +92,7 @@ describe("discoverRepos", () => {
   });
 
   it("skips sub-worktrees where .git is a file, not a directory", async () => {
-    const parent = createTempDir("oml-ws-subworktree-");
+    const parent = createTempDir("copse-ws-subworktree-");
     const realRepo = createSubDir(parent, "main-repo");
     await initRepo(realRepo);
 
@@ -106,7 +106,7 @@ describe("discoverRepos", () => {
   });
 
   it("skips directories matching exclude patterns", async () => {
-    const parent = createTempDir("oml-ws-exclude-");
+    const parent = createTempDir("copse-ws-exclude-");
     const keep = createSubDir(parent, "keep-me");
     const skip = createSubDir(parent, "node_modules");
     await initRepo(keep);
@@ -118,7 +118,7 @@ describe("discoverRepos", () => {
   });
 
   it("exclude supports glob patterns", async () => {
-    const parent = createTempDir("oml-ws-exclude-glob-");
+    const parent = createTempDir("copse-ws-exclude-glob-");
     const keep = createSubDir(parent, "keep");
     const skip1 = createSubDir(parent, "temp-one");
     const skip2 = createSubDir(parent, "temp-two");
@@ -132,7 +132,7 @@ describe("discoverRepos", () => {
   });
 
   it("depth 1 does not descend into non-repo subdirectories", async () => {
-    const parent = createTempDir("oml-ws-depth1-");
+    const parent = createTempDir("copse-ws-depth1-");
     const nested = createSubDir(join(parent, "nested-dir"), "deep-repo");
     await initRepo(nested);
 
@@ -141,7 +141,7 @@ describe("discoverRepos", () => {
   });
 
   it("depth 2 descends one level through non-repo directories", async () => {
-    const parent = createTempDir("oml-ws-depth2-");
+    const parent = createTempDir("copse-ws-depth2-");
     const group = createSubDir(parent, "group-a");
     const nested = createSubDir(group, "nested-repo");
     await initRepo(nested);
@@ -152,7 +152,7 @@ describe("discoverRepos", () => {
   });
 
   it("depth 3 can discover repos three levels deep", async () => {
-    const parent = createTempDir("oml-ws-depth3-");
+    const parent = createTempDir("copse-ws-depth3-");
     const nested = createSubDir(join(parent, "group", "subgroup"), "target-repo");
     await initRepo(nested);
 
@@ -162,7 +162,7 @@ describe("discoverRepos", () => {
   });
 
   it("depth requests beyond the max are clamped and cannot reach deeper repos", async () => {
-    const parent = createTempDir("oml-ws-depth-clamp-");
+    const parent = createTempDir("copse-ws-depth-clamp-");
     const tooDeep = createSubDir(join(parent, "a", "b", "c"), "too-deep");
     await initRepo(tooDeep);
 
@@ -171,7 +171,7 @@ describe("discoverRepos", () => {
   });
 
   it("does not recurse into discovered repos even at higher depths", async () => {
-    const parent = createTempDir("oml-ws-no-recurse-");
+    const parent = createTempDir("copse-ws-no-recurse-");
     const outer = createSubDir(parent, "outer-repo");
     await initRepo(outer);
 
@@ -185,7 +185,7 @@ describe("discoverRepos", () => {
   });
 
   it("expands leading tilde using HOME env var", async () => {
-    const parent = createTempDir("oml-ws-home-");
+    const parent = createTempDir("copse-ws-home-");
     const repoA = createSubDir(parent, "home-repo");
     await initRepo(repoA);
 
@@ -219,7 +219,7 @@ describe("expandWorkspaces", () => {
   });
 
   it("adds discovered repos to an empty repos array", async () => {
-    const parent = createTempDir("oml-expand-empty-");
+    const parent = createTempDir("copse-expand-empty-");
     const repoA = createSubDir(parent, "a");
     const repoB = createSubDir(parent, "b");
     await initRepo(repoA);
@@ -237,7 +237,7 @@ describe("expandWorkspaces", () => {
   });
 
   it("merges discovered repos alongside explicit repos", async () => {
-    const parent = createTempDir("oml-expand-merge-");
+    const parent = createTempDir("copse-expand-merge-");
     const discovered = createSubDir(parent, "discovered");
     await initRepo(discovered);
 
@@ -254,7 +254,7 @@ describe("expandWorkspaces", () => {
   });
 
   it("explicit repos take precedence over discovered repos with same path", async () => {
-    const parent = createTempDir("oml-expand-precedence-");
+    const parent = createTempDir("copse-expand-precedence-");
     const shared = createSubDir(parent, "shared");
     await initRepo(shared);
 
@@ -270,7 +270,7 @@ describe("expandWorkspaces", () => {
   });
 
   it("applies workspace defaults to discovered repos", async () => {
-    const parent = createTempDir("oml-expand-defaults-");
+    const parent = createTempDir("copse-expand-defaults-");
     const repoA = createSubDir(parent, "app");
     await initRepo(repoA);
 
@@ -298,7 +298,7 @@ describe("expandWorkspaces", () => {
   });
 
   it("first workspace wins when multiple workspaces discover the same repo", async () => {
-    const parent = createTempDir("oml-expand-dedup-");
+    const parent = createTempDir("copse-expand-dedup-");
     const repoA = createSubDir(parent, "app");
     await initRepo(repoA);
 
@@ -316,7 +316,7 @@ describe("expandWorkspaces", () => {
   });
 
   it("does not mutate the input config", async () => {
-    const parent = createTempDir("oml-expand-immutable-");
+    const parent = createTempDir("copse-expand-immutable-");
     const repoA = createSubDir(parent, "app");
     await initRepo(repoA);
 
@@ -336,7 +336,7 @@ describe("expandWorkspaces", () => {
   });
 
   it("returns input unchanged when workspace discovers nothing", () => {
-    const parent = createTempDir("oml-expand-empty-ws-");
+    const parent = createTempDir("copse-expand-empty-ws-");
     const config: OmlConfig = {
       version: 1,
       workspaces: [{ path: parent }],
@@ -348,7 +348,7 @@ describe("expandWorkspaces", () => {
   });
 
   it("respects depth and exclude options per workspace", async () => {
-    const parent = createTempDir("oml-expand-options-");
+    const parent = createTempDir("copse-expand-options-");
     const immediate = createSubDir(parent, "immediate-repo");
     const deep = createSubDir(join(parent, "nested"), "deep-repo");
     const excluded = createSubDir(parent, "temp-cache");

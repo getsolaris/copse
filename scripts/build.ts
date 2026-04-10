@@ -6,7 +6,7 @@ import solidPlugin from "@opentui/solid/bun-plugin";
 
 const pkg = JSON.parse(readFileSync("package.json", "utf-8")) as { version: string };
 
-console.log(`Building oh-my-lemontree v${pkg.version}...`);
+console.log(`Building copse v${pkg.version}...`);
 
 mkdirSync("dist", { recursive: true });
 
@@ -35,7 +35,7 @@ const result = await Bun.build({
   outdir: "dist",
   target: "bun",
   minify: true,
-  naming: "oml.js",
+  naming: "copse.js",
   plugins: [stripRuntimePreloadPlugin, solidPlugin],
   external: [
     "@opentui/core",
@@ -53,7 +53,7 @@ if (!result.success) {
 
 const size = result.outputs[0]?.size ?? 0;
 
-console.log("✓ Built dist/oml.js");
+console.log("✓ Built dist/copse.js");
 console.log(`  Size: ${(size / 1024).toFixed(1)} KB`);
 console.log("\nTo install globally:");
 console.log("  bun install -g .");

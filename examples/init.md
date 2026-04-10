@@ -1,12 +1,12 @@
-# oml init
+# copse init
 
-Initialize oml config or install oml skill for AI coding agents.
+Initialize copse config or install copse skill for AI coding agents.
 
 ## Usage
 
 ```
-oml init
-oml init --skill <platform>
+copse init
+copse init --skill <platform>
 ```
 
 ## Options
@@ -19,24 +19,24 @@ oml init --skill <platform>
 
 | Platform | Skill Path |
 |----------|-----------|
-| `claude-code` | `~/.claude/skills/oml/SKILL.md` |
-| `codex` | `~/.agents/skills/oml/SKILL.md` |
-| `opencode` | `~/.config/opencode/skill/oml/SKILL.md` |
+| `claude-code` | `~/.claude/skills/copse/SKILL.md` |
+| `codex` | `~/.agents/skills/copse/SKILL.md` |
+| `opencode` | `~/.config/opencode/skill/copse/SKILL.md` |
 
 ## Examples
 
 ### Initialize config only
 
 ```bash
-oml init
-# ✓ Initialized config → ~/.config/oh-my-lemontree/config.json
+copse init
+# ✓ Initialized config → ~/.config/copse/config.json
 ```
 
 ### Install skill for Claude Code
 
 ```bash
-oml init --skill claude-code
-# ✓ Installed → ~/.claude/skills/oml/
+copse init --skill claude-code
+# ✓ Installed → ~/.claude/skills/copse/
 #     SKILL.md
 #     references/ (21 commands)
 ```
@@ -44,8 +44,8 @@ oml init --skill claude-code
 ### Install skill for Codex
 
 ```bash
-oml init --skill codex
-# ✓ Installed → ~/.agents/skills/oml/
+copse init --skill codex
+# ✓ Installed → ~/.agents/skills/copse/
 #     SKILL.md
 #     references/ (21 commands)
 ```
@@ -53,8 +53,8 @@ oml init --skill codex
 ### Install skill for OpenCode
 
 ```bash
-oml init --skill opencode
-# ✓ Installed → ~/.config/opencode/skill/oml/
+copse init --skill opencode
+# ✓ Installed → ~/.config/opencode/skill/copse/
 #     SKILL.md
 #     references/ (21 commands)
 ```

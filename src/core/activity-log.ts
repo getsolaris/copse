@@ -8,7 +8,7 @@ const truncateToLines = 500;
 const truncateCheckBytes = 80 * maxLogLines;
 
 export function getActivityLogPath(repoPath: string): string {
-  return getMetadataFilePath(repoPath, "oml-activity.log");
+  return getMetadataFilePath(repoPath, "copse-activity.log");
 }
 
 export function logActivity(repoPath: string, event: ActivityEvent): void {

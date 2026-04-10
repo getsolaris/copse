@@ -47,7 +47,7 @@ Shared business logic for both CLI and TUI. No UI, no process.exit, no console o
 
 ## First-Run Auto-Init
 
-`ensureConfigInitialized(overridePath?)` is called once per process from `src/cli/index.ts` (skipped only when the user explicitly runs `oml init`). It is idempotent: returns `{ path, created: false }` when the file already exists, otherwise creates `DEFAULT_CONFIG` and returns `{ path, created: true }`. The CLI prints a one-line stderr notice only when `created === true` AND `process.stdout.isTTY` (so pipes and CI stay quiet).
+`ensureConfigInitialized(overridePath?)` is called once per process from `src/cli/index.ts` (skipped only when the user explicitly runs `copse init`). It is idempotent: returns `{ path, created: false }` when the file already exists, otherwise creates `DEFAULT_CONFIG` and returns `{ path, created: true }`. The CLI prints a one-line stderr notice only when `created === true` AND `process.stdout.isTTY` (so pipes and CI stay quiet).
 
 ## Doctor Pattern
 

@@ -238,9 +238,9 @@ const cmd: CommandModule = {
       }
 
       const hookEnv: Record<string, string> = {
-        OML_BRANCH: branch,
-        OML_WORKTREE_PATH: worktreePath,
-        OML_REPO_PATH: mainRepoPath,
+        COPSE_BRANCH: branch,
+        COPSE_WORKTREE_PATH: worktreePath,
+        COPSE_REPO_PATH: mainRepoPath,
       };
 
       // Parse --focus flag (supports: --focus a,b --focus c  OR  --focus "a b")
@@ -266,7 +266,7 @@ const cmd: CommandModule = {
           console.log(`  ✓ Focus set: ${valid.join(", ")}`);
         }
 
-        hookEnv.OML_FOCUS_PATHS = valid.join(",");
+        hookEnv.COPSE_FOCUS_PATHS = valid.join(",");
       }
 
       if (repoConfig.postCreate.length > 0) {

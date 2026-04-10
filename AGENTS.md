@@ -1,4 +1,4 @@
-# AGENTS.md — oh-my-lemontree
+# AGENTS.md — copse
 
 ## Project Overview
 
@@ -11,7 +11,7 @@ bun run typecheck          # tsc --noEmit --skipLibCheck
 bun test                   # Run all tests
 bun test src/core/git      # Run tests in a single file (partial match)
 bun test --filter "parses" # Run tests matching description
-bun run build              # Bundle to dist/oml.js
+bun run build              # Bundle to dist/copse.js
 bun run src/index.ts       # Launch TUI (dev mode)
 bun run src/index.ts <cmd> # Run CLI command (dev mode)
 ```
@@ -138,8 +138,8 @@ Register new commands in `src/cli/index.ts` — add to the `Promise.all` import 
 
 - Every bug fix should add or update a real regression test file whenever the behavior can be covered in `bun:test`.
 - After changing CLI behavior, run the command for real with `bun run src/index.ts <cmd>` and verify **stdout/stderr + exit code**, not just types.
-- For exhaustive command-by-command manual QA across the full CLI surface, use the project skill at `.claude/skills/oml-cli-smoke-testing/` instead of expanding this file with long procedural steps.
-- When CLI commands, options, or command docs change, update the local smoke-testing skill files (`.claude/skills/oml-cli-smoke-testing/SKILL.md` and `references/command-groups.md`) alongside `src/core/skill-templates.ts` to avoid drift.
+- For exhaustive command-by-command manual QA across the full CLI surface, use the project skill at `.claude/skills/copse-cli-smoke-testing/` instead of expanding this file with long procedural steps.
+- When CLI commands, options, or command docs change, update the local smoke-testing skill files (`.claude/skills/copse-cli-smoke-testing/SKILL.md` and `references/command-groups.md`) alongside `src/core/skill-templates.ts` to avoid drift.
 - Run CLI/manual QA in an isolated temp environment when config or repo state matters:
   - use a temp git repo instead of the project repo
   - set `HOME` / `XDG_CONFIG_HOME` to temp directories when testing config loading
@@ -175,10 +175,10 @@ All git commands go through `GitWorktree.run()` (private static). This:
 
 - Runtime is Bun, not Node — use `Bun.spawn`, `Bun.Glob`, `Bun.env`
 - No standalone binary — distributed as npm package (`bun install -g`)
-- TUI uses SolidJS JSX transform via `@opentui/solid/preload` — loaded by `bunfig.toml` (dev/tests from project root) AND by explicit `import "@opentui/solid/preload"` in `src/index.ts` (required for Homebrew, which runs `bun run src/index.ts` from the user's cwd). The bundled `dist/oml.js` has JSX transformed at build time and strips the runtime preload via a plugin in `scripts/build.ts`.
-- Config file: `~/.config/oh-my-lemontree/config.json` (XDG-compliant)
-- Focus metadata: stored in git internals (`<gitdir>/oml-focus`), not in worktree root
-- Session metadata: stored in git internals (`<gitdir>/oml-session`), not in worktree root
+- TUI uses SolidJS JSX transform via `@opentui/solid/preload` — loaded by `bunfig.toml` (dev/tests from project root) AND by explicit `import "@opentui/solid/preload"` in `src/index.ts` (required for Homebrew, which runs `bun run src/index.ts` from the user's cwd). The bundled `dist/copse.js` has JSX transformed at build time and strips the runtime preload via a plugin in `scripts/build.ts`.
+- Config file: `~/.config/copse/config.json` (XDG-compliant)
+- Focus metadata: stored in git internals (`<gitdir>/copse-focus`), not in worktree root
+- Session metadata: stored in git internals (`<gitdir>/copse-session`), not in worktree root
 
 ## Feature Completion Checklist
 
@@ -193,6 +193,6 @@ When adding or modifying a feature, **all** of the following must be updated bef
 7. **examples/** — add or update `examples/<command>.md`
 8. **AGENTS.md** — update architecture table, module map, key constraints if applicable
 9. **src/core/AGENTS.md** — update module map with new core modules
-10. **Skill references** — update `src/core/skill-templates.ts` when CLI commands change (add/remove/rename commands, change options, update config keys). This regenerates the AI agent skill files (`SKILL.md` + `references/*.md`) installed via `oml init --skill`. If the local project smoke-testing skill is affected, update `.claude/skills/oml-cli-smoke-testing/SKILL.md` and `references/command-groups.md` too.
+10. **Skill references** — update `src/core/skill-templates.ts` when CLI commands change (add/remove/rename commands, change options, update config keys). This regenerates the AI agent skill files (`SKILL.md` + `references/*.md`) installed via `copse init --skill`. If the local project smoke-testing skill is affected, update `.claude/skills/copse-cli-smoke-testing/SKILL.md` and `references/command-groups.md` too.
 11. **Typecheck + Tests** — `bun run typecheck` and `bun test` must pass
-12. **CLI Smoke Test** — after non-trivial CLI changes, run the smoke-testing skill (`.claude/skills/oml-cli-smoke-testing/`) to verify all affected commands and their flags work end-to-end in isolated temp environments. This is the final gate before considering CLI work complete.
+12. **CLI Smoke Test** — after non-trivial CLI changes, run the smoke-testing skill (`.claude/skills/copse-cli-smoke-testing/`) to verify all affected commands and their flags work end-to-end in isolated temp environments. This is the final gate before considering CLI work complete.

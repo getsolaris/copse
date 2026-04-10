@@ -4,7 +4,7 @@ import type { PinMetadata, Worktree } from "./types.ts";
 import { getMetadataFilePath } from "./metadata.ts";
 
 function getPinFilePath(worktreePath: string): string {
-  return getMetadataFilePath(worktreePath, "oml-pin");
+  return getMetadataFilePath(worktreePath, "copse-pin");
 }
 
 function getCurrentBranch(worktreePath: string): string {
