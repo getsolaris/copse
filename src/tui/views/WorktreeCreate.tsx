@@ -1,14 +1,9 @@
 import { createSignal, createEffect, on, onCleanup, onMount, For, Show } from "solid-js";
 import { useApp } from "../context/AppContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
-import { GitWorktree, parseRemoteRef } from "../../core/git.ts";
-import { loadConfig, getRepoConfig, expandTemplate, getSessionConfig, resolveSessionLayout } from "../../core/config.ts";
-import { copyFiles, linkFiles } from "../../core/files.ts";
-import { executeHooks } from "../../core/hooks.ts";
-import { writeFocus } from "../../core/focus.ts";
-import { validateFocusPaths } from "../../core/monorepo.ts";
-import { matchHooksForFocus, executeGlobHooks } from "../../core/glob-hooks.ts";
-import { isTmuxAvailable, openSession } from "../../core/session.ts";
+import { GitWorktree } from "../../core/git.ts";
+import { loadConfig, getRepoConfig, expandTemplate } from "../../core/config.ts";
+import { createWorktreeFlow } from "../../core/orchestration/index.ts";
 import { useKeyboard, usePaste, useTerminalDimensions } from "@opentui/solid";
 import { decodePasteBytes } from "@opentui/core";
 import { basename, resolve } from "node:path";
@@ -172,178 +167,50 @@ export function WorktreeCreate() {
 
         try {
           const config = loadConfig();
-          const repoConfig = getRepoConfig(config, repoPath);
-          const sessionConfig = getSessionConfig(config);
-
-          const resolvedBase = repoConfig.base;
-          const branchAlreadyExists = await GitWorktree.localBranchExists(branch, repoPath);
-          let remoteRef: { remote: string; branch: string } | null = null;
-          if (resolvedBase && !branchAlreadyExists) {
-            const remotes = await GitWorktree.getRemotes(repoPath);
-            remoteRef = parseRemoteRef(resolvedBase, remotes);
-          }
-
-          const tmuxOk = sessionConfig.autoCreate ? await isTmuxAvailable() : false;
-
-          const steps: ProgressStep[] = [];
-          if (remoteRef) {
-            steps.push({ label: `Fetching ${remoteRef.remote}/${remoteRef.branch}`, status: "pending" });
-          }
-          steps.push({ label: "Creating worktree", status: "pending" });
-          if (repoConfig.autoUpstream) {
-            steps.push({ label: "Setting upstream", status: "pending" });
-          }
-          if (repoConfig.copyFiles.length > 0) {
-            steps.push({ label: "Copying files", status: "pending" });
-          }
-          if (repoConfig.linkFiles.length > 0) {
-            steps.push({ label: "Creating symlinks", status: "pending" });
-          }
-          if (repoConfig.postCreate.length > 0) {
-            steps.push({ label: "Running hooks", status: "pending" });
-          }
 
           const rawFocus = focusInput();
-          let focusPaths: string[] = [];
-          if (rawFocus) {
-            focusPaths = rawFocus.split(/[,\s]+/).map(f => f.trim()).filter(Boolean);
-          }
+          const focusPaths = rawFocus
+            ? rawFocus.split(/[,\s]+/).map(f => f.trim()).filter(Boolean)
+            : [];
 
-          if (focusPaths.length > 0) {
-            steps.push({ label: "Setting focus", status: "pending" });
-          }
-          if (focusPaths.length > 0 && repoConfig.monorepo?.hooks && repoConfig.monorepo.hooks.length > 0) {
-            const preMatches = matchHooksForFocus(repoConfig.monorepo.hooks, focusPaths);
-            if (preMatches.length > 0) {
-              steps.push({ label: "Running monorepo hooks", status: "pending" });
-            }
-          }
-          if (sessionConfig.autoCreate && tmuxOk) {
-            steps.push({ label: "Creating session", status: "pending" });
-          }
+          const stepIndexById: Record<string, number> = {};
 
-          setProgressSteps(steps);
-
-          let stepIdx = 0;
-
-          if (remoteRef) {
-            updateStep(stepIdx, { status: "running" });
-            try {
-              await GitWorktree.fetchRemote(remoteRef.remote, remoteRef.branch, repoPath);
-              updateStep(stepIdx, { status: "done" });
-            } catch (err) {
-              const msg = (err as Error).message.split("\n")[0];
-              updateStep(stepIdx, { status: "error", message: `${msg} — continuing with local ref` });
-            }
-            stepIdx++;
-          }
-
-          updateStep(stepIdx, { status: "running" });
-          await GitWorktree.add(branch, wtPath, { createBranch: true, base: resolvedBase }, repoPath);
-          updateStep(stepIdx, { status: "done" });
-          stepIdx++;
-
-          // Setting upstream
-          if (repoConfig.autoUpstream) {
-            updateStep(stepIdx, { status: "running" });
-            try {
-              const remote = await GitWorktree.getDefaultRemote(repoPath);
-              const exists = await GitWorktree.remoteBranchExists(branch, remote, repoPath);
-              if (exists) {
-                await GitWorktree.setUpstream(branch, remote, repoPath);
-                updateStep(stepIdx, { status: "done", message: `→ ${remote}/${branch}` });
-              } else {
-                updateStep(stepIdx, { status: "done", message: "no remote branch" });
-              }
-            } catch (err) {
-              updateStep(stepIdx, { status: "error", message: (err as Error).message });
-            }
-            stepIdx++;
-          }
-
-          // Copying files
-          if (repoConfig.copyFiles.length > 0) {
-            updateStep(stepIdx, { status: "running" });
-            copyFiles(repoPath, wtPath, repoConfig.copyFiles);
-            updateStep(stepIdx, { status: "done" });
-            stepIdx++;
-          }
-
-          // Creating symlinks
-          if (repoConfig.linkFiles.length > 0) {
-            updateStep(stepIdx, { status: "running" });
-            linkFiles(repoPath, wtPath, repoConfig.linkFiles);
-            updateStep(stepIdx, { status: "done" });
-            stepIdx++;
-          }
-
-          const hookEnv: Record<string, string> = {
-            COPSE_BRANCH: branch,
-            COPSE_WORKTREE_PATH: wtPath,
-            COPSE_REPO_PATH: repoPath,
-          };
-
-          // Running hooks
-          if (repoConfig.postCreate.length > 0) {
-            updateStep(stepIdx, { status: "running" });
-            await executeHooks(repoConfig.postCreate, {
-              cwd: wtPath,
-              env: hookEnv,
-              onOutput: (line) => updateStep(stepIdx, { message: line }),
-            });
-            updateStep(stepIdx, { status: "done" });
-            stepIdx++;
-          }
-
-          // Setting focus
-          if (focusPaths.length > 0) {
-            updateStep(stepIdx, { status: "running" });
-            const { valid } = validateFocusPaths(wtPath, focusPaths);
-            focusPaths = valid;
-            if (valid.length > 0) {
-              writeFocus(wtPath, valid);
-              hookEnv.COPSE_FOCUS_PATHS = valid.join(",");
-            }
-            updateStep(stepIdx, { status: "done" });
-            stepIdx++;
-          }
-
-          // Running monorepo hooks
-          if (focusPaths.length > 0 && repoConfig.monorepo?.hooks && repoConfig.monorepo.hooks.length > 0) {
-            updateStep(stepIdx, { status: "running" });
-            const matches = matchHooksForFocus(repoConfig.monorepo.hooks, focusPaths);
-            if (matches.length > 0) {
-              await executeGlobHooks(matches, "postCreate", {
-                cwd: wtPath,
-                env: hookEnv,
-                repo: repoName,
-                branch,
-                focusPaths,
-                mainRepoPath: repoPath,
-                onOutput: (line) => updateStep(stepIdx, { message: line }),
-              });
-            }
-            updateStep(stepIdx, { status: "done" });
-            stepIdx++;
-          }
-
-          if (sessionConfig.autoCreate && tmuxOk) {
-            updateStep(stepIdx, { status: "running" });
-            try {
-              const sessionLayoutName = sessionConfig.defaultLayout;
-              const sessionLayout = resolveSessionLayout(config, sessionLayoutName);
-              const sessionName = await openSession(branch, wtPath, {
-                layout: sessionLayout,
-                prefix: sessionConfig.prefix,
-                attach: false,
-                layoutName: sessionLayoutName,
-              });
-              updateStep(stepIdx, { status: "done", message: sessionName });
-            } catch (err) {
-              updateStep(stepIdx, { status: "error", message: (err as Error).message.split("\n")[0] });
-            }
-            stepIdx++;
-          }
+          await createWorktreeFlow(
+            config,
+            {
+              branch,
+              worktreePath: wtPath,
+              mainRepoPath: repoPath,
+              repoName,
+              focusPaths,
+              session: undefined,
+            },
+            {
+              onStepPlan: (plan) => {
+                const steps: ProgressStep[] = plan.map((entry, idx) => {
+                  stepIndexById[entry.id] = idx;
+                  return { label: entry.label, status: "pending" };
+                });
+                setProgressSteps(steps);
+              },
+              onStepStart: (id) => {
+                const idx = stepIndexById[id];
+                if (idx !== undefined) updateStep(idx, { status: "running" });
+              },
+              onStepDone: (id, message) => {
+                const idx = stepIndexById[id];
+                if (idx !== undefined) updateStep(idx, { status: "done", message });
+              },
+              onStepError: (id, message) => {
+                const idx = stepIndexById[id];
+                if (idx !== undefined) updateStep(idx, { status: "error", message });
+              },
+              onHookOutput: (line) => {
+                const lastRunning = progressSteps().findLastIndex(s => s.status === "running");
+                if (lastRunning >= 0) updateStep(lastRunning, { message: line });
+              },
+            },
+          );
 
           setStatusMsg("Worktree created successfully!");
           setStep("done");

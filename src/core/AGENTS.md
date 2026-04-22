@@ -17,6 +17,9 @@ Shared business logic for both CLI and TUI. No UI, no process.exit, no console o
 | `glob-hooks.ts` | Per-package hook matching | `matchHooksForFocus()`, `executeGlobHooks()` |
 | `skill-templates.ts` | AI agent skill file generation | `writeSkillFile()`, `generateSkillContent()`, `generateReferenceFiles()`, `getSkillFilePath()` |
 | `session.ts` | Tmux session management | `openSession()`, `closeSession()`, `listSessions()`, `SessionError` |
+| `orchestration/create-worktree.ts` | Full create-worktree pipeline (fetch → add → upstream → files → hooks → session → PR meta → activity log) | `createWorktreeFlow()` |
+| `orchestration/remove-worktree.ts` | Full remove-worktree pipeline (hooks → session kill → remove → activity log) | `removeWorktreeFlow()` |
+| `orchestration/types.ts` | Shared orchestration types | `StepProgressHandler`, `CREATE_STEP_IDS`, `REMOVE_STEP_IDS`, `CreateWorktreeOpts`, `RemoveWorktreeOpts` |
 | `types.ts` | Shared types + errors | `Worktree`, `GitError`, `GitVersionError` |
 | `test-helpers.ts` | Test utilities | `createTempRepo()`, `createTempDir()`, `cleanupTempDirs()` |
 
@@ -74,6 +77,41 @@ Never add new checks that call `list()` independently.
 - Core functions **throw** — never `process.exit()` or `console.error()`
 - Custom errors carry structured data (`exitCode`, `stderr`, `command`)
 - Use `empty catch {}` only for genuinely optional fallbacks (e.g., `.catch(() => false)`)
+
+## Orchestration Layer (CLI/TUI Parity)
+
+**`src/core/orchestration/`** is the single source of truth for multi-step worktree operations. Both CLI commands (`src/cli/cmd/add.ts`, `src/cli/cmd/remove.ts`) and TUI views (`src/tui/views/WorktreeCreate.tsx`, `WorktreeRemove.tsx`, `BulkActions.tsx`) delegate to the same flow functions.
+
+**Rule:** any step that triggers a side effect during worktree create/remove MUST live here, not in the caller. Adding a new config-driven step (e.g., new hook, new metadata write) to only one caller is a bug — it WILL drift.
+
+### Handler contract
+
+Each flow accepts a `StepProgressHandler` for UI feedback:
+
+```typescript
+interface StepProgressHandler {
+  onStepPlan?: (steps: readonly StepPlanEntry[]) => void;   // called once, up-front
+  onStepStart?: (id: string, message?: string) => void;
+  onStepDone?: (id: string, message?: string) => void;
+  onStepError?: (id: string, message: string) => void;
+  onHookOutput?: (line: string) => void;
+}
+```
+
+- CLI handlers print to `console.log` / `console.warn`
+- TUI handlers update SolidJS progress state (`progressSteps` signal)
+- Tests assert on step IDs via the same handler
+
+### Step IDs
+
+Step IDs are constants (`CREATE_STEP_IDS`, `REMOVE_STEP_IDS`) — never hardcode strings in consumers. Tests in `orchestration.test.ts` verify:
+- `onStepPlan` fires exactly once, ordered correctly for the config
+- Each step's `onStepStart` → (`onStepDone` or `onStepError`) lifecycle completes
+- Same config produces identical plan across CLI and TUI callers (parity invariant)
+
+### Rollback
+
+`createWorktreeFlow` auto-removes the worktree (force=true, best-effort) when any step after `worktree` throws. Callers only see the original error.
 
 ## Bun API Access
 

@@ -62,6 +62,35 @@ useKeyboard((event) => {
 ```
 The `inputFocused` signal lives in AppContext and is set/cleared by `<input>` focus/blur events.
 
+## Worktree Operations: Delegate to Orchestration
+
+TUI views that create or remove worktrees **must not** re-implement the pipeline (fetch, copy files, hooks, session create/kill, activity log, etc.). Call `createWorktreeFlow` / `removeWorktreeFlow` from `src/core/orchestration/` instead.
+
+**Why:** adding a feature to only one caller (CLI or TUI) is how parity bugs happen — missing session auto-create, missing monorepo postRemove hooks, missing activity logs. The orchestration layer is the single source of truth; the handler callbacks are the ONLY UI-specific glue.
+
+**Pattern:**
+```tsx
+const stepIndexById: Record<string, number> = {};
+await createWorktreeFlow(config, opts, {
+  onStepPlan: (plan) => {
+    const steps = plan.map((entry, idx) => {
+      stepIndexById[entry.id] = idx;
+      return { label: entry.label, status: "pending" as StepStatus };
+    });
+    setProgressSteps(steps);
+  },
+  onStepStart: (id) => updateStep(stepIndexById[id], { status: "running" }),
+  onStepDone: (id, message) => updateStep(stepIndexById[id], { status: "done", message }),
+  onStepError: (id, message) => updateStep(stepIndexById[id], { status: "error", message }),
+  onHookOutput: (line) => {
+    const lastRunning = progressSteps().findLastIndex(s => s.status === "running");
+    if (lastRunning >= 0) updateStep(lastRunning, { message: line });
+  },
+});
+```
+
+Views that delegate today: `WorktreeCreate.tsx`, `WorktreeRemove.tsx`, `BulkActions.tsx`.
+
 ## Performance Rules
 
 - **Debounce detail fetches**: WorktreeList uses 150ms debounce on selection change. Prevents subprocess spam during rapid j/k navigation.

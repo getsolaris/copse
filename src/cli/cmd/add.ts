@@ -1,66 +1,39 @@
 import type { CommandModule } from "yargs";
 import { basename, resolve } from "node:path";
 import { existsSync } from "node:fs";
-import { GitWorktree, parseRemoteRef } from "../../core/git.ts";
+import { GitWorktree } from "../../core/git.ts";
 import { GitError } from "../../core/types.ts";
-import { loadConfig, getRepoConfig, expandTemplate, resolveTemplate, mergeTemplateWithRepo, getSessionConfig, resolveSessionLayout } from "../../core/config.ts";
+import { loadConfig, getRepoConfig, expandTemplate } from "../../core/config.ts";
 import { resolveMainRepo } from "../utils.ts";
-import { executeHooks, HookError, HookTimeoutError } from "../../core/hooks.ts";
-import { matchHooksForFocus, executeGlobHooks } from "../../core/glob-hooks.ts";
-import { copyFiles, linkFiles, applySharedDeps } from "../../core/files.ts";
-import { writeFocus } from "../../core/focus.ts";
-import { writePRMeta } from "../../core/pr.ts";
-import { logActivity } from "../../core/activity-log.ts";
-import { validateFocusPaths } from "../../core/monorepo.ts";
-import { isTmuxAvailable, openSession } from "../../core/session.ts";
+import { HookError, HookTimeoutError } from "../../core/hooks.ts";
+import { createWorktreeFlow, CREATE_STEP_IDS } from "../../core/orchestration/index.ts";
 
 const cmd: CommandModule = {
   command: "add [branch] [path]",
   describe: "Create a new worktree for a branch",
   builder: (yargs) =>
     yargs
-      .positional("branch", {
-        type: "string",
-        describe: "Branch name",
-      })
-      .positional("path", {
-        type: "string",
-        describe: "Worktree directory path",
-      })
+      .positional("branch", { type: "string", describe: "Branch name" })
+      .positional("path", { type: "string", describe: "Worktree directory path" })
       .option("create", {
         type: "boolean",
         alias: "c",
         describe: "Optional compatibility flag; missing branches are created automatically",
       })
-      .option("base", {
-        type: "string",
-        alias: "b",
-        describe: "Base branch/commit for new branch",
-      })
+      .option("base", { type: "string", alias: "b", describe: "Base branch/commit for new branch" })
       .option("focus", {
         type: "array",
         alias: "f",
         describe: "Focus packages for monorepo (comma or space separated paths)",
         string: true,
       })
-      .option("template", {
-        type: "string",
-        alias: "t",
-        describe: "Use a named template from config",
-      })
+      .option("template", { type: "string", alias: "t", describe: "Use a named template from config" })
       .option("pr", {
         type: "number",
         describe: "Create worktree from a GitHub PR number (requires gh CLI)",
       })
-      .option("session", {
-        type: "boolean",
-        alias: "s",
-        describe: "Create a tmux session for this worktree",
-      })
-      .option("layout", {
-        type: "string",
-        describe: "Session layout name from config",
-      })
+      .option("session", { type: "boolean", alias: "s", describe: "Create a tmux session for this worktree" })
+      .option("layout", { type: "string", describe: "Session layout name from config" })
       .option("fetch", {
         type: "boolean",
         default: true,
@@ -77,14 +50,12 @@ const cmd: CommandModule = {
       process.exit(1);
     }
 
-    // PR integration: resolve PR number to branch name via gh CLI
     if (prNumber) {
       try {
-        const proc = (Bun as any).spawn(["gh", "pr", "view", String(prNumber), "--json", "headRefName", "--jq", ".headRefName"], {
-          cwd: mainRepoPath,
-          stdout: "pipe",
-          stderr: "pipe",
-        });
+        const proc = (Bun as any).spawn(
+          ["gh", "pr", "view", String(prNumber), "--json", "headRefName", "--jq", ".headRefName"],
+          { cwd: mainRepoPath, stdout: "pipe", stderr: "pipe" },
+        );
         const [stdout, stderr, exitCode] = await Promise.all([
           new Response(proc.stdout).text(),
           new Response(proc.stderr).text(),
@@ -113,37 +84,11 @@ const cmd: CommandModule = {
     }
 
     const safeBranch = branch.replace(/\//g, "-");
-
     const config = loadConfig();
-    let repoConfig = getRepoConfig(config, mainRepoPath);
-
-    // Template: merge template config with repo config
-    const templateName = argv.template as string | undefined;
-    if (templateName) {
-      const template = resolveTemplate(config, templateName);
-      if (!template) {
-        const available = Object.keys(config.templates ?? {});
-        console.error(`Error: template '${templateName}' not found.`);
-        if (available.length > 0) {
-          console.error(`Available templates: ${available.join(", ")}`);
-        } else {
-          console.error("No templates configured. Add templates to your config file.");
-        }
-        process.exit(1);
-      }
-      repoConfig = mergeTemplateWithRepo(repoConfig, template);
-      // Template can override base branch
-      if (template.base && !argv.base) {
-        (argv as Record<string, unknown>).base = template.base;
-      }
-      console.log(`Using template '${templateName}'`);
-    }
+    const repoConfig = getRepoConfig(config, mainRepoPath);
 
     const pathTemplate = (argv.path as string | undefined) ?? repoConfig.worktreeDir;
-    const expandedPath = expandTemplate(pathTemplate, {
-      repo: repoName,
-      branch: safeBranch,
-    });
+    const expandedPath = expandTemplate(pathTemplate, { repo: repoName, branch: safeBranch });
     const worktreePath = resolve(mainRepoPath, expandedPath);
 
     console.log(`Creating worktree for branch '${branch}'...`);
@@ -152,9 +97,7 @@ const cmd: CommandModule = {
     const existing = await GitWorktree.list(mainRepoPath);
     const alreadyCheckedOut = existing.find((worktree) => worktree.branch === branch);
     if (alreadyCheckedOut) {
-      console.error(
-        `Error: branch '${branch}' is already checked out in ${alreadyCheckedOut.path}`,
-      );
+      console.error(`Error: branch '${branch}' is already checked out in ${alreadyCheckedOut.path}`);
       process.exit(1);
     }
 
@@ -163,201 +106,82 @@ const cmd: CommandModule = {
       process.exit(1);
     }
 
-    const resolvedBase = (argv.base as string | undefined) ?? repoConfig.base;
-    const shouldFetch = argv.fetch !== false;
-    const branchAlreadyExists = await GitWorktree.localBranchExists(branch, mainRepoPath);
+    const rawFocus = argv.focus as string[] | undefined;
+    const focusPaths = rawFocus
+      ? rawFocus.flatMap((f) => f.split(/[,\s]+/)).map((f) => f.trim()).filter(Boolean)
+      : [];
 
-    if (resolvedBase && shouldFetch && !branchAlreadyExists) {
-      const remotes = await GitWorktree.getRemotes(mainRepoPath);
-      const parsed = parseRemoteRef(resolvedBase, remotes);
-      if (parsed) {
-        console.log(`  Fetching ${parsed.remote}/${parsed.branch}...`);
-        try {
-          await GitWorktree.fetchRemote(parsed.remote, parsed.branch, mainRepoPath);
-          console.log(`  ✓ Fetched ${parsed.remote}/${parsed.branch}`);
-        } catch (err) {
-          const msg = err instanceof GitError ? (err.stderr || err.message) : (err as Error).message;
-          console.log(`  ⚠ Fetch failed (${msg.split("\n")[0]}) — continuing with local ref`);
-        }
-      }
+    const templateName = argv.template as string | undefined;
+    if (templateName) {
+      console.log(`Using template '${templateName}'`);
     }
 
     try {
-      await GitWorktree.add(
-        branch,
-        worktreePath,
+      const result = await createWorktreeFlow(
+        config,
         {
-          createBranch: Boolean(argv.create),
-          base: resolvedBase,
+          branch,
+          worktreePath,
+          mainRepoPath,
+          repoName,
+          base: argv.base as string | undefined,
+          focusPaths,
+          prNumber,
+          templateName,
+          session: argv.session as boolean | undefined,
+          layoutName: argv.layout as string | undefined,
+          fetch: argv.fetch as boolean,
         },
-        mainRepoPath,
+        {
+          onStepStart: (id, message) => {
+            if (id === CREATE_STEP_IDS.fetch) console.log(`  Fetching${message ? ` ${message}` : ""}...`);
+            else if (id === CREATE_STEP_IDS.copyFiles) console.log("  Copying files...");
+            else if (id === CREATE_STEP_IDS.linkFiles) console.log("  Linking files...");
+            else if (id === CREATE_STEP_IDS.sharedDeps) console.log("  Sharing dependencies...");
+            else if (id === CREATE_STEP_IDS.postCreate) console.log("  Running postCreate hooks...");
+            else if (id === CREATE_STEP_IDS.monorepoHooks) console.log("  Running monorepo hooks...");
+          },
+          onStepDone: (id, message) => {
+            if (id === CREATE_STEP_IDS.fetch) console.log("  ✓ Fetched");
+            else if (id === CREATE_STEP_IDS.worktree) console.log("  ✓ Worktree created");
+            else if (id === CREATE_STEP_IDS.upstream) {
+              if (message === "no remote branch") console.log("  ℹ No remote branch found — upstream tracking skipped");
+              else console.log(`  ✓ Upstream tracking set ${message ?? ""}`);
+            } else if (id === CREATE_STEP_IDS.copyFiles) console.log("  ✓ Files copied");
+            else if (id === CREATE_STEP_IDS.linkFiles) console.log("  ✓ Files linked");
+            else if (id === CREATE_STEP_IDS.sharedDeps) console.log("  ✓ Dependencies shared");
+            else if (id === CREATE_STEP_IDS.focus && message) console.log(`  ✓ Focus set: ${message}`);
+            else if (id === CREATE_STEP_IDS.postCreate) console.log("  ✓ Hooks completed");
+            else if (id === CREATE_STEP_IDS.monorepoHooks) console.log("  ✓ Monorepo hooks completed");
+            else if (id === CREATE_STEP_IDS.session) console.log(`  ✓ Session created: ${message ?? ""}`);
+            else if (id === CREATE_STEP_IDS.prMeta) console.log(`  ✓ PR #${prNumber} metadata saved`);
+          },
+          onStepError: (id, message) => {
+            if (id === CREATE_STEP_IDS.fetch) console.log(`  ⚠ ${message}`);
+            else if (id === CREATE_STEP_IDS.upstream) console.warn(`  ⚠ Could not set upstream tracking: ${message}`);
+            else if (id === CREATE_STEP_IDS.session) console.log(`  ⚠ Session create failed: ${message}`);
+            else console.warn(`  ⚠ ${id}: ${message}`);
+          },
+          onHookOutput: (line) => console.log(`    ${line}`),
+        },
       );
-      console.log("  ✓ Worktree created");
-      try { logActivity(mainRepoPath, { timestamp: new Date().toISOString(), event: "create", branch: branch as string, path: worktreePath }); } catch {}
 
-      if (prNumber) {
-        writePRMeta(worktreePath, { number: prNumber, branch, createdAt: new Date().toISOString() });
-        console.log(`  ✓ PR #${prNumber} metadata saved`);
-      }
-    } catch (err) {
-      if (err instanceof GitError) {
-        console.error(`Error creating worktree: ${err.stderr || err.message}`);
-      } else {
-        console.error(`Error: ${(err as Error).message}`);
-      }
-      process.exit(1);
-    }
-
-    if (repoConfig.autoUpstream) {
-      try {
-        const remote = await GitWorktree.getDefaultRemote(mainRepoPath);
-        const exists = await GitWorktree.remoteBranchExists(branch, remote, mainRepoPath);
-        if (exists) {
-          await GitWorktree.setUpstream(branch, remote, mainRepoPath);
-          console.log(`  ✓ Upstream tracking set → ${remote}/${branch}`);
-        } else {
-          console.log("  ℹ No remote branch found — upstream tracking skipped");
-        }
-      } catch (err) {
-        console.warn(`  ⚠ Could not set upstream tracking: ${(err as Error).message}`);
-      }
-    }
-
-    try {
-      if (repoConfig.copyFiles.length > 0) {
-        console.log(`  Copying files: ${repoConfig.copyFiles.join(", ")}`);
-        const copyResult = copyFiles(mainRepoPath, worktreePath, repoConfig.copyFiles);
-        for (const warning of copyResult.warnings) {
-          console.log(`  ⚠ ${warning}`);
-        }
-        if (copyResult.copied.length > 0) {
-          console.log(`  ✓ Copied: ${copyResult.copied.join(", ")}`);
-        }
-      }
-
-      if (repoConfig.linkFiles.length > 0) {
-        console.log(`  Linking files: ${repoConfig.linkFiles.join(", ")}`);
-        const linkResult = linkFiles(mainRepoPath, worktreePath, repoConfig.linkFiles);
-        for (const warning of linkResult.warnings) {
-          console.log(`  ⚠ ${warning}`);
-        }
-        if (linkResult.linked.length > 0) {
-          console.log(`  ✓ Linked: ${linkResult.linked.join(", ")}`);
-        }
-      }
-
-      if (repoConfig.sharedDeps && repoConfig.sharedDeps.paths && repoConfig.sharedDeps.paths.length > 0) {
-        const strategy = repoConfig.sharedDeps.strategy ?? "symlink";
-        console.log(`  Sharing dependencies (${strategy}): ${repoConfig.sharedDeps.paths.join(", ")}`);
-        const depsResult = applySharedDeps(mainRepoPath, worktreePath, repoConfig.sharedDeps);
-        for (const warning of depsResult.warnings) {
-          console.log(`  ⚠ ${warning}`);
-        }
-        if (depsResult.linked.length > 0) {
-          console.log(`  ✓ Shared (${strategy}): ${depsResult.linked.join(", ")}`);
-        }
-        if (depsResult.copied.length > 0) {
-          console.log(`  ✓ Copied: ${depsResult.copied.join(", ")}`);
-        }
-      }
-
-      const hookEnv: Record<string, string> = {
-        COPSE_BRANCH: branch,
-        COPSE_WORKTREE_PATH: worktreePath,
-        COPSE_REPO_PATH: mainRepoPath,
-      };
-
-      // Parse --focus flag (supports: --focus a,b --focus c  OR  --focus "a b")
-      const rawFocus = argv.focus as string[] | undefined;
-      let focusPaths: string[] = [];
-
-      if (rawFocus && rawFocus.length > 0) {
-        focusPaths = rawFocus
-          .flatMap((f) => f.split(/[,\s]+/))
-          .map((f) => f.trim())
-          .filter(Boolean);
-      }
-
-      if (focusPaths.length > 0) {
-        const { valid, invalid } = validateFocusPaths(worktreePath, focusPaths);
-
-        if (invalid.length > 0) {
-          console.log(`  ⚠ Focus paths not found (will be skipped): ${invalid.join(", ")}`);
-        }
-
-        if (valid.length > 0) {
-          writeFocus(worktreePath, valid);
-          console.log(`  ✓ Focus set: ${valid.join(", ")}`);
-        }
-
-        hookEnv.COPSE_FOCUS_PATHS = valid.join(",");
-      }
-
-      if (repoConfig.postCreate.length > 0) {
-        console.log("  Running postCreate hooks...");
-        await executeHooks(repoConfig.postCreate, {
-          cwd: worktreePath,
-          env: hookEnv,
-          onOutput: (line) => console.log(`    ${line}`),
-        });
-        console.log("  ✓ Hooks completed");
-      }
-
-      // Run monorepo glob hooks (if focus + monorepo config)
-      if (focusPaths.length > 0 && repoConfig.monorepo?.hooks && repoConfig.monorepo.hooks.length > 0) {
-        const matches = matchHooksForFocus(repoConfig.monorepo.hooks, focusPaths);
-        if (matches.length > 0) {
-          console.log("  Running monorepo hooks...");
-          await executeGlobHooks(matches, "postCreate", {
-            cwd: worktreePath,
-            env: hookEnv,
-            repo: repoName,
-            branch,
-            focusPaths,
-            mainRepoPath,
-            onOutput: (line) => console.log(`    ${line}`),
-          });
-          console.log("  ✓ Monorepo hooks completed");
-        }
-      }
-
-      const sessionConfig = getSessionConfig(config);
-      const wantSession = (argv.session as boolean) || sessionConfig.autoCreate;
-      if (wantSession) {
-        const tmuxOk = await isTmuxAvailable();
-        if (tmuxOk) {
-          const sessionLayoutName = (argv.layout as string | undefined) ?? sessionConfig.defaultLayout;
-          const sessionLayout = resolveSessionLayout(config, sessionLayoutName);
-          const sessionName = await openSession(branch, worktreePath, {
-            layout: sessionLayout,
-            prefix: sessionConfig.prefix,
-            attach: false,
-            layoutName: sessionLayoutName,
-          });
-          console.log(`  ✓ Session created: ${sessionName}`);
-        } else {
-          console.log("  ⚠ tmux not found — session skipped");
-        }
+      if (result.invalidFocusPaths.length > 0) {
+        console.log(`  ⚠ Focus paths not found (skipped): ${result.invalidFocusPaths.join(", ")}`);
       }
 
       console.log(`\nWorktree ready: ${worktreePath}`);
       process.exit(0);
     } catch (err) {
-      console.error("\nSetup failed, rolling back...");
-      try {
-        await GitWorktree.remove(worktreePath, { force: true }, mainRepoPath);
-        console.error("Rolled back worktree.");
-      } catch (rollbackErr) {
-        console.error(`Warning: rollback failed: ${(rollbackErr as Error).message}`);
-      }
-
       if (err instanceof HookTimeoutError) {
+        console.error(`\nSetup failed, rolled back.`);
         console.error(`Error: hook timed out: ${err.command}`);
       } else if (err instanceof HookError) {
+        console.error(`\nSetup failed, rolled back.`);
         console.error(`Error: hook failed (exit ${err.exitCode}): ${err.command}`);
-        if (err.stderr) {
-          console.error(err.stderr);
-        }
+        if (err.stderr) console.error(err.stderr);
+      } else if (err instanceof GitError) {
+        console.error(`Error creating worktree: ${err.stderr || err.message}`);
       } else {
         console.error(`Error: ${(err as Error).message}`);
       }

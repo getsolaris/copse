@@ -1,10 +1,11 @@
 import { createSignal, For, Show } from "solid-js";
+import { basename } from "node:path";
 import { useApp } from "../context/AppContext.tsx";
 import { useToast } from "../context/ToastContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
 import { GitWorktree, invalidateGitCache } from "../../core/git.ts";
-import { loadConfig, getRepoConfig } from "../../core/config.ts";
-import { executeHooks } from "../../core/hooks.ts";
+import { loadConfig } from "../../core/config.ts";
+import { removeWorktreeFlow } from "../../core/orchestration/index.ts";
 import { useKeyboard } from "@opentui/solid";
 import { theme } from "../themes.ts";
 
@@ -48,6 +49,8 @@ export function BulkActions(props: { w: number; h: number }) {
     setState("executing");
     setProgress(0);
 
+    const config = loadConfig();
+
     const errors: string[] = [];
     const skippedDirty: string[] = [];
     let removed = 0;
@@ -61,19 +64,14 @@ export function BulkActions(props: { w: number; h: number }) {
           skippedDirty.push(t.branch);
           continue;
         }
-        const config = loadConfig();
-        const repoConfig = getRepoConfig(config, t.repoPath);
-        if (repoConfig.postRemove.length > 0) {
-          await executeHooks(repoConfig.postRemove, {
-            cwd: t.path,
-            env: {
-              COPSE_BRANCH: t.branch,
-              COPSE_WORKTREE_PATH: t.path,
-              COPSE_REPO_PATH: t.repoPath,
-            },
-          }).catch(() => {});
-        }
-        await GitWorktree.remove(t.path, { force: false }, t.repoPath);
+        const repoName = basename(t.repoPath);
+        await removeWorktreeFlow(config, {
+          worktreePath: t.path,
+          mainRepoPath: t.repoPath,
+          repoName,
+          branch: t.branch === "(detached)" ? null : t.branch,
+          force: false,
+        });
         removed++;
       } catch (err) {
         errors.push(`${t.branch}: ${(err as Error).message}`);

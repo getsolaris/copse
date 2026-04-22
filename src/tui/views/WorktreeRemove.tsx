@@ -1,9 +1,10 @@
 import { createSignal, Show } from "solid-js";
+import { basename } from "node:path";
 import { useApp } from "../context/AppContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
 import { GitWorktree } from "../../core/git.ts";
-import { loadConfig, getRepoConfig } from "../../core/config.ts";
-import { executeHooks } from "../../core/hooks.ts";
+import { loadConfig } from "../../core/config.ts";
+import { removeWorktreeFlow, REMOVE_STEP_IDS } from "../../core/orchestration/index.ts";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { toast } from "@opentui-ui/toast/solid";
 import { theme } from "../themes.ts";
@@ -51,20 +52,26 @@ export function WorktreeRemove() {
     setMessage("Removing...");
     try {
       const config = loadConfig();
-      const repoConfig = getRepoConfig(config, wt.repoPath);
-      if (repoConfig.postRemove.length > 0) {
-        setMessage("Running postRemove hooks...");
-        await executeHooks(repoConfig.postRemove, {
-          cwd: wt.path,
-          env: {
-            COPSE_BRANCH: wt.branch ?? "",
-            COPSE_WORKTREE_PATH: wt.path,
-            COPSE_REPO_PATH: wt.repoPath,
-          },
-        }).catch(() => {});
-      }
+      const repoName = basename(wt.repoPath);
 
-      await GitWorktree.remove(wt.path, { force }, wt.repoPath);
+      await removeWorktreeFlow(
+        config,
+        {
+          worktreePath: wt.path,
+          mainRepoPath: wt.repoPath,
+          repoName,
+          branch: wt.branch,
+          force,
+        },
+        {
+          onStepStart: (id) => {
+            if (id === REMOVE_STEP_IDS.postRemove) setMessage("Running postRemove hooks...");
+            else if (id === REMOVE_STEP_IDS.monorepoHooks) setMessage("Running monorepo hooks...");
+            else if (id === REMOVE_STEP_IDS.session) setMessage("Killing session...");
+            else if (id === REMOVE_STEP_IDS.worktree) setMessage("Removing worktree...");
+          },
+        },
+      );
       setMessage("Removed successfully!");
       toast.success("Worktree removed");
 
