@@ -12,12 +12,21 @@ import {
   type StepProgressHandler,
 } from "./types.ts";
 
-export async function removeWorktreeFlow(
+export interface RemovePlan {
+  steps: StepPlanEntry[];
+  postRemoveHooks: string[];
+  monorepoMatches: ReturnType<typeof matchHooksForFocus>;
+  focusPaths: string[];
+  wantKill: boolean;
+  tmuxOk: boolean;
+  sessionPrefix: string | undefined;
+}
+
+export async function planRemoveWorktreeSteps(
   config: OmlConfig,
   opts: RemoveWorktreeOpts,
-  handler: StepProgressHandler = {},
-): Promise<void> {
-  const { worktreePath, mainRepoPath, repoName, branch, force } = opts;
+): Promise<RemovePlan> {
+  const { worktreePath, mainRepoPath, branch } = opts;
   const repoConfig = getRepoConfig(config, mainRepoPath);
   const sessionConfig = getSessionConfig(config);
 
@@ -30,34 +39,50 @@ export async function removeWorktreeFlow(
   const wantKill = Boolean(sessionConfig.autoKill && branch);
   const tmuxOk = wantKill ? await isTmuxAvailable() : false;
 
-  const plan: StepPlanEntry[] = [];
+  const steps: StepPlanEntry[] = [];
   if (repoConfig.postRemove.length > 0) {
-    plan.push({ id: REMOVE_STEP_IDS.postRemove, label: "Running postRemove hooks" });
+    steps.push({ id: REMOVE_STEP_IDS.postRemove, label: "Running postRemove hooks" });
   }
   if (monorepoMatches.length > 0) {
-    plan.push({ id: REMOVE_STEP_IDS.monorepoHooks, label: "Running monorepo hooks" });
+    steps.push({ id: REMOVE_STEP_IDS.monorepoHooks, label: "Running monorepo hooks" });
   }
   if (wantKill && tmuxOk) {
-    plan.push({ id: REMOVE_STEP_IDS.session, label: "Killing session" });
+    steps.push({ id: REMOVE_STEP_IDS.session, label: "Killing session" });
   }
-  plan.push({ id: REMOVE_STEP_IDS.worktree, label: "Removing worktree" });
-  plan.push({ id: REMOVE_STEP_IDS.activityLog, label: "Logging activity" });
+  steps.push({ id: REMOVE_STEP_IDS.worktree, label: "Removing worktree" });
+  steps.push({ id: REMOVE_STEP_IDS.activityLog, label: "Logging activity" });
 
-  handler.onStepPlan?.(plan);
+  return {
+    steps,
+    postRemoveHooks: repoConfig.postRemove,
+    monorepoMatches,
+    focusPaths,
+    wantKill,
+    tmuxOk,
+    sessionPrefix: sessionConfig.prefix,
+  };
+}
+
+export async function executeRemoveWorktreeFlow(
+  plan: RemovePlan,
+  opts: RemoveWorktreeOpts,
+  handler: StepProgressHandler = {},
+): Promise<void> {
+  const { worktreePath, mainRepoPath, repoName, branch, force } = opts;
 
   const hookEnv: Record<string, string> = {
     COPSE_BRANCH: branch ?? "",
     COPSE_WORKTREE_PATH: worktreePath,
     COPSE_REPO_PATH: mainRepoPath,
   };
-  if (focusPaths.length > 0) {
-    hookEnv.COPSE_FOCUS_PATHS = focusPaths.join(",");
+  if (plan.focusPaths.length > 0) {
+    hookEnv.COPSE_FOCUS_PATHS = plan.focusPaths.join(",");
   }
 
-  if (repoConfig.postRemove.length > 0) {
+  if (plan.postRemoveHooks.length > 0) {
     handler.onStepStart?.(REMOVE_STEP_IDS.postRemove);
     try {
-      await executeHooks(repoConfig.postRemove, {
+      await executeHooks(plan.postRemoveHooks, {
         cwd: worktreePath,
         env: hookEnv,
         onOutput: handler.onHookOutput,
@@ -68,15 +93,15 @@ export async function removeWorktreeFlow(
     }
   }
 
-  if (monorepoMatches.length > 0) {
+  if (plan.monorepoMatches.length > 0) {
     handler.onStepStart?.(REMOVE_STEP_IDS.monorepoHooks);
     try {
-      await executeGlobHooks(monorepoMatches, "postRemove", {
+      await executeGlobHooks(plan.monorepoMatches, "postRemove", {
         cwd: worktreePath,
         env: hookEnv,
         repo: repoName,
         branch: branch ?? "",
-        focusPaths,
+        focusPaths: plan.focusPaths,
         mainRepoPath,
         onOutput: handler.onHookOutput,
       });
@@ -86,10 +111,10 @@ export async function removeWorktreeFlow(
     }
   }
 
-  if (wantKill && tmuxOk && branch) {
+  if (plan.wantKill && plan.tmuxOk && branch) {
     handler.onStepStart?.(REMOVE_STEP_IDS.session);
     try {
-      const killed = await closeSession(branch, worktreePath, sessionConfig.prefix);
+      const killed = await closeSession(branch, worktreePath, plan.sessionPrefix);
       handler.onStepDone?.(REMOVE_STEP_IDS.session, killed ? "killed" : "no active session");
     } catch (err) {
       handler.onStepError?.(REMOVE_STEP_IDS.session, (err as Error).message);
@@ -112,4 +137,14 @@ export async function removeWorktreeFlow(
   } catch (err) {
     handler.onStepError?.(REMOVE_STEP_IDS.activityLog, (err as Error).message);
   }
+}
+
+export async function removeWorktreeFlow(
+  config: OmlConfig,
+  opts: RemoveWorktreeOpts,
+  handler: StepProgressHandler = {},
+): Promise<void> {
+  const plan = await planRemoveWorktreeSteps(config, opts);
+  handler.onStepPlan?.(plan.steps);
+  await executeRemoveWorktreeFlow(plan, opts, handler);
 }

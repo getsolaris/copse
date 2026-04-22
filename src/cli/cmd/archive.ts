@@ -1,11 +1,10 @@
 import type { CommandModule } from "yargs";
-import { GitWorktree, invalidateGitCache } from "../../core/git.ts";
-import { logActivity } from "../../core/activity-log.ts";
-import { createArchive, listArchives } from "../../core/archive.ts";
-import { loadConfig, getRepoConfig } from "../../core/config.ts";
-import { executeHooks } from "../../core/hooks.ts";
 import { basename } from "node:path";
+import { GitWorktree } from "../../core/git.ts";
+import { listArchives } from "../../core/archive.ts";
+import { loadConfig } from "../../core/config.ts";
 import { confirm, resolveMainRepo, findWorktreeOrExit, handleCliError } from "../utils.ts";
+import { archiveWorktreeFlow, ARCHIVE_STEP_IDS, REMOVE_STEP_IDS } from "../../core/orchestration/index.ts";
 
 const cmd: CommandModule = {
   command: "archive [branch]",
@@ -68,37 +67,37 @@ const cmd: CommandModule = {
         }
       }
 
-      const entry = await createArchive(target.path, mainRepoPath);
-      console.log(`Archived: ${entry.patchPath}`);
-      try {
-        logActivity(mainRepoPath, {
-          timestamp: new Date().toISOString(),
-          event: "archive",
-          branch: entry.branch,
-          path: entry.patchPath,
-        });
-      } catch {}
+      const config = loadConfig();
+      const repoName = basename(mainRepoPath);
 
-      if (!keep) {
-        const config = loadConfig();
-        const repoConfig = getRepoConfig(config, mainRepoPath);
-        if (repoConfig.postRemove.length > 0) {
-          console.log("Running postRemove hooks...");
-          await executeHooks(repoConfig.postRemove, {
-            cwd: target.path,
-            env: {
-              COPSE_BRANCH: target.branch ?? "",
-              COPSE_WORKTREE_PATH: target.path,
-              COPSE_REPO_PATH: mainRepoPath,
-            },
-            onOutput: (line) => console.log(`  ${line}`),
-          }).catch((err) => console.warn(`Warning: postRemove hook failed: ${(err as Error).message}`));
-        }
-
-        await GitWorktree.remove(target.path, { force: false }, mainRepoPath);
-        invalidateGitCache();
-        console.log(`Removed worktree: ${target.path}`);
-      }
+      await archiveWorktreeFlow(
+        config,
+        {
+          worktreePath: target.path,
+          mainRepoPath,
+          repoName,
+          branch: target.branch ?? null,
+          keep,
+          force: false,
+        },
+        {
+          onStepStart: (id) => {
+            if (id === REMOVE_STEP_IDS.postRemove) console.log("Running postRemove hooks...");
+            else if (id === REMOVE_STEP_IDS.monorepoHooks) console.log("  Running monorepo postRemove hooks...");
+          },
+          onStepDone: (id, message) => {
+            if (id === ARCHIVE_STEP_IDS.createArchive && message) console.log(`Archived: ${message}`);
+            else if (id === REMOVE_STEP_IDS.monorepoHooks) console.log("  ✓ Monorepo hooks completed");
+            else if (id === REMOVE_STEP_IDS.session && message === "killed") console.log("  ✓ Session killed");
+            else if (id === REMOVE_STEP_IDS.worktree) console.log(`Removed worktree: ${target.path}`);
+          },
+          onStepError: (id, message) => {
+            if (id === REMOVE_STEP_IDS.postRemove) console.warn(`Warning: postRemove hook failed: ${message}`);
+            else console.warn(`  ⚠ ${id}: ${message}`);
+          },
+          onHookOutput: (line) => console.log(`  ${line}`),
+        },
+      );
 
       process.exit(0);
     } catch (err) {

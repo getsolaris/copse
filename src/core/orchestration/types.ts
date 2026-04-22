@@ -38,6 +38,29 @@ export const REMOVE_STEP_IDS = {
 
 export type RemoveStepId = (typeof REMOVE_STEP_IDS)[keyof typeof REMOVE_STEP_IDS];
 
+export const ARCHIVE_STEP_IDS = {
+  createArchive: "createArchive",
+  activityLogArchive: "activityLogArchive",
+} as const;
+
+export type ArchiveStepId = (typeof ARCHIVE_STEP_IDS)[keyof typeof ARCHIVE_STEP_IDS];
+
+export const IMPORT_STEP_IDS = {
+  validate: "validate",
+  importWorktree: "importWorktree",
+  activityLog: "activityLog",
+} as const;
+
+export type ImportStepId = (typeof IMPORT_STEP_IDS)[keyof typeof IMPORT_STEP_IDS];
+
+export const RENAME_STEP_IDS = {
+  renameBranch: "renameBranch",
+  movePath: "movePath",
+  activityLog: "activityLog",
+} as const;
+
+export type RenameStepId = (typeof RENAME_STEP_IDS)[keyof typeof RENAME_STEP_IDS];
+
 export interface CreateWorktreeOpts {
   branch: string;
   worktreePath: string;
@@ -65,4 +88,27 @@ export interface RemoveWorktreeOpts {
   repoName: string;
   branch: string | null;
   force?: boolean;
+}
+
+export interface ArchiveWorktreeOpts {
+  worktreePath: string;
+  mainRepoPath: string;
+  repoName: string;
+  branch: string | null;
+  keep?: boolean;
+  force?: boolean;
+}
+
+export interface ImportWorktreeOpts {
+  targetPath: string;
+  focusPaths?: string[];
+  pin?: boolean;
+}
+
+export interface RenameWorktreeOpts {
+  mainRepoPath: string;
+  oldBranch: string;
+  newBranch: string;
+  worktreePath: string;
+  movePath?: boolean;
 }

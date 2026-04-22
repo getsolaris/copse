@@ -1,8 +1,7 @@
 import type { CommandModule } from "yargs";
-import { GitWorktree, invalidateGitCache } from "../../core/git.ts";
-import { logActivity } from "../../core/activity-log.ts";
-import { dirname, basename, join } from "node:path";
+import { GitWorktree } from "../../core/git.ts";
 import { resolveMainRepo, findWorktreeOrExit, handleCliError } from "../utils.ts";
+import { renameWorktreeFlow, RENAME_STEP_IDS } from "../../core/orchestration/index.ts";
 
 const cmd: CommandModule = {
   command: "rename <old> <new>",
@@ -33,33 +32,25 @@ const cmd: CommandModule = {
         process.exit(1);
       }
 
-      await GitWorktree.exec(["branch", "-m", oldBranch, newBranch], mainRepoPath);
-      invalidateGitCache();
+      await renameWorktreeFlow(
+        {
+          mainRepoPath,
+          oldBranch,
+          newBranch,
+          worktreePath: target.path,
+          movePath,
+        },
+        {
+          onStepDone: (id, message) => {
+            if (id === RENAME_STEP_IDS.renameBranch) console.log(`Renamed branch: ${oldBranch} → ${newBranch}`);
+            else if (id === RENAME_STEP_IDS.movePath && message && message.includes("→")) {
+              console.log(`Moved worktree: ${message}`);
+            }
+          },
+          onStepError: (id, message) => console.warn(`  ⚠ ${id}: ${message}`),
+        },
+      );
 
-      if (movePath) {
-        const branchSlug = newBranch.replace(/\//g, "-");
-        const parentDir = dirname(target.path);
-        const oldBasename = basename(target.path);
-        const oldBranchSlug = oldBranch.replace(/\//g, "-");
-        const newBasename = oldBasename.replace(oldBranchSlug, branchSlug);
-        const newPath = join(parentDir, newBasename);
-
-        if (newPath !== target.path) {
-          await GitWorktree.move(target.path, newPath, mainRepoPath);
-          invalidateGitCache();
-          console.log(`Moved worktree: ${target.path} → ${newPath}`);
-        }
-      }
-
-      console.log(`Renamed branch: ${oldBranch} → ${newBranch}`);
-      try {
-        logActivity(mainRepoPath, {
-          timestamp: new Date().toISOString(),
-          event: "rename",
-          branch: newBranch,
-          details: { oldBranch: oldBranch },
-        });
-      } catch {}
       process.exit(0);
     } catch (err) {
       handleCliError(err);

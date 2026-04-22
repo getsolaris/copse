@@ -3,9 +3,15 @@ import { existsSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { basename, join } from "path";
 import { createWorktreeFlow } from "./create-worktree.ts";
 import { removeWorktreeFlow } from "./remove-worktree.ts";
+import { archiveWorktreeFlow } from "./archive-worktree.ts";
+import { importWorktreeFlow } from "./import-worktree.ts";
+import { renameWorktreeFlow } from "./rename-worktree.ts";
 import {
   CREATE_STEP_IDS,
   REMOVE_STEP_IDS,
+  ARCHIVE_STEP_IDS,
+  IMPORT_STEP_IDS,
+  RENAME_STEP_IDS,
   type StepProgressHandler,
 } from "./types.ts";
 import { invalidateGitCache } from "../git.ts";
@@ -428,6 +434,261 @@ describe("CLI/TUI parity invariant", () => {
       }
 
       expect(plansByCaller.get("cli")).toEqual(plansByCaller.get("tui"));
+    } finally {
+      rmSync(wtPath, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("archiveWorktreeFlow", () => {
+  it("keeps worktree when --keep is set (only archives + logs archive event)", async () => {
+    const repoPath = await createTempRepo("copse-arch-keep-");
+    const wtPath = join(repoPath, "..", `copse-arch-keep-wt-${Date.now()}`);
+    await createWorktreeFlow(
+      { version: 1, defaults: { autoUpstream: false } },
+      {
+        branch: "feat/arch-keep",
+        worktreePath: wtPath,
+        mainRepoPath: repoPath,
+        repoName: basename(repoPath),
+      },
+    );
+    writeFileSync(join(wtPath, "new.txt"), "work\n");
+
+    try {
+      const { handler, events } = capture();
+      const { archiveEntry } = await archiveWorktreeFlow(
+        { version: 1 },
+        {
+          worktreePath: wtPath,
+          mainRepoPath: repoPath,
+          repoName: basename(repoPath),
+          branch: "feat/arch-keep",
+          keep: true,
+        },
+        handler,
+      );
+
+      expect(events.planned).toEqual([
+        ARCHIVE_STEP_IDS.createArchive,
+        ARCHIVE_STEP_IDS.activityLogArchive,
+      ]);
+      expect(events.done).toContain(ARCHIVE_STEP_IDS.createArchive);
+      expect(events.done).toContain(ARCHIVE_STEP_IDS.activityLogArchive);
+      expect(existsSync(wtPath)).toBeTrue();
+      expect(existsSync(archiveEntry.patchPath)).toBeTrue();
+
+      const logEvents = readActivityLog(repoPath);
+      expect(logEvents.some((e) => e.event === "archive")).toBeTrue();
+      expect(logEvents.some((e) => e.event === "delete")).toBeFalse();
+    } finally {
+      rmSync(wtPath, { recursive: true, force: true });
+    }
+  });
+
+  it("archives then removes when --keep is false (fires both archive and remove steps)", async () => {
+    const repoPath = await createTempRepo("copse-arch-rm-");
+    const wtPath = join(repoPath, "..", `copse-arch-rm-wt-${Date.now()}`);
+    await createWorktreeFlow(
+      { version: 1, defaults: { autoUpstream: false } },
+      {
+        branch: "feat/arch-rm",
+        worktreePath: wtPath,
+        mainRepoPath: repoPath,
+        repoName: basename(repoPath),
+      },
+    );
+
+    try {
+      const { handler, events } = capture();
+      await archiveWorktreeFlow(
+        { version: 1 },
+        {
+          worktreePath: wtPath,
+          mainRepoPath: repoPath,
+          repoName: basename(repoPath),
+          branch: "feat/arch-rm",
+          keep: false,
+        },
+        handler,
+      );
+
+      expect(events.planned).toEqual([
+        ARCHIVE_STEP_IDS.createArchive,
+        ARCHIVE_STEP_IDS.activityLogArchive,
+        REMOVE_STEP_IDS.worktree,
+        REMOVE_STEP_IDS.activityLog,
+      ]);
+      expect(events.done).toContain(REMOVE_STEP_IDS.worktree);
+      expect(existsSync(wtPath)).toBeFalse();
+
+      const logEvents = readActivityLog(repoPath);
+      expect(logEvents.some((e) => e.event === "archive")).toBeTrue();
+      expect(logEvents.some((e) => e.event === "delete" && e.branch === "feat/arch-rm")).toBeTrue();
+    } finally {
+      rmSync(wtPath, { recursive: true, force: true });
+    }
+  });
+
+  it("runs postRemove hooks during remove phase when --keep is false (regression: archive used to skip monorepo hooks)", async () => {
+    const repoPath = await createTempRepo("copse-arch-hooks-");
+    const wtPath = join(repoPath, "..", `copse-arch-hooks-wt-${Date.now()}`);
+
+    const config = {
+      version: 1 as const,
+      defaults: { autoUpstream: false, postRemove: ["echo archived-bye"] },
+    };
+
+    await createWorktreeFlow(config, {
+      branch: "feat/arch-hooks",
+      worktreePath: wtPath,
+      mainRepoPath: repoPath,
+      repoName: basename(repoPath),
+    });
+
+    try {
+      const { handler, events } = capture();
+      await archiveWorktreeFlow(
+        config,
+        {
+          worktreePath: wtPath,
+          mainRepoPath: repoPath,
+          repoName: basename(repoPath),
+          branch: "feat/arch-hooks",
+          keep: false,
+        },
+        handler,
+      );
+
+      expect(events.planned).toContain(REMOVE_STEP_IDS.postRemove);
+      expect(events.done).toContain(REMOVE_STEP_IDS.postRemove);
+    } finally {
+      rmSync(wtPath, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("importWorktreeFlow", () => {
+  it("imports a pre-created worktree with activity log", async () => {
+    const repoPath = await createTempRepo("copse-imp-");
+    const wtPath = join(repoPath, "..", `copse-imp-wt-${Date.now()}`);
+    await createWorktreeFlow(
+      { version: 1, defaults: { autoUpstream: false } },
+      {
+        branch: "feat/imp",
+        worktreePath: wtPath,
+        mainRepoPath: repoPath,
+        repoName: basename(repoPath),
+      },
+    );
+
+    try {
+      const { handler, events } = capture();
+      const result = await importWorktreeFlow({ targetPath: wtPath }, handler);
+
+      expect(events.planned).toEqual([
+        IMPORT_STEP_IDS.validate,
+        IMPORT_STEP_IDS.importWorktree,
+        IMPORT_STEP_IDS.activityLog,
+      ]);
+      expect(events.done).toContain(IMPORT_STEP_IDS.importWorktree);
+      expect(events.done).toContain(IMPORT_STEP_IDS.activityLog);
+      expect(result.branch).toBe("feat/imp");
+
+      const logEvents = readActivityLog(repoPath);
+      expect(logEvents.some((e) => e.event === "import" && e.branch === "feat/imp")).toBeTrue();
+    } finally {
+      rmSync(wtPath, { recursive: true, force: true });
+    }
+  });
+
+  it("throws ImportError for invalid targets (not a git directory)", async () => {
+    const { handler, events } = capture();
+    await expect(
+      importWorktreeFlow({ targetPath: `/tmp/copse-does-not-exist-${Date.now()}` }, handler),
+    ).rejects.toThrow();
+    expect(events.errored[0]?.[0]).toBe(IMPORT_STEP_IDS.validate);
+  });
+});
+
+describe("renameWorktreeFlow", () => {
+  it("renames branch and logs rename event", async () => {
+    const repoPath = await createTempRepo("copse-rename-");
+    const wtPath = join(repoPath, "..", `copse-rename-wt-${Date.now()}`);
+    await createWorktreeFlow(
+      { version: 1, defaults: { autoUpstream: false } },
+      {
+        branch: "feat/rename-old",
+        worktreePath: wtPath,
+        mainRepoPath: repoPath,
+        repoName: basename(repoPath),
+      },
+    );
+
+    try {
+      const { handler, events } = capture();
+      const result = await renameWorktreeFlow(
+        {
+          mainRepoPath: repoPath,
+          oldBranch: "feat/rename-old",
+          newBranch: "feat/rename-new",
+          worktreePath: wtPath,
+          movePath: false,
+        },
+        handler,
+      );
+
+      expect(events.planned).toEqual([
+        RENAME_STEP_IDS.renameBranch,
+        RENAME_STEP_IDS.activityLog,
+      ]);
+      expect(events.done).toContain(RENAME_STEP_IDS.renameBranch);
+      expect(result.newBranch).toBe("feat/rename-new");
+      expect(result.moved).toBeFalse();
+
+      const logEvents = readActivityLog(repoPath);
+      const renameEvent = logEvents.find((e) => e.event === "rename" && e.branch === "feat/rename-new");
+      expect(renameEvent).toBeDefined();
+      expect(renameEvent?.details?.oldBranch).toBe("feat/rename-old");
+    } finally {
+      rmSync(wtPath, { recursive: true, force: true });
+    }
+  });
+
+  it("moves worktree directory when movePath=true", async () => {
+    const repoPath = await createTempRepo("copse-rename-mv-");
+    const wtPath = join(repoPath, "..", `copse-rename-mv-wt-${basename(repoPath)}-feat-mv-old`);
+    await createWorktreeFlow(
+      { version: 1, defaults: { autoUpstream: false } },
+      {
+        branch: "feat/mv-old",
+        worktreePath: wtPath,
+        mainRepoPath: repoPath,
+        repoName: basename(repoPath),
+      },
+    );
+
+    try {
+      const { handler, events } = capture();
+      const result = await renameWorktreeFlow(
+        {
+          mainRepoPath: repoPath,
+          oldBranch: "feat/mv-old",
+          newBranch: "feat/mv-new",
+          worktreePath: wtPath,
+          movePath: true,
+        },
+        handler,
+      );
+
+      expect(events.planned).toContain(RENAME_STEP_IDS.movePath);
+      expect(events.done).toContain(RENAME_STEP_IDS.movePath);
+      expect(result.moved).toBeTrue();
+      expect(result.newWorktreePath).not.toBe(wtPath);
+      expect(existsSync(wtPath)).toBeFalse();
+      expect(existsSync(result.newWorktreePath)).toBeTrue();
+
+      rmSync(result.newWorktreePath, { recursive: true, force: true });
     } finally {
       rmSync(wtPath, { recursive: true, force: true });
     }

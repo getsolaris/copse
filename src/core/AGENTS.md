@@ -18,8 +18,11 @@ Shared business logic for both CLI and TUI. No UI, no process.exit, no console o
 | `skill-templates.ts` | AI agent skill file generation | `writeSkillFile()`, `generateSkillContent()`, `generateReferenceFiles()`, `getSkillFilePath()` |
 | `session.ts` | Tmux session management | `openSession()`, `closeSession()`, `listSessions()`, `SessionError` |
 | `orchestration/create-worktree.ts` | Full create-worktree pipeline (fetch → add → upstream → files → hooks → session → PR meta → activity log) | `createWorktreeFlow()` |
-| `orchestration/remove-worktree.ts` | Full remove-worktree pipeline (hooks → session kill → remove → activity log) | `removeWorktreeFlow()` |
-| `orchestration/types.ts` | Shared orchestration types | `StepProgressHandler`, `CREATE_STEP_IDS`, `REMOVE_STEP_IDS`, `CreateWorktreeOpts`, `RemoveWorktreeOpts` |
+| `orchestration/remove-worktree.ts` | Full remove-worktree pipeline (hooks → session kill → remove → activity log). Exposes `planRemoveWorktreeSteps()` + `executeRemoveWorktreeFlow()` so composers (e.g. archive) can share the plan without emitting it twice. | `removeWorktreeFlow()`, `planRemoveWorktreeSteps()`, `executeRemoveWorktreeFlow()` |
+| `orchestration/archive-worktree.ts` | Archive worktree as patch + optionally remove. Composes with `removeWorktreeFlow` for the remove phase so archive gets session kill, monorepo postRemove hooks, and the `delete` activity event for free. | `archiveWorktreeFlow()` |
+| `orchestration/import-worktree.ts` | Adopt an existing worktree into copse metadata + activity log. | `importWorktreeFlow()` |
+| `orchestration/rename-worktree.ts` | Rename branch + optionally move worktree directory + activity log. | `renameWorktreeFlow()` |
+| `orchestration/types.ts` | Shared orchestration types | `StepProgressHandler`, `CREATE_STEP_IDS`, `REMOVE_STEP_IDS`, `ARCHIVE_STEP_IDS`, `IMPORT_STEP_IDS`, `RENAME_STEP_IDS`, `CreateWorktreeOpts`, `RemoveWorktreeOpts`, `ArchiveWorktreeOpts`, `ImportWorktreeOpts`, `RenameWorktreeOpts` |
 | `types.ts` | Shared types + errors | `Worktree`, `GitError`, `GitVersionError` |
 | `test-helpers.ts` | Test utilities | `createTempRepo()`, `createTempDir()`, `cleanupTempDirs()` |
 
@@ -80,9 +83,18 @@ Never add new checks that call `list()` independently.
 
 ## Orchestration Layer (CLI/TUI Parity)
 
-**`src/core/orchestration/`** is the single source of truth for multi-step worktree operations. Both CLI commands (`src/cli/cmd/add.ts`, `src/cli/cmd/remove.ts`) and TUI views (`src/tui/views/WorktreeCreate.tsx`, `WorktreeRemove.tsx`, `BulkActions.tsx`) delegate to the same flow functions.
+**`src/core/orchestration/`** is the single source of truth for multi-step worktree operations. CLI commands (`src/cli/cmd/{add,remove,archive,import,rename}.ts`) and TUI views (`src/tui/views/WorktreeCreate.tsx`, `WorktreeRemove.tsx`, `BulkActions.tsx`) delegate to the same flow functions.
 
-**Rule:** any step that triggers a side effect during worktree create/remove MUST live here, not in the caller. Adding a new config-driven step (e.g., new hook, new metadata write) to only one caller is a bug — it WILL drift.
+**Rule:** any step that triggers a side effect during worktree create/remove/archive/import/rename MUST live here, not in the caller. Adding a new config-driven step (e.g., new hook, new metadata write) to only one caller is a bug — it WILL drift.
+
+**Composition pattern:** when one flow needs to reuse another (e.g. `archiveWorktreeFlow` needs to remove the worktree when `--keep` is false), use the split `planXxxSteps()` + `executeXxxFlow()` pair. The composer:
+
+1. Calls `planRemoveWorktreeSteps()` to get the remove plan without executing or emitting it.
+2. Emits a combined plan via `handler.onStepPlan` ONCE, up front.
+3. Executes its own steps.
+4. Calls `executeRemoveWorktreeFlow()` (which does NOT call `onStepPlan` again) with a handler stripped of `onStepPlan`.
+
+This keeps the UI's step list stable — no mid-flow plan re-emission.
 
 ### Handler contract
 
