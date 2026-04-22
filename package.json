@@ -1,6 +1,6 @@
 {
   "name": "@getsolaris/copse",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Git worktree manager with a beautiful TUI",
   "license": "MIT",
   "repository": {

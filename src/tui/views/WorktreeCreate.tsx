@@ -1,13 +1,14 @@
 import { createSignal, createEffect, on, onCleanup, onMount, For, Show } from "solid-js";
 import { useApp } from "../context/AppContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
-import { GitWorktree } from "../../core/git.ts";
-import { loadConfig, getRepoConfig, expandTemplate } from "../../core/config.ts";
+import { GitWorktree, parseRemoteRef } from "../../core/git.ts";
+import { loadConfig, getRepoConfig, expandTemplate, getSessionConfig, resolveSessionLayout } from "../../core/config.ts";
 import { copyFiles, linkFiles } from "../../core/files.ts";
 import { executeHooks } from "../../core/hooks.ts";
 import { writeFocus } from "../../core/focus.ts";
 import { validateFocusPaths } from "../../core/monorepo.ts";
 import { matchHooksForFocus, executeGlobHooks } from "../../core/glob-hooks.ts";
+import { isTmuxAvailable, openSession } from "../../core/session.ts";
 import { useKeyboard, usePaste, useTerminalDimensions } from "@opentui/solid";
 import { decodePasteBytes } from "@opentui/core";
 import { basename, resolve } from "node:path";
@@ -172,10 +173,23 @@ export function WorktreeCreate() {
         try {
           const config = loadConfig();
           const repoConfig = getRepoConfig(config, repoPath);
+          const sessionConfig = getSessionConfig(config);
 
-          const steps: ProgressStep[] = [
-            { label: "Creating worktree", status: "pending" },
-          ];
+          const resolvedBase = repoConfig.base;
+          const branchAlreadyExists = await GitWorktree.localBranchExists(branch, repoPath);
+          let remoteRef: { remote: string; branch: string } | null = null;
+          if (resolvedBase && !branchAlreadyExists) {
+            const remotes = await GitWorktree.getRemotes(repoPath);
+            remoteRef = parseRemoteRef(resolvedBase, remotes);
+          }
+
+          const tmuxOk = sessionConfig.autoCreate ? await isTmuxAvailable() : false;
+
+          const steps: ProgressStep[] = [];
+          if (remoteRef) {
+            steps.push({ label: `Fetching ${remoteRef.remote}/${remoteRef.branch}`, status: "pending" });
+          }
+          steps.push({ label: "Creating worktree", status: "pending" });
           if (repoConfig.autoUpstream) {
             steps.push({ label: "Setting upstream", status: "pending" });
           }
@@ -204,14 +218,28 @@ export function WorktreeCreate() {
               steps.push({ label: "Running monorepo hooks", status: "pending" });
             }
           }
+          if (sessionConfig.autoCreate && tmuxOk) {
+            steps.push({ label: "Creating session", status: "pending" });
+          }
 
           setProgressSteps(steps);
 
           let stepIdx = 0;
 
-          // Creating worktree
+          if (remoteRef) {
+            updateStep(stepIdx, { status: "running" });
+            try {
+              await GitWorktree.fetchRemote(remoteRef.remote, remoteRef.branch, repoPath);
+              updateStep(stepIdx, { status: "done" });
+            } catch (err) {
+              const msg = (err as Error).message.split("\n")[0];
+              updateStep(stepIdx, { status: "error", message: `${msg} — continuing with local ref` });
+            }
+            stepIdx++;
+          }
+
           updateStep(stepIdx, { status: "running" });
-          await GitWorktree.add(branch, wtPath, { createBranch: true }, repoPath);
+          await GitWorktree.add(branch, wtPath, { createBranch: true, base: resolvedBase }, repoPath);
           updateStep(stepIdx, { status: "done" });
           stepIdx++;
 
@@ -296,6 +324,24 @@ export function WorktreeCreate() {
               });
             }
             updateStep(stepIdx, { status: "done" });
+            stepIdx++;
+          }
+
+          if (sessionConfig.autoCreate && tmuxOk) {
+            updateStep(stepIdx, { status: "running" });
+            try {
+              const sessionLayoutName = sessionConfig.defaultLayout;
+              const sessionLayout = resolveSessionLayout(config, sessionLayoutName);
+              const sessionName = await openSession(branch, wtPath, {
+                layout: sessionLayout,
+                prefix: sessionConfig.prefix,
+                attach: false,
+                layoutName: sessionLayoutName,
+              });
+              updateStep(stepIdx, { status: "done", message: sessionName });
+            } catch (err) {
+              updateStep(stepIdx, { status: "error", message: (err as Error).message.split("\n")[0] });
+            }
             stepIdx++;
           }
 
