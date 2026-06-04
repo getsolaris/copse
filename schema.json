@@ -56,6 +56,11 @@
       "type": "string",
       "enum": ["opencode", "tokyo-night", "dracula", "nord", "catppuccin", "github-dark", "one-dark", "monokai", "github-light"]
     },
+    "terminalCommand": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Terminal app or executable for the TUI terminal shortcut. The selected worktree path is passed automatically."
+    },
     "sessions": {
       "type": "object",
       "additionalProperties": false,
@@ -258,6 +263,7 @@
           "defaults": { "$ref": "#/properties/defaults" },
           "repos": { "$ref": "#/properties/repos" },
           "workspaces": { "$ref": "#/properties/workspaces" },
+          "terminalCommand": { "$ref": "#/properties/terminalCommand" },
           "theme": { "type": "string", "enum": ["opencode", "tokyo-night", "dracula", "nord", "catppuccin", "github-dark", "one-dark", "monokai", "github-light"] },
           "templates": { "$ref": "#/properties/templates" },
           "lifecycle": { "$ref": "#/properties/lifecycle" },

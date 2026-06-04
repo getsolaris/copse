@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "fs";
+import { existsSync, readdirSync, readFileSync, statSync, type Dirent } from "fs";
 import { join, relative } from "path";
 
 export type MonorepoTool =
@@ -130,7 +130,7 @@ function scanNxProjects(rootDir: string): string[] {
       return;
     }
 
-    let entries: ReturnType<typeof readdirSync>;
+    let entries: Dirent<string>[];
     try {
       entries = readdirSync(currentDir, { withFileTypes: true });
     } catch {

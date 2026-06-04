@@ -105,6 +105,41 @@ describe("validateConfig - autoUpstream", () => {
   });
 });
 
+describe("validateConfig - terminalCommand", () => {
+  it("accepts a terminal name string", () => {
+    expect(validateConfig({
+      version: 1,
+      terminalCommand: "iTerm",
+    })).toEqual([]);
+  });
+
+  it("rejects non-string terminalCommand", () => {
+    const result = validateConfig({ version: 1, terminalCommand: ["cmd"] });
+
+    expect(result.some((error) => error.field === "terminalCommand")).toBeTrue();
+  });
+
+  it("rejects empty terminalCommand", () => {
+    const result = validateConfig({ version: 1, terminalCommand: "" });
+
+    expect(result.some((error) => error.field === "terminalCommand")).toBeTrue();
+  });
+
+  it("allows activeProfile to override terminalCommand", () => {
+    const result = validateConfig({
+      version: 1,
+      profiles: {
+        work: {
+          terminalCommand: "iTerm",
+        },
+      },
+      activeProfile: "work",
+    });
+
+    expect(result).toEqual([]);
+  });
+});
+
 describe("getRepoConfig", () => {
   it("returns defaults when no repo match", () => {
     const config: OmlConfig = {

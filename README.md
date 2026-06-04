@@ -173,6 +173,8 @@ Launch with `copse` (no arguments).
 | `a`       | Add worktree           |
 | `d`       | Delete worktree        |
 | `o`       | Open in editor (focus-aware) |
+| `f`       | Open in Finder / file manager |
+| `t`       | Open in Terminal       |
 | `h`       | Doctor (health check)  |
 | `Enter`   | Open detail view       |
 | `Escape`  | Close detail view / picker |
@@ -193,6 +195,9 @@ Pressing `o` opens the selected worktree in `$VISUAL` / `$EDITOR`:
 - **2+ focus paths** → shows a picker so you can choose which focus path (or the worktree root) to open.
 
 The picker supports `j`/`k` or `↑`/`↓` to navigate, `Enter` to open, and `Esc` to cancel.
+
+Press `f` to open the selected worktree in Finder / file manager. Press `t` to open it in Terminal.
+Set `terminalCommand` to choose the terminal app or executable; the selected worktree path is passed automatically.
 
 ### Command Palette (`Ctrl+P`)
 
@@ -584,6 +589,7 @@ Initialize with: `copse config --init` (or just run any `copse` command — see 
   "$schema": "https://raw.githubusercontent.com/getsolaris/copse/main/schema.json",
   "version": 1,
   "theme": "dracula",
+  "terminalCommand": "Terminal",
   "defaults": {
     "worktreeDir": "~/.copse/worktrees/{repo}-{branch}",
     "copyFiles": [".env"],
@@ -993,6 +999,16 @@ Set via config or command palette (`Ctrl+P`):
 ```
 
 Available: `opencode`, `tokyo-night`, `dracula`, `nord`, `catppuccin`, `github-dark`, `one-dark`, `monokai`, `github-light`
+
+### Terminal Opener
+
+The TUI `t` shortcut uses `terminalCommand` when present:
+
+```json
+{ "terminalCommand": "iTerm" }
+```
+
+copse passes the selected worktree path automatically.
 
 ## Shell Integration
 

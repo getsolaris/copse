@@ -158,6 +158,8 @@ copse init --skill claude-code
 | `a` | worktree 추가 |
 | `d` | worktree 삭제 |
 | `o` | 에디터로 열기 (focus 인식) |
+| `f` | Finder / 파일 관리자에서 열기 |
+| `t` | 터미널에서 열기 |
 | `h` | Doctor (헬스 체크) |
 | `r` | 목록 새로고침 |
 | `Ctrl+P` | 커맨드 팔레트 |
@@ -178,6 +180,9 @@ copse init --skill claude-code
 - **focus 경로 2개 이상** → 피커가 떠서 어떤 focus 경로(또는 worktree 루트)를 열지 선택할 수 있습니다.
 
 피커는 `j`/`k` 또는 `↑`/`↓`로 탐색, `Enter`로 열기, `Esc`로 취소합니다.
+
+`f`를 누르면 선택된 worktree를 Finder / 파일 관리자에서 엽니다. `t`를 누르면 터미널에서 엽니다.
+터미널 실행 방식은 `terminalCommand` 문자열로 터미널 앱 또는 실행 파일만 고를 수 있으며, 선택된 worktree 경로는 자동으로 전달됩니다.
 
 ### 커맨드 팔레트 (`Ctrl+P`)
 
@@ -567,6 +572,7 @@ copse: created default config at /Users/you/.config/copse/config.json
   "$schema": "https://raw.githubusercontent.com/getsolaris/copse/main/schema.json",
   "version": 1,
   "theme": "dracula",
+  "terminalCommand": "Terminal",
   "defaults": {
     "worktreeDir": "~/.copse/worktrees/{repo}-{branch}",
     "copyFiles": [".env"],
@@ -965,6 +971,16 @@ defaults.copyFiles 없음? →  [] (빈 배열) 사용
 ```
 
 사용 가능: `opencode`, `tokyo-night`, `dracula`, `nord`, `catppuccin`, `github-dark`, `one-dark`, `monokai`, `github-light`
+
+### 터미널 열기 설정
+
+TUI의 `t` 단축키는 `terminalCommand`가 있으면 그 값을 사용합니다:
+
+```json
+{ "terminalCommand": "iTerm" }
+```
+
+선택된 worktree 경로는 자동으로 전달됩니다.
 
 ## 셸 통합
 

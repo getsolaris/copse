@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, statSync } from "fs";
+import { existsSync, readdirSync, statSync, type Dirent } from "fs";
 import { join, resolve } from "path";
 import type { OmlConfig, RepoConfig } from "./config.ts";
 
@@ -70,7 +70,7 @@ export function discoverRepos(
   const found = new Set<string>();
 
   const scan = (currentDir: string, currentDepth: number): void => {
-    let entries: ReturnType<typeof readdirSync>;
+    let entries: Dirent<string>[];
     try {
       entries = readdirSync(currentDir, { withFileTypes: true });
     } catch {

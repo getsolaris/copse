@@ -93,6 +93,7 @@ export interface OmlConfig {
   defaults?: RepoDefaults;
   repos?: RepoConfig[];
   workspaces?: WorkspaceConfig[];
+  terminalCommand?: string;
   theme?: string;
   templates?: Record<string, TemplateConfig>;
   lifecycle?: LifecycleConfig;
@@ -158,7 +159,7 @@ export function getConfigPath(): string {
   return join(getConfigDir(), "config.json");
 }
 
-const VALID_ROOT_KEYS = new Set(["version", "defaults", "repos", "workspaces", "$schema", "theme", "templates", "lifecycle", "sessions", "profiles", "activeProfile"]);
+const VALID_ROOT_KEYS = new Set(["version", "defaults", "repos", "workspaces", "$schema", "terminalCommand", "theme", "templates", "lifecycle", "sessions", "profiles", "activeProfile"]);
 const VALID_DEFAULT_KEYS = new Set(["worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "sharedDeps", "base"]);
 const VALID_REPO_KEYS = new Set(["path", "worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "monorepo", "sharedDeps", "base"]);
 const VALID_WORKSPACE_KEYS = new Set(["path", "depth", "exclude", "defaults"]);
@@ -166,7 +167,7 @@ const VALID_MONOREPO_KEYS = new Set(["autoDetect", "extraPatterns", "hooks"]);
 const VALID_TEMPLATE_KEYS = new Set(["worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "base"]);
 const VALID_LIFECYCLE_KEYS = new Set(["autoCleanMerged", "staleAfterDays", "maxWorktrees"]);
 const VALID_SESSION_KEYS = new Set(["enabled", "autoCreate", "autoKill", "prefix", "defaultLayout", "layouts"]);
-const VALID_PROFILE_KEYS = new Set(["defaults", "repos", "workspaces", "theme", "templates", "lifecycle", "sessions"]);
+const VALID_PROFILE_KEYS = new Set(["defaults", "repos", "workspaces", "terminalCommand", "theme", "templates", "lifecycle", "sessions"]);
 
 export function validateConfig(data: unknown): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -189,6 +190,14 @@ export function validateConfig(data: unknown): ValidationError[] {
   for (const key of Object.keys(obj)) {
     if (!VALID_ROOT_KEYS.has(key)) {
       errors.push({ field: key, message: `Unknown field '${key}'` });
+    }
+  }
+
+  if ("terminalCommand" in obj && obj.terminalCommand !== undefined) {
+    if (typeof obj.terminalCommand !== "string") {
+      errors.push({ field: "terminalCommand", message: "Must be a string" });
+    } else if (obj.terminalCommand.trim().length === 0) {
+      errors.push({ field: "terminalCommand", message: "Must not be empty" });
     }
   }
 
