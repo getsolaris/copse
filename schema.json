@@ -56,6 +56,14 @@
       "type": "string",
       "enum": ["opencode", "tokyo-night", "dracula", "nord", "catppuccin", "github-dark", "one-dark", "monokai", "github-light"]
     },
+    "terminalCommand": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      },
+      "description": "Argv template for TUI terminal shortcut. Use {path} to inject selected worktree path."
+    },
     "sessions": {
       "type": "object",
       "additionalProperties": false,
@@ -258,6 +266,7 @@
           "defaults": { "$ref": "#/properties/defaults" },
           "repos": { "$ref": "#/properties/repos" },
           "workspaces": { "$ref": "#/properties/workspaces" },
+          "terminalCommand": { "$ref": "#/properties/terminalCommand" },
           "theme": { "type": "string", "enum": ["opencode", "tokyo-night", "dracula", "nord", "catppuccin", "github-dark", "one-dark", "monokai", "github-light"] },
           "templates": { "$ref": "#/properties/templates" },
           "lifecycle": { "$ref": "#/properties/lifecycle" },

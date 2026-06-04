@@ -56,6 +56,17 @@ copse config --path
 copse config --validate
 ```
 
+### Configure the TUI terminal shortcut
+
+```json
+{
+  "version": 1,
+  "terminalCommand": ["open", "-a", "iTerm", "{path}"]
+}
+```
+
+`{path}` is replaced with the selected worktree path. If omitted, the path is appended.
+
 ### List available profiles
 
 ```bash
