@@ -61,11 +61,11 @@ copse config --validate
 ```json
 {
   "version": 1,
-  "terminalCommand": ["open", "-a", "iTerm", "{path}"]
+  "terminalCommand": "iTerm"
 }
 ```
 
-`{path}` is replaced with the selected worktree path. If omitted, the path is appended.
+The selected worktree path is passed automatically.
 
 ### List available profiles
 

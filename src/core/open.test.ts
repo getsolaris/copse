@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { EmptyTerminalCommandError, buildFileManagerCommand, buildTerminalCommand } from "./open.ts";
+import { InvalidTerminalCommandError, buildFileManagerCommand, buildTerminalCommand } from "./open.ts";
 
 describe("buildFileManagerCommand", () => {
   it("builds default mac finder command", () => {
@@ -18,15 +18,21 @@ describe("buildFileManagerCommand", () => {
 });
 
 describe("buildTerminalCommand", () => {
-  it("builds configured terminal command", () => {
-    expect(
-      buildTerminalCommand("/workspaces/repo", ["bash", "-lc", "cd", "{path}", "&&", "zsh"]),
-    ).toEqual(["bash", "-lc", "cd", "/workspaces/repo", "&&", "zsh"]);
+  it("builds configured mac terminal command and appends path automatically", () => {
+    expect(buildTerminalCommand("/workspaces/repo", "iTerm", "darwin")).toEqual([
+      "open",
+      "-a",
+      "iTerm",
+      "/workspaces/repo",
+    ]);
   });
 
-  it("appends path when custom terminal command has no {path}", () => {
-    expect(buildTerminalCommand("/workspaces/repo", ["npm", "run", "dev"]))
-      .toEqual(["npm", "run", "dev", "/workspaces/repo"]);
+  it("builds configured linux terminal command and appends path automatically", () => {
+    expect(buildTerminalCommand("/workspaces/repo", "gnome-terminal", "linux")).toEqual([
+      "gnome-terminal",
+      "--working-directory",
+      "/workspaces/repo",
+    ]);
   });
 
   it("builds default mac terminal command", () => {
@@ -58,6 +64,6 @@ describe("buildTerminalCommand", () => {
   });
 
   it("throws for empty custom terminal command", () => {
-    expect(() => buildTerminalCommand("/workspaces/repo", [])).toThrow(EmptyTerminalCommandError);
+    expect(() => buildTerminalCommand("/workspaces/repo", "")).toThrow(InvalidTerminalCommandError);
   });
 });

@@ -197,7 +197,7 @@ Pressing `o` opens the selected worktree in `$VISUAL` / `$EDITOR`:
 The picker supports `j`/`k` or `↑`/`↓` to navigate, `Enter` to open, and `Esc` to cancel.
 
 Press `f` to open the selected worktree in Finder / file manager. Press `t` to open it in Terminal.
-Set `terminalCommand` to customize the terminal opener; `{path}` is replaced with the selected worktree path.
+Set `terminalCommand` to choose the terminal app or executable; the selected worktree path is passed automatically.
 
 ### Command Palette (`Ctrl+P`)
 
@@ -589,7 +589,7 @@ Initialize with: `copse config --init` (or just run any `copse` command — see 
   "$schema": "https://raw.githubusercontent.com/getsolaris/copse/main/schema.json",
   "version": 1,
   "theme": "dracula",
-  "terminalCommand": ["open", "-a", "Terminal", "{path}"],
+  "terminalCommand": "Terminal",
   "defaults": {
     "worktreeDir": "~/.copse/worktrees/{repo}-{branch}",
     "copyFiles": [".env"],
@@ -1005,10 +1005,10 @@ Available: `opencode`, `tokyo-night`, `dracula`, `nord`, `catppuccin`, `github-d
 The TUI `t` shortcut uses `terminalCommand` when present:
 
 ```json
-{ "terminalCommand": ["open", "-a", "iTerm", "{path}"] }
+{ "terminalCommand": "iTerm" }
 ```
 
-If no `{path}` token is present, copse appends the selected worktree path.
+copse passes the selected worktree path automatically.
 
 ## Shell Integration
 

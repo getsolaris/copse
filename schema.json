@@ -57,12 +57,9 @@
       "enum": ["opencode", "tokyo-night", "dracula", "nord", "catppuccin", "github-dark", "one-dark", "monokai", "github-light"]
     },
     "terminalCommand": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "string"
-      },
-      "description": "Argv template for TUI terminal shortcut. Use {path} to inject selected worktree path."
+      "type": "string",
+      "minLength": 1,
+      "description": "Terminal app or executable for the TUI terminal shortcut. The selected worktree path is passed automatically."
     },
     "sessions": {
       "type": "object",

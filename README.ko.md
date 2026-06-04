@@ -182,7 +182,7 @@ copse init --skill claude-code
 피커는 `j`/`k` 또는 `↑`/`↓`로 탐색, `Enter`로 열기, `Esc`로 취소합니다.
 
 `f`를 누르면 선택된 worktree를 Finder / 파일 관리자에서 엽니다. `t`를 누르면 터미널에서 엽니다.
-터미널 실행 방식은 `terminalCommand`로 설정할 수 있으며, `{path}`는 선택된 worktree 경로로 치환됩니다.
+터미널 실행 방식은 `terminalCommand` 문자열로 터미널 앱 또는 실행 파일만 고를 수 있으며, 선택된 worktree 경로는 자동으로 전달됩니다.
 
 ### 커맨드 팔레트 (`Ctrl+P`)
 
@@ -572,7 +572,7 @@ copse: created default config at /Users/you/.config/copse/config.json
   "$schema": "https://raw.githubusercontent.com/getsolaris/copse/main/schema.json",
   "version": 1,
   "theme": "dracula",
-  "terminalCommand": ["open", "-a", "Terminal", "{path}"],
+  "terminalCommand": "Terminal",
   "defaults": {
     "worktreeDir": "~/.copse/worktrees/{repo}-{branch}",
     "copyFiles": [".env"],
@@ -977,10 +977,10 @@ defaults.copyFiles 없음? →  [] (빈 배열) 사용
 TUI의 `t` 단축키는 `terminalCommand`가 있으면 그 값을 사용합니다:
 
 ```json
-{ "terminalCommand": ["open", "-a", "iTerm", "{path}"] }
+{ "terminalCommand": "iTerm" }
 ```
 
-`{path}` 토큰이 없으면 선택된 worktree 경로를 마지막 인자로 추가합니다.
+선택된 worktree 경로는 자동으로 전달됩니다.
 
 ## 셸 통합
 

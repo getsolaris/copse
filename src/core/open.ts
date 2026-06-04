@@ -1,7 +1,7 @@
-export class EmptyTerminalCommandError extends Error {
+export class InvalidTerminalCommandError extends Error {
   constructor() {
     super("terminalCommand must not be empty");
-    this.name = "EmptyTerminalCommandError";
+    this.name = "InvalidTerminalCommandError";
   }
 }
 
@@ -24,17 +24,21 @@ export function buildFileManagerCommand(path: string, platform = process.platfor
 
 export function buildTerminalCommand(
   path: string,
-  terminalCommand?: string[],
+  terminalCommand?: string,
   platform = process.platform,
 ): string[] {
-  if (terminalCommand && terminalCommand.length > 0) {
-    const hasPathToken = terminalCommand.some((token) => token.includes("{path}"));
-    const argv = terminalCommand.map((token) => token.replaceAll("{path}", path));
-    return hasPathToken ? argv : [...argv, path];
-  }
-
-  if (terminalCommand && terminalCommand.length === 0) {
-    throw new EmptyTerminalCommandError();
+  if (terminalCommand !== undefined) {
+    const command = terminalCommand.trim();
+    if (command.length === 0) {
+      throw new InvalidTerminalCommandError();
+    }
+    if (platform === "darwin") {
+      return ["open", "-a", command, path];
+    }
+    if (platform === "win32") {
+      return [command, "-d", path];
+    }
+    return [command, "--working-directory", path];
   }
 
   if (platform === "win32") {

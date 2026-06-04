@@ -93,7 +93,7 @@ export interface OmlConfig {
   defaults?: RepoDefaults;
   repos?: RepoConfig[];
   workspaces?: WorkspaceConfig[];
-  terminalCommand?: string[];
+  terminalCommand?: string;
   theme?: string;
   templates?: Record<string, TemplateConfig>;
   lifecycle?: LifecycleConfig;
@@ -194,12 +194,10 @@ export function validateConfig(data: unknown): ValidationError[] {
   }
 
   if ("terminalCommand" in obj && obj.terminalCommand !== undefined) {
-    if (!Array.isArray(obj.terminalCommand)) {
-      errors.push({ field: "terminalCommand", message: "Must be an array of strings" });
-    } else if (obj.terminalCommand.length === 0) {
-      errors.push({ field: "terminalCommand", message: "Must contain at least one command token" });
-    } else if (obj.terminalCommand.some((item) => typeof item !== "string")) {
-      errors.push({ field: "terminalCommand", message: "Must be an array of strings" });
+    if (typeof obj.terminalCommand !== "string") {
+      errors.push({ field: "terminalCommand", message: "Must be a string" });
+    } else if (obj.terminalCommand.trim().length === 0) {
+      errors.push({ field: "terminalCommand", message: "Must not be empty" });
     }
   }
 

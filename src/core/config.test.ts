@@ -106,27 +106,21 @@ describe("validateConfig - autoUpstream", () => {
 });
 
 describe("validateConfig - terminalCommand", () => {
-  it("accepts a non-empty string array", () => {
+  it("accepts a terminal name string", () => {
     expect(validateConfig({
       version: 1,
-      terminalCommand: ["cmd", "/c", "start", "{path}"],
+      terminalCommand: "iTerm",
     })).toEqual([]);
   });
 
-  it("rejects non-array terminalCommand", () => {
-    const result = validateConfig({ version: 1, terminalCommand: "cmd" });
+  it("rejects non-string terminalCommand", () => {
+    const result = validateConfig({ version: 1, terminalCommand: ["cmd"] });
 
     expect(result.some((error) => error.field === "terminalCommand")).toBeTrue();
   });
 
   it("rejects empty terminalCommand", () => {
-    const result = validateConfig({ version: 1, terminalCommand: [] });
-
-    expect(result.some((error) => error.field === "terminalCommand")).toBeTrue();
-  });
-
-  it("rejects terminalCommand with non-string items", () => {
-    const result = validateConfig({ version: 1, terminalCommand: ["cmd", 1] });
+    const result = validateConfig({ version: 1, terminalCommand: "" });
 
     expect(result.some((error) => error.field === "terminalCommand")).toBeTrue();
   });
@@ -136,7 +130,7 @@ describe("validateConfig - terminalCommand", () => {
       version: 1,
       profiles: {
         work: {
-          terminalCommand: ["open", "-a", "iTerm", "{path}"],
+          terminalCommand: "iTerm",
         },
       },
       activeProfile: "work",
