@@ -326,6 +326,10 @@ describe("parseRemoteRef", () => {
     expect(parseRemoteRef("origin/", remotes)).toBeNull();
   });
 
+  it("returns null when the remote branch segment is option-like", () => {
+    expect(parseRemoteRef("origin/--upload-pack=/tmp/pwn", remotes)).toBeNull();
+  });
+
   it("returns null for leading slash", () => {
     expect(parseRemoteRef("/origin/main", remotes)).toBeNull();
   });
@@ -411,6 +415,12 @@ describe("GitWorktree.getRemotes + fetchRemote", () => {
     await expect(
       GitWorktree.fetchRemote("does-not-exist", "main", testDir),
     ).rejects.toBeInstanceOf(GitError);
+  });
+
+  it("fetchRemote() rejects option-like refspecs before invoking git", async () => {
+    await expect(
+      GitWorktree.fetchRemote("origin", "--upload-pack=/tmp/pwn", testDir),
+    ).rejects.toThrow("Fetch ref must not start with '-'");
   });
 
   it("fetchRemote() without ref argument fetches all branches from remote", async () => {
