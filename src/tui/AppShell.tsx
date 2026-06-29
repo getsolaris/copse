@@ -3,15 +3,12 @@ import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { useApp } from "./context/AppContext.tsx";
 import { useGit } from "./context/GitContext.tsx";
 import { useToast } from "./context/ToastContext.tsx";
-import { buildFileManagerCommand, buildTerminalCommand } from "../core/open.ts";
 import { loadConfig } from "../core/config.ts";
-import { resolveFocusOpenTarget } from "../core/focus.ts";
-import { existsSync } from "node:fs";
+import { resolveOpenShortcutCommand } from "./open-shortcuts.ts";
 import { BulkActions } from "./views/BulkActions.tsx";
 import { CommandPalette } from "./views/CommandPalette.tsx";
 import { ConfigView } from "./views/ConfigView.tsx";
 import { DoctorView } from "./views/DoctorView.tsx";
-import { FocusPicker } from "./views/FocusPicker.tsx";
 import { Sidebar } from "./views/Sidebar.tsx";
 import { ShortcutHelp } from "./views/ShortcutHelp.tsx";
 import { Toast } from "./views/Toast.tsx";
@@ -21,18 +18,6 @@ import { WorktreeRemove } from "./views/WorktreeRemove.tsx";
 import { theme } from "./themes.ts";
 
 const SIDEBAR_W = 28;
-
-function detectEditorBin(): string | null {
-  const editors = ["code", "cursor", "vim", "nvim", "zed", "subl", "idea", "webstorm"] as const;
-  for (const e of editors) {
-    try {
-      const proc = Bun.spawnSync(["which", e], { stdout: "pipe", stderr: "pipe" });
-      if (proc.exitCode === 0) return e;
-    } catch {
-    }
-  }
-  return null;
-}
 
 function spawnOpenCommand(argv: readonly string[]): void {
   const [command, ...args] = argv;
@@ -126,14 +111,14 @@ export function AppShell(props: { repoPath: string }) {
         }
         return;
       }
-      if (key === "f") {
+      if (key === "o" || key === "f") {
         const selected = selectedWorktree();
         if (!selected) return;
         try {
-          spawnOpenCommand(buildFileManagerCommand(selected.path));
-          toast.addToast({ message: "Opened in Finder", type: "success" });
+          spawnOpenCommand(resolveOpenShortcutCommand({ key, selectedWorktree: selected }));
+          toast.addToast({ message: "Opened folder", type: "success" });
         } catch (err) {
-          toast.addToast({ message: `Finder failed: ${(err as Error).message}`, type: "error" });
+          toast.addToast({ message: `Folder open failed: ${(err as Error).message}`, type: "error" });
         }
         return;
       }
@@ -142,40 +127,16 @@ export function AppShell(props: { repoPath: string }) {
         if (!selected) return;
         try {
           const config = loadConfig();
-          spawnOpenCommand(buildTerminalCommand(selected.path, config.terminalCommand));
+          spawnOpenCommand(resolveOpenShortcutCommand({
+            key,
+            selectedWorktree: selected,
+            terminalCommand: config.terminalCommand,
+            terminalProgram: process.env.TERM_PROGRAM,
+          }));
           toast.addToast({ message: "Opened in Terminal", type: "success" });
         } catch (err) {
           toast.addToast({ message: `Terminal failed: ${(err as Error).message}`, type: "error" });
         }
-        return;
-      }
-      if (key === "o") {
-        const selected = selectedWorktree();
-        if (!selected) return;
-        const resolution = resolveFocusOpenTarget(selected.path);
-        if (resolution.kind === "multiple") {
-          app.setFocusPickerData({
-            worktreePath: selected.path,
-            focusPaths: resolution.focusPaths,
-          });
-          return;
-        }
-        const editor = process.env.VISUAL || process.env.EDITOR || detectEditorBin();
-        if (!editor) {
-          toast.addToast({
-            message: "No editor detected. Set $VISUAL or $EDITOR.",
-            type: "error",
-          });
-          return;
-        }
-        if (!existsSync(resolution.path)) {
-          toast.addToast({
-            message: `Path does not exist: ${resolution.path}`,
-            type: "error",
-          });
-          return;
-        }
-        Bun.spawn([editor, resolution.path], { stdout: "inherit", stderr: "inherit" });
         return;
       }
     }
@@ -239,7 +200,7 @@ export function AppShell(props: { repoPath: string }) {
       </box>
       <box height={1} backgroundColor={theme.bg.overlay}>
         <text x={1} y={0} fg={theme.text.secondary}>
-          {"d:delete  a:add  o:open  f:finder  t:terminal  r:refresh  ^P:cmd  h:health  q:quit"}
+          {"d:delete  a:add  o:folder  t:terminal  r:refresh  ^P:cmd  h:health  q:quit"}
         </text>
       </box>
 
@@ -251,7 +212,6 @@ export function AppShell(props: { repoPath: string }) {
       <Show when={app.activeTab() === "doctor"}><DoctorView /></Show>
       <Show when={app.showRemove()}><WorktreeRemove /></Show>
       <Show when={app.showCommandPalette()}><CommandPalette /></Show>
-      <FocusPicker detectEditor={() => process.env.VISUAL || process.env.EDITOR || detectEditorBin()} />
     </box>
   );
 }

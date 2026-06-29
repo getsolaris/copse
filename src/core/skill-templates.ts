@@ -804,7 +804,7 @@ function generateConfigSchemaContent(): string {
     "",
     "| Key | Type | Default | Description |",
     "|-----|------|---------|-------------|",
-    "| `terminalCommand` | string | platform default | Terminal app or executable for the TUI `t` shortcut. The selected worktree path is passed automatically. |",
+    "| `terminalCommand` | string | platform/current terminal default | Terminal app or executable for the TUI `t` shortcut. macOS can infer the current terminal from `TERM_PROGRAM` (for example Ghostty); the selected worktree path is passed automatically. |",
     "| `worktreeDir` | string | `~/.copse/worktrees/{repo}-{branch}` | Directory pattern. Supports `{repo}` and `{branch}` variables |",
     "| `copyFiles` | string[] | `[]` | Files to copy from main worktree on creation |",
     "| `linkFiles` | string[] | `[]` | Files to symlink from main worktree on creation |",

@@ -6,8 +6,7 @@ const HELP_ROWS = [
   ["j/k", "Navigate list"],
   ["a", "Add worktree"],
   ["d", "Delete worktree"],
-  ["o", "Open in editor"],
-  ["f", "Open in Finder"],
+  ["o", "Open folder"],
   ["t", "Open in Terminal"],
   ["r", "Refresh list"],
 ] as const;

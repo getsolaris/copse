@@ -372,7 +372,7 @@ export function DetailView(props: { worktree: Worktree }) {
         </box>
         <box height={1}>
           <text x={0} y={0} fg={theme.text.secondary} selectable>
-            {"Esc:back  d:delete  o:open  r:refresh"}
+            {"Esc:back  d:delete  r:refresh"}
           </text>
         </box>
       </scrollbox>

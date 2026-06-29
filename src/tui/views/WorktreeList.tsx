@@ -302,7 +302,8 @@ export function WorktreeList() {
               <text fg={theme.text.secondary}>{"Enter:detail"}</text>
               <text fg={theme.text.secondary}>{"d:delete"}</text>
               <text fg={theme.text.secondary}>{"a:add"}</text>
-              <text fg={theme.text.secondary}>{"o:open"}</text>
+              <text fg={theme.text.secondary}>{"o:folder"}</text>
+              <text fg={theme.text.secondary}>{"t:terminal"}</text>
               <text fg={theme.text.secondary}>{"r:refresh"}</text>
               <text fg={theme.text.secondary}>{"^P:commands"}</text>
             </box>
