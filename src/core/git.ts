@@ -472,9 +472,17 @@ export class GitWorktree {
   }
 
   static async fetchRemote(remote: string, ref?: string, cwd?: string): Promise<void> {
+    assertFetchArgSafe("Remote", remote);
+    if (ref) assertFetchArgSafe("Fetch ref", ref);
     const args = ref ? ["fetch", remote, ref] : ["fetch", remote];
     await this.run(args, cwd);
     invalidateGitCache();
+  }
+}
+
+function assertFetchArgSafe(label: string, value: string): void {
+  if (value.startsWith("-")) {
+    throw new Error(`${label} must not start with '-'`);
   }
 }
 
@@ -489,6 +497,7 @@ export function parseRemoteRef(
   const remote = ref.slice(0, slashIndex);
   const branch = ref.slice(slashIndex + 1);
   if (!branch) return null;
+  if (branch.startsWith("-")) return null;
   if (!remotes.includes(remote)) return null;
 
   return { remote, branch };
