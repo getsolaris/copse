@@ -47,6 +47,19 @@ const WORKTREE_DIR_PRESETS = [
   "~/code/worktrees/{repo}/{branch}",
 ];
 
+const TERMINAL_COMMAND_PRESETS = [
+  "Ghostty",
+  "ghostty",
+  "iTerm",
+  "WezTerm",
+  "wezterm",
+  "Terminal",
+  "alacritty",
+  "gnome-terminal",
+  "konsole",
+  "wt",
+];
+
 const EMPTY_ARRAY_PRESET = "[]";
 
 const COPY_FILES_PRESETS = [
@@ -131,7 +144,7 @@ function inheritedOrBool(v: boolean | undefined): string {
   return v ? "true" : "false";
 }
 
-function buildRows(cfg: OmlConfig | null): Row[] {
+export function buildRows(cfg: OmlConfig | null): Row[] {
   const rows: Row[] = [];
   if (!cfg) return rows;
 
@@ -154,6 +167,17 @@ function buildRows(cfg: OmlConfig | null): Row[] {
     path: ["theme"],
     editKind: "theme",
     depth: 0,
+  });
+  rows.push({
+    key: "top.terminalCommand",
+    kind: "field",
+    label: "terminalCommand",
+    value: cfg.terminalCommand ?? "(auto)",
+    rawValue: cfg.terminalCommand,
+    path: ["terminalCommand"],
+    editKind: "string",
+    depth: 0,
+    suggestions: TERMINAL_COMMAND_PRESETS,
   });
   if (cfg.activeProfile !== undefined || (cfg.profiles && Object.keys(cfg.profiles).length > 0)) {
     rows.push({

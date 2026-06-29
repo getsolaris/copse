@@ -172,12 +172,11 @@ Launch with `copse` (no arguments).
 | `j` / `k` | Navigate worktree list |
 | `a`       | Add worktree           |
 | `d`       | Delete worktree        |
-| `o`       | Open in editor (focus-aware) |
-| `f`       | Open in Finder / file manager |
+| `o`       | Open in Finder / file manager |
 | `t`       | Open in Terminal       |
 | `h`       | Doctor (health check)  |
 | `Enter`   | Open detail view       |
-| `Escape`  | Close detail view / picker |
+| `Escape`  | Close detail view / modal |
 | `Space`   | Toggle worktree selection |
 | `Ctrl+A`  | Select all worktrees   |
 | `x`       | Bulk actions menu      |
@@ -186,17 +185,15 @@ Launch with `copse` (no arguments).
 | `?`       | Help                   |
 | `q`       | Quit                   |
 
-#### `o` — Focus-aware editor open
+#### `o` — Open folder
 
-Pressing `o` opens the selected worktree in `$VISUAL` / `$EDITOR`:
+Pressing `o` opens the selected worktree root in Finder / the OS file manager:
 
-- **No focus paths set** → opens the worktree root.
-- **Exactly 1 focus path** → opens `<worktree>/<focus>` directly.
-- **2+ focus paths** → shows a picker so you can choose which focus path (or the worktree root) to open.
+- **macOS** → Finder via `open <worktree>`.
+- **Windows** → Explorer via `explorer <worktree>`.
+- **Linux** → the default file manager via `xdg-open <worktree>`.
 
-The picker supports `j`/`k` or `↑`/`↓` to navigate, `Enter` to open, and `Esc` to cancel.
-
-Press `f` to open the selected worktree in Finder / file manager. Press `t` to open it in Terminal.
+Press `t` to open the selected worktree root in Terminal.
 Set `terminalCommand` to choose the terminal app or executable; the selected worktree path is passed automatically.
 
 ### Command Palette (`Ctrl+P`)
@@ -1008,6 +1005,8 @@ The TUI `t` shortcut uses `terminalCommand` when present:
 { "terminalCommand": "iTerm" }
 ```
 
+Without `terminalCommand`, macOS follows the current terminal app when it can detect it
+(`TERM_PROGRAM=ghostty` opens Ghostty, for example) and falls back to Terminal.
 copse passes the selected worktree path automatically.
 
 ## Shell Integration

@@ -18,7 +18,7 @@ App.tsx (launchTUI → render)
     │   ├── DoctorView (views/DoctorView.tsx) — health checks + auto-fix
     │   ├── ConfigView (views/ConfigView.tsx) — full config display + inline editing (string, strArray as JSON, boolean, theme, enum) with Tab-cycle through field-specific presets, via setNestedValue + writeAtomically. Loads via `loadRawConfig()` (NOT `loadConfig()`) so workspace-discovered repos are not shown in the `Repos` section nor serialized back to disk on edit. Renders a dedicated `Workspaces` section above `Repos` listing each `workspaces[]` entry (path, depth, exclude, defaults).
     │   ├── CommandPalette (views/CommandPalette.tsx) — Ctrl+P fuzzy search
-    │   ├── FocusPicker (views/FocusPicker.tsx) — modal picker for `o` key when worktree has 2+ focus paths
+    │   ├── FocusPicker (views/FocusPicker.tsx) — legacy focus-path picker component
     │   └── Spinner (views/Spinner.tsx) — animated braille dots spinner
     └── Footer bar (keyboard hints)
 ```
@@ -28,7 +28,7 @@ App.tsx (launchTUI → render)
 **AppContext** (`activeTab`, `selectedWorktreeIndex`, `showRemove`, `showCommandPalette`, `focusPickerData`)
 - `TabId = "list" | "add" | "config" | "doctor"`
 - Only ONE modal at a time (CommandPalette, Remove, BulkActions, or FocusPicker)
-- `focusPickerData: { worktreePath, focusPaths } | null` — when set, FocusPicker is shown and the global `useKeyboard` yields to the picker's own handler
+- `focusPickerData: { worktreePath, focusPaths } | null` — legacy focus picker state; current list `o` shortcut opens the worktree root in the OS file manager
 
 **GitContext** (`worktrees`, `refetch`, `loading`, `error`)
 - `createResource` fetches worktrees on mount
