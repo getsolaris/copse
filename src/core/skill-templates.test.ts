@@ -76,6 +76,7 @@ describe("generateSkillContent", () => {
     expect(content).toContain("copse add feature/my-feature --base main");
     expect(content).toContain("Clean up merged worktrees");
     expect(content).toContain("Run commands across worktrees");
+    expect(content).toContain("Check for updates");
     expect(content).toContain("Review a GitHub PR");
     expect(content).toContain("Use templates");
     expect(content).toContain("Tmux session management");
@@ -85,6 +86,7 @@ describe("generateSkillContent", () => {
     expect(content).toContain("| `add` |");
     expect(content).toContain("| `shell-init` |");
     expect(content).toContain("| `init` |");
+    expect(content).toContain("| `update` |");
   });
 
   it("includes monorepo, config, and command reference links", () => {
@@ -99,18 +101,20 @@ describe("generateSkillContent", () => {
     expect(content).toContain("references/add.md");
     expect(content).toContain("references/shell-init.md");
     expect(content).toContain("references/init.md");
+    expect(content).toContain("references/update.md");
     expect(content).toContain("references/config-schema.md");
   });
 });
 
 describe("generateReferenceFiles", () => {
-  it("returns all 20 command reference files plus config schema", () => {
+  it("returns all 21 command reference files plus config schema", () => {
     const references = generateReferenceFiles();
-    expect(references.size).toBe(21);
+    expect(references.size).toBe(22);
     expect(references.has("add.md")).toBeTrue();
     expect(references.has("remove.md")).toBeTrue();
     expect(references.has("shell-init.md")).toBeTrue();
     expect(references.has("init.md")).toBeTrue();
+    expect(references.has("update.md")).toBeTrue();
     expect(references.has("config-schema.md")).toBeTrue();
   });
 
@@ -155,6 +159,19 @@ describe("generateReferenceFiles", () => {
     expect(initRef).toContain("Without --skill, reuses config initialization and creates only config.json.");
   });
 
+  it("documents update command and update config keys", () => {
+    const references = generateReferenceFiles();
+    const updateRef = references.get("update.md");
+
+    expect(updateRef).toBeDefined();
+    expect(updateRef).toContain("# copse update");
+    expect(updateRef).toContain("--check");
+    expect(updateRef).toContain("--yes");
+    expect(updateRef).toContain("updates.enabled");
+    expect(updateRef).toContain("updates.checkIntervalHours");
+    expect(updateRef).toContain("silent update");
+  });
+
   it("does not render Configuration section when config keys are empty", () => {
     const references = generateReferenceFiles();
     const diffRef = references.get("diff.md");
@@ -185,7 +202,7 @@ describe("writeSkillFile", () => {
     expect(result.platform).toBe("codex");
     expect(result.filePath).toContain(join(".agents", "skills", "copse", "SKILL.md"));
     expect(result.referenceDir).toContain(join(".agents", "skills", "copse", "references"));
-    expect(result.referenceCount).toBe(21);
+    expect(result.referenceCount).toBe(22);
     expect(existsSync(result.filePath)).toBeTrue();
     expect(existsSync(result.referenceDir)).toBeTrue();
 
@@ -194,9 +211,10 @@ describe("writeSkillFile", () => {
     expect(content).toContain("copse");
 
     const referenceFiles = readdirSync(result.referenceDir);
-    expect(referenceFiles).toHaveLength(21);
+    expect(referenceFiles).toHaveLength(22);
     expect(referenceFiles).toContain("add.md");
     expect(referenceFiles).toContain("init.md");
+    expect(referenceFiles).toContain("update.md");
     expect(referenceFiles).toContain("config-schema.md");
   });
 
@@ -206,7 +224,7 @@ describe("writeSkillFile", () => {
     expect(result.action).toBe("created");
     expect(result.filePath).toContain(join(".claude", "skills", "copse", "SKILL.md"));
     expect(result.referenceDir).toContain(join(".claude", "skills", "copse", "references"));
-    expect(result.referenceCount).toBe(21);
+    expect(result.referenceCount).toBe(22);
     expect(existsSync(result.filePath)).toBeTrue();
     expect(existsSync(result.referenceDir)).toBeTrue();
   });
@@ -217,7 +235,7 @@ describe("writeSkillFile", () => {
     expect(result.action).toBe("created");
     expect(result.filePath).toContain(join(".config", "opencode", "skill", "copse", "SKILL.md"));
     expect(result.referenceDir).toContain(join(".config", "opencode", "skill", "copse", "references"));
-    expect(result.referenceCount).toBe(21);
+    expect(result.referenceCount).toBe(22);
     expect(existsSync(result.filePath)).toBeTrue();
     expect(existsSync(result.referenceDir)).toBeTrue();
   });
@@ -261,10 +279,11 @@ describe("writeSkillFile", () => {
       expect(content).toContain("description:");
       expect(content).toContain("## Command Overview");
       expect(existsSync(result.referenceDir)).toBeTrue();
-      expect(result.referenceCount).toBe(21);
+      expect(result.referenceCount).toBe(22);
       const referenceNames = readdirSync(result.referenceDir);
       expect(referenceNames).toContain("config.md");
       expect(referenceNames).toContain("open.md");
+      expect(referenceNames).toContain("update.md");
       expect(referenceNames).toContain("config-schema.md");
     }
   });

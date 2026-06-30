@@ -45,7 +45,7 @@ Keep `AGENTS.md` short. Put the long-form manual QA procedure here.
 
 Enumerate commands from the registry, then classify each as one of:
 
-- config/init/shell setup
+- config/init/update/shell setup
 - read-only repo inspection
 - worktree mutation
 - remote/archive/import
@@ -103,7 +103,7 @@ Prefer real commands over synthetic assertions. Verify the side effects after ea
 
 **Flag-level coverage requirements per group:**
 
-- **Wave 3 (config/init/shell):** every flag for `config`, `init`, `shell-init` — including all aliases and negative cases for flags that require companion flags (`--activate` without `--profile`, etc.)
+- **Wave 3 (config/init/update/shell):** every flag for `config`, `init`, `update`, `shell-init` — including all aliases and negative cases for flags that require companion flags (`--activate` without `--profile`, etc.)
 - **Wave 4 (read-only):** every flag for `list`, `status`, `doctor`, `diff`, `exec`, `log` — including all `-j`/`-a`/`-p` aliases
 - **Wave 5 (mutation):** every flag for `add`, `remove`, `switch`, `rename`, `clean`, `pin`, `open`, `log --clear` — including dirty-worktree negative cases for `remove` without `--force`
 - **Wave 6 (remote/archive/import):** every flag for `clone`, `import`, `archive` — including `--no-init-config`, `--keep`, `--pin`
