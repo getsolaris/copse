@@ -127,14 +127,14 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "default": true,
-          "description": "Enable automatic update checks"
+          "default": false,
+          "description": "Enable opt-in interactive launch-time and TUI update checks"
         },
         "checkIntervalHours": {
           "type": "integer",
           "minimum": 1,
           "default": 24,
-          "description": "Minimum hours between automatic update checks"
+          "description": "Minimum hours between successful launch-time and TUI update checks"
         },
         "ignoredVersion": {
           "type": "string",

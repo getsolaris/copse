@@ -68,11 +68,11 @@ Interactive CLI commands and the TUI can show an update prompt after the configu
 ```json
 {
   "updates": {
-    "enabled": true,
+    "enabled": false,
     "checkIntervalHours": 24,
     "ignoredVersion": "1.2.3"
   }
 }
 ```
 
-Set `updates.enabled` to `false` to disable launch-time and TUI prompts. The explicit `copse update` command still works.
+Set `updates.enabled` to `true` to opt in to launch-time and TUI prompts. The explicit `copse update` command works either way.

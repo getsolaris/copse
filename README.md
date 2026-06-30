@@ -671,7 +671,7 @@ Initialize with: `copse config --init` (or just run any `copse` command — see 
     }
   },
   "updates": {
-    "enabled": true,
+    "enabled": false,
     "checkIntervalHours": 24,
     "ignoredVersion": "1.2.3"
   },
@@ -960,12 +960,12 @@ Session naming: branch `feat/auth-token` → tmux session `copse_feat-auth-token
 
 #### `updates`
 
-Update checks for the explicit `copse update` command, interactive CLI launch prompt, and TUI update modal.
+Update checks for the explicit `copse update` command, plus opt-in interactive CLI launch and TUI prompts.
 
 ```json
 {
   "updates": {
-    "enabled": true,
+    "enabled": false,
     "checkIntervalHours": 24,
     "ignoredVersion": "1.2.3"
   }
@@ -974,7 +974,7 @@ Update checks for the explicit `copse update` command, interactive CLI launch pr
 
 | Field | Type | Default | Description |
 | ----- | ---- | ------- | ----------- |
-| `enabled` | `boolean` | `true` | Enable interactive launch-time and TUI update checks. Explicit `copse update` still works when disabled. |
+| `enabled` | `boolean` | `false` | Enable opt-in interactive launch-time and TUI update checks. Explicit `copse update` still works when disabled. |
 | `checkIntervalHours` | `number` | `24` | Minimum hours between successful launch-time/TUI checks. Must be a positive integer. |
 | `ignoredVersion` | `string` | — | Latest version to suppress after `copse update --ignore` or the TUI ignore action. |
 

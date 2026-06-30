@@ -200,7 +200,7 @@ export function buildRows(cfg: OmlConfig | null): Row[] {
     key: "u.enabled",
     kind: "field",
     label: "enabled",
-    value: String(updates.enabled ?? true),
+    value: String(updates.enabled ?? false),
     rawValue: updates.enabled,
     path: ["updates", "enabled"],
     editKind: "boolean",

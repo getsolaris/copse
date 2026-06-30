@@ -2,7 +2,7 @@ import type { CommandModule } from "yargs";
 import { loadRawConfig } from "../../core/config.ts";
 import { checkForUpdate } from "../../core/updater.ts";
 import { executeInstallPlan, InstallExecutionError } from "../../core/updater-execute.ts";
-import { buildInstallPlan, readCurrentVersion, testReleaseFetch, writeIgnoredVersion } from "../../core/updater-runtime.ts";
+import { buildInstallPlan, readCurrentVersion, writeIgnoredVersion } from "../../core/updater-runtime.ts";
 import { confirm } from "../utils.ts";
 import { printNonInteractiveUpdate, printStatus, resultToJson, unsupportedMessage, updateAvailableStatus, updateSummary } from "./update-output.ts";
 
@@ -39,7 +39,6 @@ const cmd: CommandModule = {
       const result = await checkForUpdate({
         currentVersion: readCurrentVersion(),
         ignoredVersion: config.updates?.ignoredVersion,
-        fetchImpl: testReleaseFetch(),
       });
 
       if (result.status !== "update-available") {

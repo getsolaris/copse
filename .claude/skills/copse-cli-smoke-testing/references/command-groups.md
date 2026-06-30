@@ -123,7 +123,7 @@ bun run src/index.ts init
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `updates.enabled` | boolean | `true` | Enable interactive launch-time and TUI prompts |
+| `updates.enabled` | boolean | `false` | Enable opt-in interactive launch-time and TUI prompts |
 | `updates.checkIntervalHours` | number | `24` | Minimum hours between successful prompt checks |
 | `updates.ignoredVersion` | string | — | Suppress a specific latest version |
 

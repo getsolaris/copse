@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, readFileSync } from "fs";
+import { chmodSync, cpSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 import { cleanupTempDirs, createTempDir, createTempRepo } from "./test-helpers.ts";
 
-const cliPath = resolve(import.meta.dir, "../index.ts");
+const projectRoot = resolve(import.meta.dir, "../..");
+const projectSrc = resolve(import.meta.dir, "..");
 const releaseServers: Array<{ stop(): void }> = [];
 
 interface CommandResult {
@@ -17,14 +18,20 @@ interface ReleaseServer {
   stop(): void;
 }
 
-async function runCli(args: readonly string[], cwd: string, env: Record<string, string>): Promise<CommandResult> {
-  const proc = (Bun as any).spawn(["bun", "run", cliPath, ...args], {
+interface CliFixture {
+  readonly cliPath: string;
+  readonly preloadPath: string;
+  readonly env: Record<string, string>;
+}
+
+async function runCli(args: readonly string[], cwd: string, fixture: CliFixture): Promise<CommandResult> {
+  const proc = (Bun as any).spawn(["bun", "run", "--preload", fixture.preloadPath, fixture.cliPath, ...args], {
     cwd,
     stdout: "pipe",
     stderr: "pipe",
     env: {
       ...(Bun as any).env,
-      ...env,
+      ...fixture.env,
       GIT_AUTHOR_NAME: "Test",
       GIT_AUTHOR_EMAIL: "test@example.com",
       GIT_COMMITTER_NAME: "Test",
@@ -39,6 +46,45 @@ async function runCli(args: readonly string[], cwd: string, env: Record<string, 
   ]);
 
   return { stdout: stdout.trimEnd(), stderr: stderr.trimEnd(), exitCode };
+}
+
+function createCliFixture(root: string, releaseUrl: string, npmScript = "printf update-ok\n"): CliFixture {
+  const xdgConfigHome = join(root, "xdg");
+  const packageDir = join(root, "node_modules", "@getsolaris", "copse");
+  const binDir = join(root, "bin");
+  mkdirSync(xdgConfigHome, { recursive: true });
+  mkdirSync(packageDir, { recursive: true });
+  mkdirSync(binDir, { recursive: true });
+  cpSync(projectSrc, join(packageDir, "src"), { recursive: true });
+  writeFileSync(join(packageDir, "package.json"), `${JSON.stringify({ version: "1.3.1", type: "module" }, null, 2)}\n`);
+  symlinkSync(join(projectRoot, "node_modules"), join(packageDir, "node_modules"), "dir");
+
+  const preloadPath = join(root, "mock-release-fetch.js");
+  writeFileSync(preloadPath, `const releaseUrl = ${JSON.stringify(releaseUrl)};
+const originalFetch = globalThis.fetch;
+globalThis.fetch = (url, init) => {
+  const target = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
+  if (target === "https://api.github.com/repos/getsolaris/copse/releases/latest") {
+    return originalFetch(releaseUrl, init);
+  }
+  return originalFetch(url, init);
+};
+`);
+
+  const npmPath = join(binDir, "npm");
+  writeFileSync(npmPath, `#!/bin/sh\n${npmScript}`);
+  chmodSync(npmPath, 0o755);
+
+  return {
+    cliPath: join(packageDir, "src", "index.ts"),
+    preloadPath,
+    env: {
+      HOME: root,
+      XDG_CONFIG_HOME: xdgConfigHome,
+      XDG_CACHE_HOME: join(root, "cache"),
+      PATH: `${binDir}:${(Bun as any).env.PATH ?? ""}`,
+    },
+  };
 }
 
 function startReleaseServer(): ReleaseServer {
@@ -70,18 +116,6 @@ function startReleaseServer(): ReleaseServer {
   };
   releaseServers.push(handle);
   return handle;
-}
-
-function isolatedEnv(root: string, releaseUrl: string, installCommand?: string): Record<string, string> {
-  const xdgConfigHome = join(root, "xdg");
-  mkdirSync(xdgConfigHome, { recursive: true });
-  return {
-    HOME: root,
-    XDG_CONFIG_HOME: xdgConfigHome,
-    XDG_CACHE_HOME: join(root, "cache"),
-    COPSE_UPDATE_TEST_RELEASE_URL: releaseUrl,
-    ...(installCommand === undefined ? {} : { COPSE_UPDATE_TEST_INSTALL_COMMAND: installCommand }),
-  };
 }
 
 function parseObject(text: string): Record<string, unknown> {
@@ -117,8 +151,9 @@ describe("update CLI command", () => {
     const repoPath = await createTempRepo("copse-update-check-");
     const root = createTempDir("copse-update-env-");
     const server = startReleaseServer();
+    const fixture = createCliFixture(root, server.url);
 
-    const result = await runCli(["update", "--check", "--json"], repoPath, isolatedEnv(root, server.url));
+    const result = await runCli(["update", "--check", "--json"], repoPath, fixture);
 
     expect(result.exitCode).toBe(0);
     expect(readStatus(result.stdout)).toBe("update-available");
@@ -130,8 +165,9 @@ describe("update CLI command", () => {
     const repoPath = await createTempRepo("copse-update-nontty-");
     const root = createTempDir("copse-update-env-");
     const server = startReleaseServer();
+    const fixture = createCliFixture(root, server.url);
 
-    const result = await runCli(["update"], repoPath, isolatedEnv(root, server.url, "printf update-ok"));
+    const result = await runCli(["update"], repoPath, fixture);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Update available");
@@ -143,8 +179,9 @@ describe("update CLI command", () => {
     const repoPath = await createTempRepo("copse-update-yes-");
     const root = createTempDir("copse-update-env-");
     const server = startReleaseServer();
+    const fixture = createCliFixture(root, server.url);
 
-    const result = await runCli(["update", "--yes"], repoPath, isolatedEnv(root, server.url, "printf update-ok"));
+    const result = await runCli(["update", "--yes"], repoPath, fixture);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("update-ok");
@@ -154,8 +191,9 @@ describe("update CLI command", () => {
     const repoPath = await createTempRepo("copse-update-fail-");
     const root = createTempDir("copse-update-env-");
     const server = startReleaseServer();
+    const fixture = createCliFixture(root, server.url, "echo update-failed >&2\nexit 42\n");
 
-    const result = await runCli(["update", "--yes"], repoPath, isolatedEnv(root, server.url, "sh -c 'echo update-failed >&2; exit 42'"));
+    const result = await runCli(["update", "--yes"], repoPath, fixture);
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("update-failed");
@@ -165,10 +203,10 @@ describe("update CLI command", () => {
     const repoPath = await createTempRepo("copse-update-ignore-");
     const root = createTempDir("copse-update-env-");
     const server = startReleaseServer();
-    const env = isolatedEnv(root, server.url, "printf update-ok");
+    const fixture = createCliFixture(root, server.url);
 
-    const ignore = await runCli(["update", "--ignore"], repoPath, env);
-    const check = await runCli(["update", "--check", "--json"], repoPath, env);
+    const ignore = await runCli(["update", "--ignore"], repoPath, fixture);
+    const check = await runCli(["update", "--check", "--json"], repoPath, fixture);
     const config = parseObject(readFileSync(join(root, "xdg", "copse", "config.json"), "utf-8"));
     const updates = config.updates;
 

@@ -468,7 +468,7 @@ describe("loadConfig", () => {
         autoUpstream: true,
       },
       updates: {
-        enabled: true,
+        enabled: false,
         checkIntervalHours: 24,
       },
       repos: [],

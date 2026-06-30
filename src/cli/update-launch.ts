@@ -8,7 +8,7 @@ import {
   type UpdateFetch,
 } from "../core/updater.ts";
 import { executeInstallPlan, InstallExecutionError, type InstallExecutionResult } from "../core/updater-execute.ts";
-import { buildInstallPlan, readCurrentVersion, testReleaseFetch } from "../core/updater-runtime.ts";
+import { buildInstallPlan, readCurrentVersion } from "../core/updater-runtime.ts";
 import { unsupportedMessage, updateSummary } from "./cmd/update-output.ts";
 import { confirm } from "./utils.ts";
 
@@ -72,14 +72,13 @@ export async function maybePromptForUpdateOnLaunch(argv: readonly string[] = pro
       config: loadRawConfig(),
       currentVersion: readCurrentVersion(),
       cachePath: getUpdateStatePath(),
-      fetchImpl: testReleaseFetch(),
       confirmInstall: confirm,
     });
   } catch {}
 }
 
 export async function runLaunchUpdateNotice(options: LaunchUpdateNoticeOptions): Promise<LaunchUpdateNoticeOutcome> {
-  if (options.config.updates?.enabled === false) return { status: "skipped" };
+  if (options.config.updates?.enabled !== true) return { status: "skipped" };
 
   const result = await checkForUpdateOnLaunch({
     currentVersion: options.currentVersion,

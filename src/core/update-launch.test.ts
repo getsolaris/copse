@@ -63,9 +63,9 @@ describe("startup update launch notice", () => {
     }
   });
 
-  it("startup update honors disabled config before touching the network", async () => {
+  it("startup update requires opt-in config before touching the network", async () => {
     let fetchCount = 0;
-    const outcome = await runLaunchUpdateNotice({
+    const disabled = await runLaunchUpdateNotice({
       config: { version: 1, updates: { enabled: false } },
       currentVersion: "1.0.0",
       cachePath: join(createTempDir("copse-launch-disabled-"), "cache.json"),
@@ -77,8 +77,21 @@ describe("startup update launch notice", () => {
       buildInstallPlan: commandPlan,
       executeInstallPlan: async () => installed(),
     });
+    const missing = await runLaunchUpdateNotice({
+      config: { version: 1 },
+      currentVersion: "1.0.0",
+      cachePath: join(createTempDir("copse-launch-missing-"), "cache.json"),
+      fetchImpl: async () => {
+        fetchCount += 1;
+        return release("v9.9.9");
+      },
+      confirmInstall: async () => true,
+      buildInstallPlan: commandPlan,
+      executeInstallPlan: async () => installed(),
+    });
 
-    expect(outcome.status).toBe("skipped");
+    expect(disabled.status).toBe("skipped");
+    expect(missing.status).toBe("skipped");
     expect(fetchCount).toBe(0);
   });
 

@@ -133,7 +133,7 @@ const DEFAULT_CONFIG: OmlConfig = {
     autoUpstream: true,
   },
   updates: {
-    enabled: true,
+    enabled: false,
     checkIntervalHours: 24,
   },
   repos: [],

@@ -6,16 +6,11 @@ import {
   planInstallUpdate,
   type InstallUpdatePlan,
   type UpdateCheckResult,
-  type UpdateFetch,
 } from "./updater.ts";
 
 type UpdateAvailableResult = Extract<UpdateCheckResult, { readonly status: "update-available" }>;
 
 export function buildInstallPlan(result: UpdateAvailableResult): InstallUpdatePlan {
-  const command = Bun.env.COPSE_UPDATE_TEST_INSTALL_COMMAND;
-  if (command !== undefined && command.trim().length > 0) {
-    return { kind: "command", method: "npm", command: ["sh", "-c", command] };
-  }
   const method = detectInstallMethod({
     executablePath: process.argv[1] ?? process.execPath,
     realpath: realpathOrSelf,
@@ -27,12 +22,6 @@ export function buildInstallPlan(result: UpdateAvailableResult): InstallUpdatePl
     executablePath: process.argv[1] ?? process.execPath,
     standaloneAsset: result.standaloneAsset,
   });
-}
-
-export function testReleaseFetch(): UpdateFetch | undefined {
-  const releaseUrl = Bun.env.COPSE_UPDATE_TEST_RELEASE_URL;
-  if (releaseUrl === undefined || releaseUrl.trim().length === 0) return undefined;
-  return (_url, init) => fetch(releaseUrl, { headers: init.headers, signal: init.signal });
 }
 
 export function readCurrentVersion(): string {

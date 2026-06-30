@@ -8,7 +8,7 @@ import {
   type UpdateCheckResult,
 } from "../../core/updater.ts";
 import { executeInstallPlan, InstallExecutionError } from "../../core/updater-execute.ts";
-import { buildInstallPlan, readCurrentVersion, testReleaseFetch, writeIgnoredVersion } from "../../core/updater-runtime.ts";
+import { buildInstallPlan, readCurrentVersion, writeIgnoredVersion } from "../../core/updater-runtime.ts";
 import { useApp } from "../context/AppContext.tsx";
 import { theme } from "../themes.ts";
 import { buildUpdateModalView, isUpdateModalVisible, type UpdatePromptState } from "../update-modal-state.ts";
@@ -141,11 +141,10 @@ export function UpdatePrompt() {
   async function checkForUpdate(): Promise<void> {
     try {
       const config = loadRawConfig();
-      if (config.updates?.enabled === false) return;
+      if (config.updates?.enabled !== true) return;
       const result = await checkForUpdateOnLaunch({
         currentVersion: readCurrentVersion(),
         ignoredVersion: config.updates?.ignoredVersion,
-        fetchImpl: testReleaseFetch(),
         cachePath: getUpdateStatePath(),
         successCacheTtlMs: (config.updates?.checkIntervalHours ?? 24) * 60 * 60 * 1000,
       });
