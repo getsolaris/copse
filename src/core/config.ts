@@ -70,6 +70,12 @@ export interface SessionConfig {
   layouts?: Record<string, SessionLayoutConfig>;
 }
 
+export interface UpdatesConfig {
+  enabled?: boolean;
+  checkIntervalHours?: number;
+  ignoredVersion?: string;
+}
+
 export interface SharedDepsConfig {
   strategy?: "hardlink" | "symlink" | "copy";
   paths?: string[];
@@ -98,6 +104,7 @@ export interface OmlConfig {
   templates?: Record<string, TemplateConfig>;
   lifecycle?: LifecycleConfig;
   sessions?: SessionConfig;
+  updates?: UpdatesConfig;
   profiles?: Record<string, object>;
   activeProfile?: string;
 }
@@ -124,6 +131,10 @@ const DEFAULT_CONFIG: OmlConfig = {
     postCreate: [],
     postRemove: [],
     autoUpstream: true,
+  },
+  updates: {
+    enabled: true,
+    checkIntervalHours: 24,
   },
   repos: [],
 };
@@ -159,7 +170,7 @@ export function getConfigPath(): string {
   return join(getConfigDir(), "config.json");
 }
 
-const VALID_ROOT_KEYS = new Set(["version", "defaults", "repos", "workspaces", "$schema", "terminalCommand", "theme", "templates", "lifecycle", "sessions", "profiles", "activeProfile"]);
+const VALID_ROOT_KEYS = new Set(["version", "defaults", "repos", "workspaces", "$schema", "terminalCommand", "theme", "templates", "lifecycle", "sessions", "updates", "profiles", "activeProfile"]);
 const VALID_DEFAULT_KEYS = new Set(["worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "sharedDeps", "base"]);
 const VALID_REPO_KEYS = new Set(["path", "worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "monorepo", "sharedDeps", "base"]);
 const VALID_WORKSPACE_KEYS = new Set(["path", "depth", "exclude", "defaults"]);
@@ -167,7 +178,8 @@ const VALID_MONOREPO_KEYS = new Set(["autoDetect", "extraPatterns", "hooks"]);
 const VALID_TEMPLATE_KEYS = new Set(["worktreeDir", "copyFiles", "linkFiles", "postCreate", "postRemove", "autoUpstream", "base"]);
 const VALID_LIFECYCLE_KEYS = new Set(["autoCleanMerged", "staleAfterDays", "maxWorktrees"]);
 const VALID_SESSION_KEYS = new Set(["enabled", "autoCreate", "autoKill", "prefix", "defaultLayout", "layouts"]);
-const VALID_PROFILE_KEYS = new Set(["defaults", "repos", "workspaces", "terminalCommand", "theme", "templates", "lifecycle", "sessions"]);
+const VALID_UPDATE_KEYS = new Set(["enabled", "checkIntervalHours", "ignoredVersion"]);
+const VALID_PROFILE_KEYS = new Set(["defaults", "repos", "workspaces", "terminalCommand", "theme", "templates", "lifecycle", "sessions", "updates"]);
 
 export function validateConfig(data: unknown): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -570,6 +582,14 @@ export function validateConfig(data: unknown): ValidationError[] {
     }
   }
 
+  if ("updates" in obj && obj.updates !== undefined) {
+    if (typeof obj.updates !== "object" || obj.updates === null || Array.isArray(obj.updates)) {
+      errors.push({ field: "updates", message: "Must be an object" });
+    } else {
+      validateUpdates(obj.updates as Record<string, unknown>, "updates", errors);
+    }
+  }
+
   if ("profiles" in obj && obj.profiles !== undefined) {
     if (typeof obj.profiles !== "object" || obj.profiles === null || Array.isArray(obj.profiles)) {
       errors.push({ field: "profiles", message: "Must be an object (key-value map)" });
@@ -606,6 +626,36 @@ export function validateConfig(data: unknown): ValidationError[] {
   }
 
   return errors;
+}
+
+function validateUpdates(obj: Record<string, unknown>, prefix: string, errors: ValidationError[]): void {
+  for (const key of Object.keys(obj)) {
+    if (!VALID_UPDATE_KEYS.has(key)) {
+      errors.push({ field: `${prefix}.${key}`, message: `Unknown field '${key}'` });
+    }
+  }
+
+  if ("enabled" in obj && typeof obj.enabled !== "boolean") {
+    errors.push({ field: `${prefix}.enabled`, message: "Must be a boolean" });
+  }
+
+  if ("checkIntervalHours" in obj) {
+    if (
+      typeof obj.checkIntervalHours !== "number" ||
+      !Number.isInteger(obj.checkIntervalHours) ||
+      obj.checkIntervalHours < 1
+    ) {
+      errors.push({ field: `${prefix}.checkIntervalHours`, message: "Must be a positive integer" });
+    }
+  }
+
+  if ("ignoredVersion" in obj) {
+    if (typeof obj.ignoredVersion !== "string") {
+      errors.push({ field: `${prefix}.ignoredVersion`, message: "Must be a string" });
+    } else if (obj.ignoredVersion.trim().length === 0) {
+      errors.push({ field: `${prefix}.ignoredVersion`, message: "Must not be empty" });
+    }
+  }
 }
 
 function validateSharedDeps(obj: Record<string, unknown>, prefix: string, errors: ValidationError[]): void {

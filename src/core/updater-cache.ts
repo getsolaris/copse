@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
-import { dirname } from "path";
-import type { UpdateCacheEntry, UpdateCheckResult, UpdateCheckSource, UpdateFailureReason, WriteUpdateCacheOptions } from "./updater-types.ts";
+import { dirname, join } from "path";
+import type { UpdateCacheEntry, UpdateCheckResult, UpdateCheckSource, UpdateFailureReason, UpdateStatePathEnv, WriteUpdateCacheOptions } from "./updater-types.ts";
 
 const SUCCESS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FAILURE_CACHE_TTL_MS = 60 * 60 * 1000;
@@ -9,6 +9,11 @@ const STALE_LOCK_MS = 5 * 60 * 1000;
 
 class UpdateCacheError extends Error {
   readonly name = "UpdateCacheError";
+}
+
+export function getUpdateStatePath(env: UpdateStatePathEnv = Bun.env): string {
+  const base = env.XDG_CACHE_HOME ?? join(env.HOME ?? "~", ".cache");
+  return join(base, "copse", "update-state.json");
 }
 
 export function writeUpdateCache(options: WriteUpdateCacheOptions): void {

@@ -1,7 +1,7 @@
 import { isCacheFresh, readUpdateCache, withSource, writeUpdateCache as persistUpdateCache } from "./updater-cache.ts";
 import type { UpdateCacheEntry, UpdateCheckOptions, UpdateCheckResult, UpdateFailureReason, UpdateFetch } from "./updater-types.ts";
 
-export { writeUpdateCache } from "./updater-cache.ts";
+export { getUpdateStatePath, writeUpdateCache } from "./updater-cache.ts";
 export type {
   UpdateCacheEntry,
   UpdateCheckOptions,
@@ -11,6 +11,7 @@ export type {
   UpdateFetch,
   UpdateFetchInit,
   UpdateFetchResponse,
+  UpdateStatePathEnv,
   WriteUpdateCacheOptions,
 } from "./updater-types.ts";
 

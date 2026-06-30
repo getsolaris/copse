@@ -39,3 +39,8 @@ export interface WriteUpdateCacheOptions {
   readonly entry: UpdateCacheEntry;
   readonly nowMs?: number;
 }
+
+export interface UpdateStatePathEnv {
+  readonly XDG_CACHE_HOME?: string;
+  readonly HOME?: string;
+}

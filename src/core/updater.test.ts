@@ -4,6 +4,7 @@ import { join } from "path";
 import {
   checkForUpdate,
   checkForUpdateOnLaunch,
+  getUpdateStatePath,
   writeUpdateCache,
   type UpdateCacheEntry,
   type UpdateFailureReason,
@@ -238,5 +239,12 @@ describe("writeUpdateCache", () => {
     const parsed: unknown = JSON.parse(readFileSync(cachePath, "utf-8"));
     expect(parsed).toMatchObject({ checkedAtMs: nowMs });
     expect(existsSync(`${cachePath}.lock`)).toBeFalse();
+  });
+});
+
+describe("getUpdateStatePath", () => {
+  it("uses XDG cache home and falls back to HOME cache", () => {
+    expect(getUpdateStatePath({ XDG_CACHE_HOME: "/tmp/xdg-cache", HOME: "/tmp/home" })).toBe("/tmp/xdg-cache/copse/update-state.json");
+    expect(getUpdateStatePath({ HOME: "/tmp/home" })).toBe("/tmp/home/.cache/copse/update-state.json");
   });
 });
