@@ -1,7 +1,8 @@
-import { For, Show, createMemo } from "solid-js";
+import { For, Show, createEffect, createMemo } from "solid-js";
+import { useKeyboard } from "@opentui/solid";
+import type { ScrollBoxRenderable } from "@opentui/core";
 import { useApp } from "../context/AppContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
-import { useKeyboard } from "@opentui/solid";
 import { theme } from "../themes.ts";
 import { isPinned } from "../../core/pin.ts";
 import { readSessionMeta } from "../../core/session.ts";
@@ -14,9 +15,16 @@ type DisplayItem =
   | { type: "separator" }
   | { type: "worktree"; wt: Worktree; flatIdx: number };
 
+export function getSidebarScrollTop(selectedLine: number, viewportRows: number): number {
+  const safeSelectedLine = Math.max(0, selectedLine);
+  const safeViewportRows = Math.max(1, Math.floor(viewportRows));
+  return Math.max(0, safeSelectedLine - safeViewportRows + 1);
+}
+
 export function Sidebar() {
   const app = useApp();
   const git = useGit();
+  let listScrollbox: ScrollBoxRenderable | undefined;
 
   const worktrees = () => git.worktrees() ?? [];
   const selectedIdx = () => app.selectedWorktreeIndex();
@@ -62,6 +70,15 @@ export function Sidebar() {
   });
 
   const selectionCount = () => app.selectedWorktrees().size;
+  const selectedDisplayIndex = createMemo(() =>
+    displayItems().findIndex((item) => item.type === "worktree" && item.flatIdx === selectedIdx()),
+  );
+
+  createEffect(() => {
+    const row = selectedDisplayIndex();
+    if (row < 0 || !listScrollbox) return;
+    listScrollbox.scrollTo({ x: 0, y: getSidebarScrollTop(row, listScrollbox.height) });
+  });
 
   useKeyboard((event: any) => {
     if (app.activeTab() !== "list") return;
@@ -114,70 +131,78 @@ export function Sidebar() {
         <text fg={theme.text.secondary}>Loading...</text>
       </Show>
       <Show when={!git.loading()}>
-        <For each={displayItems()}>
-          {(item) => {
-            if (item.type === "header") {
+        <scrollbox
+          ref={(el: ScrollBoxRenderable) => { listScrollbox = el; }}
+          width="100%"
+          height="100%"
+          scrollX={false}
+          scrollY={true}
+        >
+          <For each={displayItems()}>
+            {(item) => {
+              if (item.type === "header") {
+                return (
+                  <box width="100%" height={1}>
+                    <text fg={theme.text.accent}>
+                      <b>{item.repoName}</b>
+                    </text>
+                  </box>
+                );
+              }
+
+              if (item.type === "separator") {
+                return (
+                  <box width="100%" height={1}>
+                    <text fg={theme.border.subtle}>
+                      {"\u2500".repeat(INNER_W)}
+                    </text>
+                  </box>
+                );
+              }
+
+              const wt = item.wt;
+              const isFocused = () => item.flatIdx === selectedIdx();
+              const isChecked = () => app.selectedWorktrees().has(wt.path);
               return (
-                <box width="100%" height={1}>
-                  <text fg={theme.text.accent}>
-                    <b>{item.repoName}</b>
+                <box
+                  width="100%" height={1}
+                  backgroundColor={isFocused() ? theme.select.focusedBg : isChecked() ? theme.bg.elevated : theme.bg.surface}
+                  paddingX={1}
+                  onMouseDown={() => setSelectedByIndex(item.flatIdx)}
+                >
+                  <text x={0} y={0} fg={statusColor(wt)}>
+                    {statusIcon(wt)}
                   </text>
+                  <text x={2} y={0} fg={isFocused() ? theme.tab.active : theme.text.primary}>
+                    {truncBranch(wt, false)}
+                  </text>
+                  <Show when={isChecked()}>
+                    <text x={INNER_W - 1} y={0} fg={theme.text.accent}>
+                      {"\u2713"}
+                    </text>
+                  </Show>
+                  <Show when={!!readSessionMeta(wt.path)}>
+                    <text x={INNER_W - (isChecked() ? 3 : 1)} y={0} fg={theme.text.accent}>
+                      {"S"}
+                    </text>
+                  </Show>
+                  <Show when={isPinned(wt.path)}>
+                    <text x={INNER_W - (isChecked() ? 5 : 3) + (readSessionMeta(wt.path) ? 0 : 2)} y={0} fg={theme.text.warning}>
+                      {"P"}
+                    </text>
+                  </Show>
                 </box>
               );
-            }
-
-            if (item.type === "separator") {
-              return (
-                <box width="100%" height={1}>
-                  <text fg={theme.border.subtle}>
-                    {"\u2500".repeat(INNER_W)}
-                  </text>
-                </box>
-              );
-            }
-
-            const wt = item.wt;
-            const isFocused = () => item.flatIdx === selectedIdx();
-            const isChecked = () => app.selectedWorktrees().has(wt.path);
-            return (
-              <box
-                width="100%" height={1}
-                backgroundColor={isFocused() ? theme.select.focusedBg : isChecked() ? theme.bg.elevated : theme.bg.surface}
-                paddingX={1}
-                onMouseDown={() => setSelectedByIndex(item.flatIdx)}
-              >
-                <text x={0} y={0} fg={statusColor(wt)}>
-                  {statusIcon(wt)}
-                </text>
-                <text x={2} y={0} fg={isFocused() ? theme.tab.active : theme.text.primary}>
-                  {truncBranch(wt, false)}
-                </text>
-                <Show when={isChecked()}>
-                  <text x={INNER_W - 1} y={0} fg={theme.text.accent}>
-                    {"\u2713"}
-                  </text>
-                </Show>
-                <Show when={!!readSessionMeta(wt.path)}>
-                  <text x={INNER_W - (isChecked() ? 3 : 1)} y={0} fg={theme.text.accent}>
-                    {"S"}
-                  </text>
-                </Show>
-                <Show when={isPinned(wt.path)}>
-                  <text x={INNER_W - (isChecked() ? 5 : 3) + (readSessionMeta(wt.path) ? 0 : 2)} y={0} fg={theme.text.warning}>
-                    {"P"}
-                  </text>
-                </Show>
-              </box>
-            );
-          }}
-        </For>
-        <Show when={selectionCount() > 0}>
-          <box width="100%" height={1}>
-            <text fg={theme.text.accent}>
-              {`Selected: ${selectionCount()}`}
-            </text>
-          </box>
-        </Show>
+            }}
+          </For>
+          <Show when={selectionCount() > 0}>
+            <box width="100%" height={1}>
+              <text fg={theme.text.accent}>
+                {`Selected: ${selectionCount()}`}
+              </text>
+            </box>
+          </Show>
+        </scrollbox>
       </Show>
     </box>
   );
