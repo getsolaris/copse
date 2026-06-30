@@ -2,6 +2,15 @@ import { isCacheFresh, readUpdateCache, withSource, writeUpdateCache as persistU
 import type { UpdateCacheEntry, UpdateCheckOptions, UpdateCheckResult, UpdateFailureReason, UpdateFetch } from "./updater-types.ts";
 
 export { getUpdateStatePath, writeUpdateCache } from "./updater-cache.ts";
+export { detectInstallMethod, planInstallUpdate } from "./updater-install.ts";
+export type {
+  InstallDetectionEnv,
+  InstallDetectionOptions,
+  InstallMethod,
+  InstallUpdatePlan,
+  InstallUpdatePlanOptions,
+  StandaloneUpdateAsset,
+} from "./updater-install.ts";
 export type {
   UpdateCacheEntry,
   UpdateCheckOptions,
