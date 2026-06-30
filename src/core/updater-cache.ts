@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
+import type { StandaloneUpdateAsset } from "./updater-install.ts";
 import type { UpdateCacheEntry, UpdateCheckResult, UpdateCheckSource, UpdateFailureReason, UpdateStatePathEnv, WriteUpdateCacheOptions } from "./updater-types.ts";
 
 const SUCCESS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -72,7 +73,10 @@ function parseCheckResult(value: unknown): UpdateCheckResult | null {
     case "update-available": {
       const releaseUrl = readStringField(value, "releaseUrl");
       if (currentVersion === undefined || latestVersion === undefined || releaseUrl === undefined) return null;
-      return { status, currentVersion, latestVersion, releaseUrl, source };
+      const standaloneAsset = readStandaloneAsset(value);
+      return standaloneAsset === undefined
+        ? { status, currentVersion, latestVersion, releaseUrl, source }
+        : { status, currentVersion, latestVersion, releaseUrl, source, standaloneAsset };
     }
     case "ignored-version": {
       const ignoredVersion = readStringField(value, "ignoredVersion");
@@ -142,6 +146,14 @@ function readFailureReason(value: unknown): UpdateFailureReason | undefined {
     default:
       return undefined;
   }
+}
+
+function readStandaloneAsset(value: unknown): StandaloneUpdateAsset | undefined {
+  const candidate = readField(value, "standaloneAsset");
+  const downloadUrl = readStringField(candidate, "downloadUrl");
+  if (downloadUrl === undefined) return undefined;
+  const digest = readStringField(candidate, "digest");
+  return digest === undefined ? { downloadUrl } : { downloadUrl, digest };
 }
 
 function readStringField(value: unknown, field: string): string | undefined {

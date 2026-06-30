@@ -26,9 +26,7 @@ export interface InstallUpdatePlanOptions {
 }
 
 export type InstallUpdatePlan =
-  | { readonly kind: "command"; readonly method: "homebrew"; readonly command: readonly ["brew", "upgrade", "getsolaris/tap/copse"] }
-  | { readonly kind: "command"; readonly method: "bun"; readonly command: readonly ["bun", "install", "-g", string] }
-  | { readonly kind: "command"; readonly method: "npm"; readonly command: readonly ["npm", "install", "-g", string] }
+  | { readonly kind: "command"; readonly method: "homebrew" | "bun" | "npm"; readonly command: readonly string[] }
   | {
     readonly kind: "standalone";
     readonly method: "standalone";

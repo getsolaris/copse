@@ -1,4 +1,5 @@
 import { isCacheFresh, readUpdateCache, withSource, writeUpdateCache as persistUpdateCache } from "./updater-cache.ts";
+import type { StandaloneUpdateAsset } from "./updater-install.ts";
 import type { UpdateCacheEntry, UpdateCheckOptions, UpdateCheckResult, UpdateFailureReason, UpdateFetch } from "./updater-types.ts";
 
 export { getUpdateStatePath, writeUpdateCache } from "./updater-cache.ts";
@@ -42,6 +43,7 @@ interface VersionParts {
 interface LatestRelease {
   readonly version: VersionParts;
   readonly releaseUrl: string;
+  readonly standaloneAsset?: StandaloneUpdateAsset;
 }
 
 type CheckFailedResult = Extract<UpdateCheckResult, { readonly status: "check-failed" }>;
@@ -122,6 +124,7 @@ function parseLatestRelease(value: unknown): LatestReleaseResult {
     release: {
       version,
       releaseUrl: readStringField(value, "html_url") ?? `https://github.com/getsolaris/copse/releases/tag/v${version.normalized}`,
+      ...standaloneAssetFields(readField(value, "assets")),
     },
   };
 }
@@ -160,13 +163,14 @@ function compareUpdate(
     };
   }
 
-  return {
+  const result: Extract<UpdateCheckResult, { readonly status: "update-available" }> = {
     status: "update-available",
     currentVersion: current.normalized,
     latestVersion: release.version.normalized,
     releaseUrl: release.releaseUrl,
     source: "network",
   };
+  return release.standaloneAsset === undefined ? result : { ...result, standaloneAsset: release.standaloneAsset };
 }
 
 function parseReleaseTag(value: string): VersionParts | null {
@@ -205,6 +209,18 @@ function readField(value: unknown, field: string): unknown {
     if (key === field) return fieldValue;
   }
   return undefined;
+}
+
+function standaloneAssetFields(value: unknown): { readonly standaloneAsset?: StandaloneUpdateAsset } {
+  if (!Array.isArray(value)) return {};
+  for (const asset of value) {
+    if (readStringField(asset, "name") !== "copse.js") continue;
+    const downloadUrl = readStringField(asset, "browser_download_url");
+    if (downloadUrl === undefined) continue;
+    const digest = readStringField(asset, "digest");
+    return digest === undefined ? { standaloneAsset: { downloadUrl } } : { standaloneAsset: { downloadUrl, digest } };
+  }
+  return {};
 }
 
 function isTimeoutError(error: unknown): boolean {

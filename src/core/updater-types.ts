@@ -1,3 +1,5 @@
+import type { StandaloneUpdateAsset } from "./updater-install.ts";
+
 export type UpdateCheckSource = "network" | "cache";
 export type UpdateFailureReason = "http" | "invalid-json" | "missing-tag" | "timeout" | "invalid-version" | "network";
 
@@ -17,7 +19,7 @@ export type UpdateFetch = (url: string, init: UpdateFetchInit) => Promise<Update
 
 export type UpdateCheckResult =
   | { readonly status: "up-to-date"; readonly currentVersion: string; readonly latestVersion: string; readonly source: UpdateCheckSource }
-  | { readonly status: "update-available"; readonly currentVersion: string; readonly latestVersion: string; readonly releaseUrl: string; readonly source: UpdateCheckSource }
+  | { readonly status: "update-available"; readonly currentVersion: string; readonly latestVersion: string; readonly releaseUrl: string; readonly source: UpdateCheckSource; readonly standaloneAsset?: StandaloneUpdateAsset }
   | { readonly status: "ignored-version"; readonly currentVersion: string; readonly latestVersion: string; readonly ignoredVersion: string; readonly source: UpdateCheckSource }
   | { readonly status: "check-failed"; readonly reason: UpdateFailureReason; readonly message: string; readonly source: UpdateCheckSource };
 
