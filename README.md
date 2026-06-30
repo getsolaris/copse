@@ -45,6 +45,7 @@ A **copse** is a small group of trees growing closely together. Git worktrees ar
 - **Tmux sessions** — auto-create/kill tmux sessions per worktree with layout templates (`copse session`)
 - **Workspaces** — auto-discover git repos under parent directories with per-workspace defaults (`workspaces` config)
 - **AI agent init** — create config by default or install copse skill for Claude Code, Codex, OpenCode (`copse init`, `copse init --skill`)
+- **Update checks** — check and install copse updates with explicit prompts (`copse update`)
 
 ## Requirements
 
@@ -159,6 +160,9 @@ copse init
 
 # Generate AI agent skill file
 copse init --skill claude-code
+
+# Check for copse updates
+copse update --check
 ```
 
 ## TUI Usage
@@ -295,6 +299,7 @@ Every commit runs `validateConfig` before writing. Invalid input surfaces as an 
 | `copse session [branch]`   | Manage tmux sessions for worktrees   |
 | `copse open [branch]`      | Open a worktree in your editor (focus-aware) |
 | `copse init`               | Initialize config or install AI agent skills |
+| `copse update`             | Check for and install copse updates  |
 
 ### `copse add`
 
@@ -558,7 +563,7 @@ copse init --skill opencode       # → ~/.config/opencode/skill/copse/
 
 Each skill directory contains:
 - `SKILL.md` — overview and common workflows
-- `references/` — detailed per-command documentation (21 files)
+- `references/` — detailed per-command documentation (22 files)
 
 Without `--skill`, the command reuses the normal config initializer and creates only `config.json`.
 The command is idempotent — running it again updates the skill directory.
@@ -572,6 +577,30 @@ copse: created default config at /Users/you/.config/copse/config.json
 ```
 
 The notice is suppressed when stdout is not a TTY (so pipes, scripts, and CI stay quiet) and when you run `copse init` explicitly (to avoid duplicate messages with init's own success line). Auto-init is fully idempotent — subsequent runs do nothing.
+
+### `copse update`
+
+Check for new copse releases and install them through the detected install method.
+
+```bash
+copse update              # Prompt before installing
+copse update --check      # Check only
+copse update --yes        # Install without prompting
+copse update --json       # Machine-readable status
+copse update --ignore     # Ignore the current latest version
+```
+
+Install routing:
+
+- Homebrew installs run `brew upgrade getsolaris/tap/copse`.
+- Bun global installs run `bun install -g @getsolaris/copse@<version>`.
+- npm global installs run `npm install -g @getsolaris/copse@<version>`.
+- Standalone installs replace the current binary only when the release asset includes a sha256 digest.
+- Source/dev checkouts are not overwritten; update them with git or reinstall copse.
+
+Interactive CLI commands and the TUI may show the same update prompt after the configured check interval. These prompts are non-blocking for scripts and machine-readable output: JSON/porcelain commands, non-TTY runs, `copse update`, `copse init`, help, and version output skip launch-time prompts.
+
+copse never performs a silent update. It does not run a background daemon or send telemetry; every install is triggered by `copse update --yes` or an explicit confirmation in an interactive prompt.
 
 ## Configuration
 
@@ -640,6 +669,11 @@ Initialize with: `copse config --init` (or just run any `copse` command — see 
         ]
       }
     }
+  },
+  "updates": {
+    "enabled": false,
+    "checkIntervalHours": 24,
+    "ignoredVersion": "1.2.3"
   },
   "workspaces": [
     {
@@ -923,6 +957,28 @@ Tmux session management for worktrees.
 | `command` | `string` | No       | Command to run in the window   |
 
 Session naming: branch `feat/auth-token` → tmux session `copse_feat-auth-token`.
+
+#### `updates`
+
+Update checks for the explicit `copse update` command, plus opt-in interactive CLI launch and TUI prompts.
+
+```json
+{
+  "updates": {
+    "enabled": false,
+    "checkIntervalHours": 24,
+    "ignoredVersion": "1.2.3"
+  }
+}
+```
+
+| Field | Type | Default | Description |
+| ----- | ---- | ------- | ----------- |
+| `enabled` | `boolean` | `false` | Enable opt-in interactive launch-time and TUI update checks. Explicit `copse update` still works when disabled. |
+| `checkIntervalHours` | `number` | `24` | Minimum hours between successful launch-time/TUI checks. Must be a positive integer. |
+| `ignoredVersion` | `string` | — | Latest version to suppress after `copse update --ignore` or the TUI ignore action. |
+
+Launch-time checks are skipped for non-TTY runs, machine-readable output, `copse update`, `copse init`, help, and version output. Install prompts always require explicit confirmation unless you pass `copse update --yes`.
 
 #### `sharedDeps`
 

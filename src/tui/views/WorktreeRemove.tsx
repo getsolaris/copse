@@ -98,6 +98,7 @@ export function WorktreeRemove() {
   useKeyboard(async (event: any) => {
     if (!app.showRemove()) return;
     if (app.showCommandPalette()) return;
+    if (app.showUpdatePrompt()) return;
     const key = event.name;
     if (key === "escape") { closeDialog(); return; }
     if (confirmForce() && (key === "return" || key === "enter")) { setConfirmForce(false); await doRemove(true); return; }

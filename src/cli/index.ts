@@ -32,7 +32,10 @@ if (process.argv.length === 2) {
   const { launchTUI } = await import("../tui/App.tsx");
   await launchTUI();
 } else {
-  const [addCmd, listCmd, removeCmd, switchCmd, cleanCmd, configCmd, doctorCmd, shellInitCmd, statusCmd, openCmd, execCmd, diffCmd, pinCmd, logCmd, archiveCmd, renameCmd, cloneCmd, importCmd, sessionCmd, initCmd] =
+  const { maybePromptForUpdateOnLaunch } = await import("./update-launch.ts");
+  await maybePromptForUpdateOnLaunch();
+
+  const [addCmd, listCmd, removeCmd, switchCmd, cleanCmd, configCmd, doctorCmd, shellInitCmd, statusCmd, openCmd, execCmd, diffCmd, pinCmd, logCmd, archiveCmd, renameCmd, cloneCmd, importCmd, sessionCmd, initCmd, updateCmd] =
     await Promise.all([
       import("./cmd/add.ts"),
       import("./cmd/list.ts"),
@@ -54,6 +57,7 @@ if (process.argv.length === 2) {
       import("./cmd/import.ts"),
       import("./cmd/session.ts"),
       import("./cmd/init.ts"),
+      import("./cmd/update.ts"),
     ]);
 
   yargs(hideBin(process.argv))
@@ -87,6 +91,7 @@ if (process.argv.length === 2) {
     .command(importCmd.default)
     .command(sessionCmd.default)
     .command(initCmd.default)
+    .command(updateCmd.default)
     .completion("completion", "Generate shell completion script")
     .demandCommand(
       1,

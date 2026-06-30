@@ -110,6 +110,49 @@ bun run src/index.ts init
 
 ---
 
+### `update`
+
+| Flag | Type | Alias | Description |
+|------|------|-------|-------------|
+| `--check` | boolean | — | Check for updates without installing |
+| `--yes` | boolean | `-y` | Install without prompting |
+| `--json` | boolean | `-j` | Output as JSON |
+| `--ignore` | boolean | — | Ignore the current latest version |
+
+**Config keys:**
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `updates.enabled` | boolean | `false` | Enable opt-in interactive launch-time and TUI prompts |
+| `updates.checkIntervalHours` | number | `24` | Minimum hours between successful prompt checks |
+| `updates.ignoredVersion` | string | — | Suppress a specific latest version |
+
+**Test invocations:**
+
+```bash
+# --check: reports status without installing
+bun run src/index.ts update --check
+# expect: exit 0 when up-to-date or update available, no install command runs
+
+# --check --json: parseable status
+bun run src/index.ts update --check --json
+# expect: exit 0, valid JSON on stdout
+
+# --ignore: records ignored latest version when an update is available
+bun run src/index.ts update --ignore
+# expect: exit 0 when a latest version is available, config updates ignoredVersion
+
+# --yes: installs through detected method
+bun run src/index.ts update --yes
+# expect: exit 0 on supported install method, exit 1 on command failure or unsupported forced install
+
+# no silent update guardrail
+bun run src/index.ts list --json
+# expect: valid JSON only; no update prompt, daemon output, or telemetry notice
+```
+
+---
+
 ### `shell-init [shell]`
 
 | Positional | Values | Description |

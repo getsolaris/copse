@@ -107,6 +107,7 @@ export function BulkActions(props: { w: number; h: number }) {
   useKeyboard(async (event: any) => {
     if (!app.showBulkActions()) return;
     if (app.showCommandPalette()) return;
+    if (app.showUpdatePrompt()) return;
     const key = event.name;
     if (state() === "executing") return;
     if (key === "escape") { closeDialog(); return; }

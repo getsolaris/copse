@@ -71,6 +71,7 @@ export function FocusPicker(props: FocusPickerProps) {
 
   useKeyboard((event: any) => {
     if (!data()) return;
+    if (app.showUpdatePrompt()) return;
     const key = event.name;
     if (key === "escape") {
       close();

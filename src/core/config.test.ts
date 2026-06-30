@@ -140,6 +140,95 @@ describe("validateConfig - terminalCommand", () => {
   });
 });
 
+describe("validateConfig - updates", () => {
+  it("accepts update settings when values are valid", () => {
+    // Given
+    const config = {
+      version: 1,
+      updates: {
+        enabled: true,
+        checkIntervalHours: 12,
+        ignoredVersion: "1.2.3",
+      },
+    };
+
+    // When
+    const errors = validateConfig(config);
+
+    // Then
+    expect(errors).toEqual([]);
+  });
+});
+
+describe("validateConfig - invalid update config", () => {
+  it("rejects unknown update fields", () => {
+    // Given
+    const config = {
+      version: 1,
+      updates: {
+        enabled: true,
+        lastCheckedAt: "2026-06-30T00:00:00Z",
+      },
+    };
+
+    // When
+    const errors = validateConfig(config);
+
+    // Then
+    expect(errors.some((error) => error.field === "updates.lastCheckedAt")).toBeTrue();
+  });
+
+  it("rejects non-boolean update enabled", () => {
+    // Given
+    const config = {
+      version: 1,
+      updates: {
+        enabled: "yes",
+      },
+    };
+
+    // When
+    const errors = validateConfig(config);
+
+    // Then
+    expect(errors.some((error) => error.field === "updates.enabled" && error.message === "Must be a boolean")).toBeTrue();
+  });
+
+  it("rejects zero negative and non-integer update check intervals", () => {
+    for (const checkIntervalHours of [0, -1, 1.5]) {
+      // Given
+      const config = {
+        version: 1,
+        updates: {
+          checkIntervalHours,
+        },
+      };
+
+      // When
+      const errors = validateConfig(config);
+
+      // Then
+      expect(errors.some((error) => error.field === "updates.checkIntervalHours")).toBeTrue();
+    }
+  });
+
+  it("rejects blank ignored update version", () => {
+    // Given
+    const config = {
+      version: 1,
+      updates: {
+        ignoredVersion: "   ",
+      },
+    };
+
+    // When
+    const errors = validateConfig(config);
+
+    // Then
+    expect(errors.some((error) => error.field === "updates.ignoredVersion")).toBeTrue();
+  });
+});
+
 describe("getRepoConfig", () => {
   it("returns defaults when no repo match", () => {
     const config: OmlConfig = {
@@ -377,6 +466,10 @@ describe("loadConfig", () => {
         postCreate: [],
         postRemove: [],
         autoUpstream: true,
+      },
+      updates: {
+        enabled: false,
+        checkIntervalHours: 24,
       },
       repos: [],
     });

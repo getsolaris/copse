@@ -117,6 +117,7 @@ export function WorktreeList() {
   useKeyboard((event: any) => {
     if (app.activeTab() !== "list") return;
     if (app.showCommandPalette()) return;
+    if (app.showUpdatePrompt()) return;
     if (app.showRemove()) return;
     if (app.showBulkActions()) return;
     const key = event.name;

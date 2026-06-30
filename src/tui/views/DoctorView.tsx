@@ -47,6 +47,7 @@ export function DoctorView() {
   useKeyboard((event: any) => {
     if (app.activeTab() !== "doctor") return;
     if (app.showCommandPalette()) return;
+    if (app.showUpdatePrompt()) return;
     const key = event.name;
     if (key === "r") runChecks();
     if (key === "f" && !loading() && !fixing() && !report()?.healthy) runAutoFix();

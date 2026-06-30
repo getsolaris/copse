@@ -194,6 +194,41 @@ export function buildRows(cfg: OmlConfig | null): Row[] {
 
   rows.push({ key: "sp.top", kind: "spacer", label: "", depth: 0 });
 
+  rows.push({ key: "sec.updates", kind: "section", label: "Updates", depth: 0 });
+  const updates = cfg.updates ?? {};
+  rows.push({
+    key: "u.enabled",
+    kind: "field",
+    label: "enabled",
+    value: String(updates.enabled ?? false),
+    rawValue: updates.enabled,
+    path: ["updates", "enabled"],
+    editKind: "boolean",
+    depth: 1,
+  });
+  rows.push({
+    key: "u.checkIntervalHours",
+    kind: "field",
+    label: "checkIntervalHours",
+    value: String(updates.checkIntervalHours ?? 24),
+    rawValue: updates.checkIntervalHours,
+    path: ["updates", "checkIntervalHours"],
+    editKind: null,
+    depth: 1,
+  });
+  rows.push({
+    key: "u.ignoredVersion",
+    kind: "field",
+    label: "ignoredVersion",
+    value: updates.ignoredVersion ?? "(none)",
+    rawValue: updates.ignoredVersion,
+    path: ["updates", "ignoredVersion"],
+    editKind: "string",
+    depth: 1,
+  });
+
+  rows.push({ key: "sp.updates", kind: "spacer", label: "", depth: 0 });
+
   rows.push({ key: "sec.defaults", kind: "section", label: "Defaults", depth: 0 });
   const d = cfg.defaults ?? {};
   rows.push({
@@ -1079,6 +1114,7 @@ export function ConfigView() {
   useKeyboard((event: any) => {
     if (app.activeTab() !== "config") return;
     if (app.showCommandPalette()) return;
+    if (app.showUpdatePrompt()) return;
     const key = event.name;
 
     if (editing()) {

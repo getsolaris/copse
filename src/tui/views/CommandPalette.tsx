@@ -152,6 +152,7 @@ export function CommandPalette() {
 
   useKeyboard((event: any) => {
     if (!app.showCommandPalette()) return;
+    if (app.showUpdatePrompt()) return;
     const key = event.name;
 
     if (key === "escape") {

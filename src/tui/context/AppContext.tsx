@@ -18,6 +18,8 @@ interface AppState {
   setShowRemove: (v: boolean) => void;
   showCommandPalette: () => boolean;
   setShowCommandPalette: (v: boolean) => void;
+  showUpdatePrompt: () => boolean;
+  setShowUpdatePrompt: (v: boolean) => void;
   showDetailView: () => boolean;
   setShowDetailView: (v: boolean) => void;
   inputFocused: () => boolean;
@@ -47,6 +49,7 @@ export function AppProvider(props: {
   const [selectedWorktreePath, setSelectedWorktreePath] = createSignal<string | null>(null);
   const [showRemove, setShowRemove] = createSignal(false);
   const [showCommandPalette, setShowCommandPalette] = createSignal(false);
+  const [showUpdatePrompt, setShowUpdatePrompt] = createSignal(false);
   const [showDetailView, setShowDetailView] = createSignal(false);
   const [inputFocused, setInputFocused] = createSignal(false);
   const [selectedWorktrees, setSelectedWorktrees] = createSignal<Set<string>>(new Set());
@@ -100,6 +103,8 @@ export function AppProvider(props: {
         setShowRemove,
         showCommandPalette,
         setShowCommandPalette,
+        showUpdatePrompt,
+        setShowUpdatePrompt,
         showDetailView,
         setShowDetailView,
         inputFocused,

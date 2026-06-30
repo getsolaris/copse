@@ -120,6 +120,30 @@
         }
       }
     },
+    "updates": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Automatic update check settings. Last-check state is runtime metadata and is not stored in config.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable opt-in interactive launch-time and TUI update checks"
+        },
+        "checkIntervalHours": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 24,
+          "description": "Minimum hours between successful launch-time and TUI update checks"
+        },
+        "ignoredVersion": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Version to ignore when update checks report it"
+        }
+      }
+    },
     "workspaces": {
       "type": "array",
       "description": "Parent directories whose immediate (or nested up to depth) git repo children are auto-discovered and merged into repos at load time. Explicit repos entries with the same path always take precedence.",
@@ -267,7 +291,8 @@
           "theme": { "type": "string", "enum": ["opencode", "tokyo-night", "dracula", "nord", "catppuccin", "github-dark", "one-dark", "monokai", "github-light"] },
           "templates": { "$ref": "#/properties/templates" },
           "lifecycle": { "$ref": "#/properties/lifecycle" },
-          "sessions": { "$ref": "#/properties/sessions" }
+          "sessions": { "$ref": "#/properties/sessions" },
+          "updates": { "$ref": "#/properties/updates" }
         }
       }
     },
