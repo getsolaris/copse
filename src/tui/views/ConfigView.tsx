@@ -1114,6 +1114,7 @@ export function ConfigView() {
   useKeyboard((event: any) => {
     if (app.activeTab() !== "config") return;
     if (app.showCommandPalette()) return;
+    if (app.showUpdatePrompt()) return;
     const key = event.name;
 
     if (editing()) {

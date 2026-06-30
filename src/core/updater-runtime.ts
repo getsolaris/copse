@@ -1,13 +1,13 @@
 import { readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
-import { getConfigPath, loadRawConfig, writeAtomically } from "../core/config.ts";
+import { getConfigPath, loadRawConfig, writeAtomically } from "./config.ts";
 import {
   detectInstallMethod,
   planInstallUpdate,
   type InstallUpdatePlan,
   type UpdateCheckResult,
   type UpdateFetch,
-} from "../core/updater.ts";
+} from "./updater.ts";
 
 type UpdateAvailableResult = Extract<UpdateCheckResult, { readonly status: "update-available" }>;
 

@@ -16,6 +16,7 @@ import type { ProgressStep, WorktreeCreateStep } from "./WorktreeCreateContent.t
 interface WorktreeCreateControllerOptions {
   readonly activeTab: Accessor<string>;
   readonly showCommandPalette: Accessor<boolean>;
+  readonly showUpdatePrompt: Accessor<boolean>;
   readonly inputFocused: Accessor<boolean>;
   readonly setActiveTab: (tab: "list") => void;
   readonly refetchWorktrees: () => void;
@@ -59,6 +60,7 @@ export function useWorktreeCreateController(opts: WorktreeCreateControllerOption
   useKeyboard(async (event) => {
     if (opts.activeTab() !== "add") return;
     if (opts.showCommandPalette()) return;
+    if (opts.showUpdatePrompt()) return;
     const key = event.name;
 
     if (key === "escape") {

@@ -8,8 +8,8 @@ import {
   type UpdateFetch,
 } from "../core/updater.ts";
 import { executeInstallPlan, InstallExecutionError, type InstallExecutionResult } from "../core/updater-execute.ts";
+import { buildInstallPlan, readCurrentVersion, testReleaseFetch } from "../core/updater-runtime.ts";
 import { unsupportedMessage, updateSummary } from "./cmd/update-output.ts";
-import { buildInstallPlan, readCurrentVersion, testReleaseFetch } from "./update-shared.ts";
 import { confirm } from "./utils.ts";
 
 type UpdateAvailableResult = Extract<UpdateCheckResult, { readonly status: "update-available" }>;

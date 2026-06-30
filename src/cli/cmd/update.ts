@@ -2,8 +2,8 @@ import type { CommandModule } from "yargs";
 import { loadRawConfig } from "../../core/config.ts";
 import { checkForUpdate } from "../../core/updater.ts";
 import { executeInstallPlan, InstallExecutionError } from "../../core/updater-execute.ts";
+import { buildInstallPlan, readCurrentVersion, testReleaseFetch, writeIgnoredVersion } from "../../core/updater-runtime.ts";
 import { confirm } from "../utils.ts";
-import { buildInstallPlan, readCurrentVersion, testReleaseFetch, writeIgnoredVersion } from "../update-shared.ts";
 import { printNonInteractiveUpdate, printStatus, resultToJson, unsupportedMessage, updateAvailableStatus, updateSummary } from "./update-output.ts";
 
 const cmd: CommandModule = {

@@ -12,6 +12,7 @@ import { DoctorView } from "./views/DoctorView.tsx";
 import { Sidebar } from "./views/Sidebar.tsx";
 import { ShortcutHelp } from "./views/ShortcutHelp.tsx";
 import { Toast } from "./views/Toast.tsx";
+import { UpdatePrompt } from "./views/UpdatePrompt.tsx";
 import { WorktreeCreate } from "./views/WorktreeCreate.tsx";
 import { WorktreeList } from "./views/WorktreeList.tsx";
 import { WorktreeRemove } from "./views/WorktreeRemove.tsx";
@@ -81,6 +82,7 @@ export function AppShell(props: { repoPath: string }) {
 
   useKeyboard((event: { name: string; ctrl?: boolean }) => {
     const key = event.name;
+    if (app.showUpdatePrompt()) return;
     if (key === "escape") {
       if (app.focusPickerData()) { app.setFocusPickerData(null); return; }
       if (app.showBulkActions()) { app.setShowBulkActions(false); return; }
@@ -212,6 +214,7 @@ export function AppShell(props: { repoPath: string }) {
       <Show when={app.activeTab() === "doctor"}><DoctorView /></Show>
       <Show when={app.showRemove()}><WorktreeRemove /></Show>
       <Show when={app.showCommandPalette()}><CommandPalette /></Show>
+      <UpdatePrompt />
     </box>
   );
 }

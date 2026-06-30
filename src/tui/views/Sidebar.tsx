@@ -66,6 +66,7 @@ export function Sidebar() {
   useKeyboard((event: any) => {
     if (app.activeTab() !== "list") return;
     if (app.showCommandPalette()) return;
+    if (app.showUpdatePrompt()) return;
     if (app.showRemove()) return;
     if (app.showBulkActions()) return;
     if (app.inputFocused()) return;

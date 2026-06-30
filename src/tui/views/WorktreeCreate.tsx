@@ -98,6 +98,7 @@ export function WorktreeCreate() {
   useWorktreeCreateController({
     activeTab: app.activeTab,
     showCommandPalette: app.showCommandPalette,
+    showUpdatePrompt: app.showUpdatePrompt,
     inputFocused: app.inputFocused,
     setActiveTab: app.setActiveTab,
     refetchWorktrees: git.refetch,
