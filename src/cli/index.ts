@@ -32,6 +32,9 @@ if (process.argv.length === 2) {
   const { launchTUI } = await import("../tui/App.tsx");
   await launchTUI();
 } else {
+  const { maybePromptForUpdateOnLaunch } = await import("./update-launch.ts");
+  await maybePromptForUpdateOnLaunch();
+
   const [addCmd, listCmd, removeCmd, switchCmd, cleanCmd, configCmd, doctorCmd, shellInitCmd, statusCmd, openCmd, execCmd, diffCmd, pinCmd, logCmd, archiveCmd, renameCmd, cloneCmd, importCmd, sessionCmd, initCmd, updateCmd] =
     await Promise.all([
       import("./cmd/add.ts"),

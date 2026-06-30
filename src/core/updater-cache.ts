@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import type { StandaloneUpdateAsset } from "./updater-install.ts";
-import type { UpdateCacheEntry, UpdateCheckResult, UpdateCheckSource, UpdateFailureReason, UpdateStatePathEnv, WriteUpdateCacheOptions } from "./updater-types.ts";
+import type { UpdateCacheEntry, UpdateCacheFreshOptions, UpdateCheckResult, UpdateCheckSource, UpdateFailureReason, UpdateStatePathEnv, WriteUpdateCacheOptions } from "./updater-types.ts";
 
 const SUCCESS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FAILURE_CACHE_TTL_MS = 60 * 60 * 1000;
@@ -45,8 +45,10 @@ export function readUpdateCache(cachePath: string): UpdateCacheEntry | null {
   }
 }
 
-export function isCacheFresh(entry: UpdateCacheEntry, nowMs: number): boolean {
-  const ttlMs = entry.result.status === "check-failed" ? FAILURE_CACHE_TTL_MS : SUCCESS_CACHE_TTL_MS;
+export function isCacheFresh(entry: UpdateCacheEntry, nowMs: number, options: UpdateCacheFreshOptions = {}): boolean {
+  const ttlMs = entry.result.status === "check-failed"
+    ? options.failureCacheTtlMs ?? FAILURE_CACHE_TTL_MS
+    : options.successCacheTtlMs ?? SUCCESS_CACHE_TTL_MS;
   return nowMs - entry.checkedAtMs < ttlMs;
 }
 

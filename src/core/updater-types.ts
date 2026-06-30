@@ -29,11 +29,18 @@ export interface UpdateCheckOptions {
   readonly fetchImpl?: UpdateFetch;
   readonly nowMs?: number;
   readonly cachePath?: string;
+  readonly successCacheTtlMs?: number;
+  readonly failureCacheTtlMs?: number;
 }
 
 export interface UpdateCacheEntry {
   readonly checkedAtMs: number;
   readonly result: UpdateCheckResult;
+}
+
+export interface UpdateCacheFreshOptions {
+  readonly successCacheTtlMs?: number;
+  readonly failureCacheTtlMs?: number;
 }
 
 export interface WriteUpdateCacheOptions {

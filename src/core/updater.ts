@@ -73,7 +73,7 @@ async function checkForUpdateWithTimeout(
 ): Promise<UpdateCheckResult> {
   const nowMs = options.nowMs ?? Date.now();
   const cached = options.cachePath === undefined ? null : readUpdateCache(options.cachePath);
-  if (cached !== null && shouldUseCache(cached, nowMs, cachePolicy)) {
+  if (cached !== null && shouldUseCache(cached, nowMs, cachePolicy, options)) {
     return withSource(cached.result, "cache");
   }
 
@@ -87,8 +87,11 @@ async function checkForUpdateWithTimeout(
   return result;
 }
 
-function shouldUseCache(entry: UpdateCacheEntry, nowMs: number, policy: CachePolicy): boolean {
-  if (!isCacheFresh(entry, nowMs)) return false;
+function shouldUseCache(entry: UpdateCacheEntry, nowMs: number, policy: CachePolicy, options: UpdateCheckOptions): boolean {
+  if (!isCacheFresh(entry, nowMs, {
+    successCacheTtlMs: options.successCacheTtlMs,
+    failureCacheTtlMs: options.failureCacheTtlMs,
+  })) return false;
   return policy === "honor-all" || entry.result.status !== "check-failed";
 }
 
