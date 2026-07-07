@@ -12,7 +12,15 @@ import {
   removeSessionMeta,
   toSessionName,
 } from "../../core/session.ts";
+import type { SessionInfo } from "../../core/session.ts";
+import type { Worktree } from "../../core/types.ts";
 import { resolveMainRepo, findWorktreeOrExit, handleCliError } from "../utils.ts";
+
+interface SessionWorktreeEntry {
+  branch: string | null;
+  path: string;
+  meta: SessionInfo | null;
+}
 
 const cmd: CommandModule = {
   command: "session [branch-or-path]",
@@ -112,6 +120,27 @@ const cmd: CommandModule = {
   },
 };
 
+function buildSessionWorktreeIndex(
+  worktrees: readonly Worktree[],
+  prefix: string | undefined,
+): Map<string, SessionWorktreeEntry> {
+  const index = new Map<string, SessionWorktreeEntry>();
+
+  for (const worktree of worktrees) {
+    const branch = worktree.branch;
+    const sessionBranch = branch ?? basename(worktree.path);
+    const meta = readSessionMeta(worktree.path);
+    const entry = { branch, path: worktree.path, meta };
+
+    index.set(toSessionName(sessionBranch, prefix), entry);
+    if (meta?.name) {
+      index.set(meta.name, entry);
+    }
+  }
+
+  return index;
+}
+
 async function handleList(
   mainRepoPath: string,
   prefix: string | undefined,
@@ -122,39 +151,38 @@ async function handleList(
     GitWorktree.list(mainRepoPath),
   ]);
 
+  if (sessions.length === 0) {
+    if (json) {
+      console.log(JSON.stringify([], null, 2));
+      return;
+    }
+
+    console.log("No active copse sessions.");
+    return;
+  }
+
+  const sessionIndex = buildSessionWorktreeIndex(worktrees, prefix);
+
   if (json) {
     const enriched = sessions.map((s) => {
-      const wt = worktrees.find((w) => {
-        const branch = w.branch ?? basename(w.path);
-        return toSessionName(branch, prefix) === s.name;
-      });
-      const meta = wt ? readSessionMeta(wt.path) : null;
+      const entry = sessionIndex.get(s.name);
       return {
         ...s,
-        branch: wt?.branch ?? null,
-        worktreePath: wt?.path ?? null,
-        layout: meta?.layout ?? null,
+        branch: entry?.branch ?? null,
+        worktreePath: entry?.path ?? null,
+        layout: entry?.meta?.layout ?? null,
       };
     });
     console.log(JSON.stringify(enriched, null, 2));
     return;
   }
 
-  if (sessions.length === 0) {
-    console.log("No active copse sessions.");
-    return;
-  }
-
   console.log(`Active sessions (${sessions.length}):\n`);
   for (const s of sessions) {
-    const wt = worktrees.find((w) => {
-      const branch = w.branch ?? basename(w.path);
-      return toSessionName(branch, prefix) === s.name;
-    });
-    const meta = wt ? readSessionMeta(wt.path) : null;
+    const entry = sessionIndex.get(s.name);
     const attachedTag = s.attached ? " (attached)" : "";
-    const layoutTag = meta?.layout ? ` [${meta.layout}]` : "";
-    const branchInfo = wt?.branch ? `  ${wt.branch}` : "";
+    const layoutTag = entry?.meta?.layout ? ` [${entry.meta.layout}]` : "";
+    const branchInfo = entry?.branch ? `  ${entry.branch}` : "";
     console.log(`  ${s.name}${branchInfo}  ${s.windows} windows${layoutTag}${attachedTag}`);
   }
 }
@@ -173,17 +201,15 @@ async function handleKillAll(
     return;
   }
 
+  const sessionIndex = buildSessionWorktreeIndex(worktrees, prefix);
+
   let killed = 0;
   for (const s of sessions) {
-    const wt = worktrees.find((w) => {
-      const meta = readSessionMeta(w.path);
-      const branch = w.branch ?? basename(w.path);
-      return meta?.name === s.name || toSessionName(branch, prefix) === s.name;
-    });
+    const entry = sessionIndex.get(s.name);
 
     await killSession(s.name);
-    if (wt) {
-      removeSessionMeta(wt.path);
+    if (entry) {
+      removeSessionMeta(entry.path);
     }
     killed++;
     console.log(`  ✓ Killed ${s.name}`);

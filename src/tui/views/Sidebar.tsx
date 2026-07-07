@@ -4,7 +4,7 @@ import type { ScrollBoxRenderable } from "@opentui/core";
 import { useApp } from "../context/AppContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
 import { theme } from "../themes.ts";
-import { isPinned } from "../../core/pin.ts";
+import { isPinned as readPinState } from "../../core/pin.ts";
 import { readSessionMeta } from "../../core/session.ts";
 import type { Worktree } from "../../core/types.ts";
 
@@ -14,6 +14,33 @@ type DisplayItem =
   | { type: "header"; repoName: string }
   | { type: "separator" }
   | { type: "worktree"; wt: Worktree; flatIdx: number };
+
+interface SidebarRowMetadata {
+  readonly hasSession: boolean;
+  readonly pinned: boolean;
+}
+
+interface SidebarMetadataReaders {
+  readonly hasSession: (path: string) => boolean;
+  readonly pinned: (path: string) => boolean;
+}
+
+export function buildSidebarMetadata(
+  worktrees: readonly Worktree[],
+  readers: SidebarMetadataReaders = {
+    hasSession: (path) => readSessionMeta(path) !== null,
+    pinned: readPinState,
+  },
+): Map<string, SidebarRowMetadata> {
+  const metadata = new Map<string, SidebarRowMetadata>();
+  for (const wt of worktrees) {
+    metadata.set(wt.path, {
+      hasSession: readers.hasSession(wt.path),
+      pinned: readers.pinned(wt.path),
+    });
+  }
+  return metadata;
+}
 
 export function getSidebarScrollTop(selectedLine: number, viewportRows: number): number {
   const safeSelectedLine = Math.max(0, selectedLine);
@@ -68,6 +95,7 @@ export function Sidebar() {
 
     return items;
   });
+  const metadataByPath = createMemo(() => buildSidebarMetadata(worktrees()));
 
   const selectionCount = () => app.selectedWorktrees().size;
   const selectedDisplayIndex = createMemo(() =>
@@ -161,6 +189,7 @@ export function Sidebar() {
               }
 
               const wt = item.wt;
+              const rowMetadata = () => metadataByPath().get(wt.path);
               const isFocused = () => item.flatIdx === selectedIdx();
               const isChecked = () => app.selectedWorktrees().has(wt.path);
               return (
@@ -181,13 +210,13 @@ export function Sidebar() {
                       {"\u2713"}
                     </text>
                   </Show>
-                  <Show when={!!readSessionMeta(wt.path)}>
+                  <Show when={rowMetadata()?.hasSession}>
                     <text x={INNER_W - (isChecked() ? 3 : 1)} y={0} fg={theme.text.accent}>
                       {"S"}
                     </text>
                   </Show>
-                  <Show when={isPinned(wt.path)}>
-                    <text x={INNER_W - (isChecked() ? 5 : 3) + (readSessionMeta(wt.path) ? 0 : 2)} y={0} fg={theme.text.warning}>
+                  <Show when={rowMetadata()?.pinned}>
+                    <text x={INNER_W - (isChecked() ? 5 : 3) + (rowMetadata()?.hasSession ? 0 : 2)} y={0} fg={theme.text.warning}>
                       {"P"}
                     </text>
                   </Show>

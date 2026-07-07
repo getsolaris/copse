@@ -32,6 +32,7 @@ export function DetailView(props: { worktree: Worktree }) {
 
   const [data, setData] = createSignal<DetailData | null>(null);
   const [loading, setLoading] = createSignal(true);
+  const [fullDiffLoading, setFullDiffLoading] = createSignal(false);
   const [error, setError] = createSignal("");
 
   useSelectionHandler((selection) => {
@@ -63,28 +64,33 @@ export function DetailView(props: { worktree: Worktree }) {
         if (!path) {
           setData(null);
           setError("");
+          setFullDiffLoading(false);
           setLoading(false);
           return;
         }
 
         setData(null);
         setError("");
+        setFullDiffLoading(false);
         setLoading(true);
 
         debounceTimer = setTimeout(async () => {
           if (props.worktree.path !== path) return;
 
           try {
-            const [commits, [diffStat, fullDiff], aheadBehind] = await Promise.all([
+            const branch = props.worktree.branch;
+            const isMain = props.worktree.isMain;
+            const baseBranch = mainBranch();
+            const shouldLoadDiff = Boolean(branch && !isMain);
+            const diffStatPromise = branch && !isMain
+              ? GitWorktree.diffBetween(baseBranch, branch, { stat: true }, path).catch(() => "")
+              : Promise.resolve("");
+
+            const [commits, diffStat, aheadBehind] = await Promise.all([
               fetchRecentCommits(path),
-              props.worktree.branch && !props.worktree.isMain
-                ? Promise.all([
-                    GitWorktree.diffBetween(mainBranch(), props.worktree.branch, { stat: true }, path).catch(() => ""),
-                    GitWorktree.diffBetween(mainBranch(), props.worktree.branch, undefined, path).catch(() => ""),
-                  ])
-                : Promise.resolve(["", ""]),
-              props.worktree.branch
-                ? GitWorktree.getAheadBehind(props.worktree.branch, path)
+              diffStatPromise,
+              branch
+                ? GitWorktree.getAheadBehind(branch, path)
                 : Promise.resolve({ ahead: 0, behind: 0 }),
             ]);
 
@@ -104,12 +110,24 @@ export function DetailView(props: { worktree: Worktree }) {
 
             if (props.worktree.path !== path) return;
 
-            setData({ commits, diffStat, fullDiff, aheadBehind, focus, session });
+            setData({ commits, diffStat, fullDiff: "", aheadBehind, focus, session });
             setError("");
+            setLoading(false);
+
+            if (!shouldLoadDiff || !branch) return;
+
+            setFullDiffLoading(true);
+            const fullDiff = await GitWorktree.diffBetween(baseBranch, branch, undefined, path).catch(() => "");
+
+            if (props.worktree.path !== path) return;
+
+            setData((current) => current ? { ...current, fullDiff } : current);
+            setFullDiffLoading(false);
           } catch (err) {
             if (props.worktree.path !== path) return;
             setData(null);
             setError((err as Error).message);
+            setFullDiffLoading(false);
           } finally {
             if (props.worktree.path === path) {
               setLoading(false);
@@ -291,9 +309,18 @@ export function DetailView(props: { worktree: Worktree }) {
             <Show
               when={data()!.fullDiff.length > 0}
               fallback={
-                <box height={1}>
-                  <text x={0} y={0} fg={theme.text.secondary} selectable>No changes</text>
-                </box>
+                <Show
+                  when={fullDiffLoading()}
+                  fallback={
+                    <box height={1}>
+                      <text x={0} y={0} fg={theme.text.secondary} selectable>No changes</text>
+                    </box>
+                  }
+                >
+                  <box height={1}>
+                    <Spinner label="Loading diff..." />
+                  </box>
+                </Show>
               }
             >
               <scrollbox height={15} width={w() - 3}>

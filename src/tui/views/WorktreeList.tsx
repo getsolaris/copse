@@ -1,19 +1,15 @@
-import { Show, createSignal, createEffect, on, onCleanup } from "solid-js";
+import { Show, createSignal, createEffect, createMemo, on, onCleanup } from "solid-js";
+import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { useApp } from "../context/AppContext.tsx";
 import { useGit } from "../context/GitContext.tsx";
-import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { theme } from "../themes.ts";
 import { readFocus } from "../../core/focus.ts";
 import { readSessionMeta } from "../../core/session.ts";
 import { GitWorktree } from "../../core/git.ts";
 import { DetailView } from "./DetailView.tsx";
 import { Spinner } from "./Spinner.tsx";
-
-interface WorktreeExtra {
-  aheadBehind: { ahead: number; behind: number };
-  lastCommit: { hash: string; message: string; relativeDate: string } | null;
-  dirtyCount: number;
-}
+import { WorktreeDetailsPanel } from "./WorktreeDetailsPanel.tsx";
+import type { SelectedMetadata, WorktreeExtra } from "./WorktreeDetailsPanel.tsx";
 
 const DEBOUNCE_MS = 150;
 
@@ -31,9 +27,15 @@ export function WorktreeList() {
     }
     return wts[app.selectedWorktreeIndex()];
   };
+  const selectedMetadata = createMemo<SelectedMetadata>(() => {
+    const path = selectedWt()?.path;
+    if (!path) return { focus: null, session: null };
+    return {
+      focus: readFocus(path),
+      session: readSessionMeta(path),
+    };
+  });
   const w = () => dims().width;
-
-  const LABEL_W = 14;
 
   const [extra, setExtra] = createSignal<WorktreeExtra | null>(null);
   const [extraLoading, setExtraLoading] = createSignal(false);
@@ -137,8 +139,8 @@ export function WorktreeList() {
 
   return (
     <box width="100%" height="100%" backgroundColor={theme.bg.base}>
-      <Show when={app.showDetailView() && !!selectedWt()}>
-        <DetailView worktree={selectedWt()!} />
+      <Show when={app.showDetailView() && selectedWt()}>
+        {(worktree) => <DetailView worktree={worktree()} />}
       </Show>
 
       <Show when={!app.showDetailView()}>
@@ -160,155 +162,20 @@ export function WorktreeList() {
           </box>
         </Show>
 
-        <Show when={!git.loading() && !git.error() && !!selectedWt()}>
-          <box
-            width="100%"
-            height="100%"
-            flexDirection="column"
-            backgroundColor={theme.bg.surface}
-            paddingX={2}
-            paddingY={1}
-          >
-            <box height={1} flexDirection="row">
-              <text fg={theme.text.accent}>
-                Worktree Details
-              </text>
-            </box>
-
-            <box height={1}>
-              <text fg={theme.border.subtle}>
-                {"\u2500".repeat(Math.max(w() - 38, 10))}
-              </text>
-            </box>
-
-            <Show when={git.isMultiRepo()}>
-              <box height={1} flexDirection="row">
-                <box width={LABEL_W} height={1}>
-                  <text fg={theme.text.secondary}>Repo</text>
-                </box>
-                <text fg={theme.text.warning}>{selectedWt()?.repoName}</text>
-              </box>
-            </Show>
-
-            <box height={1} flexDirection="row">
-              <box width={LABEL_W} height={1}>
-                <text fg={theme.text.secondary}>Branch</text>
-              </box>
-              <text fg={theme.text.accent}>{selectedWt()?.branch ?? "(detached)"}</text>
-            </box>
-
-            <box height={1} flexDirection="row">
-              <box width={LABEL_W} height={1}>
-                <text fg={theme.text.secondary}>Path</text>
-              </box>
-              <text fg={theme.text.primary}>{selectedWt()?.path}</text>
-            </box>
-
-            <box height={1} flexDirection="row">
-              <box width={LABEL_W} height={1}>
-                <text fg={theme.text.secondary}>Status</text>
-              </box>
-              <text fg={selectedWt()?.isDirty ? theme.text.error : selectedWt()?.isLocked ? theme.text.warning : theme.text.success}>
-                {statusLabel()}
-              </text>
-            </box>
-
-            <box height={1} flexDirection="row">
-              <box width={LABEL_W} height={1}>
-                <text fg={theme.text.secondary}>Sync</text>
-              </box>
-              <text fg={
-                extraError()
-                  ? theme.text.error
-                  : extraLoading()
-                    ? theme.text.secondary
-                    : extra()?.aheadBehind?.ahead || extra()?.aheadBehind?.behind
-                  ? theme.text.warning
-                  : theme.text.success
-              }>
-                {syncLabel()}
-              </text>
-            </box>
-
-            <box height={1} flexDirection="row">
-              <box width={LABEL_W} height={1}>
-                <text fg={theme.text.secondary}>HEAD</text>
-              </box>
-              <text fg={theme.text.secondary}>{selectedWt()?.head?.slice(0, 8)}</text>
-            </box>
-
-            <Show when={extra()?.lastCommit}>
-              <box height={1} flexDirection="row">
-                <box width={LABEL_W} height={1}>
-                  <text fg={theme.text.secondary}>Last Commit</text>
-                </box>
-                <text fg={theme.text.primary}>
-                  {extra()!.lastCommit!.relativeDate}
-                </text>
-              </box>
-              <box height={1} flexDirection="row">
-                <box width={LABEL_W} height={1}>
-                  <text fg={theme.text.secondary}>{""}</text>
-                </box>
-                <text fg={theme.text.secondary}>
-                  {extra()!.lastCommit!.message.length > 50
-                    ? extra()!.lastCommit!.message.slice(0, 47) + "..."
-                    : extra()!.lastCommit!.message}
-                </text>
-              </box>
-            </Show>
-
-            <Show when={(() => { const f = readFocus(selectedWt()?.path ?? ""); return f && f.length > 0; })()}>
-              <box height={1} flexDirection="row">
-                <box width={LABEL_W} height={1}>
-                  <text fg={theme.text.secondary}>Focus</text>
-                </box>
-                <text fg={theme.text.accent}>
-                  {readFocus(selectedWt()?.path ?? "")?.join(", ") ?? ""}
-                </text>
-              </box>
-            </Show>
-
-            <Show when={(() => { const s = readSessionMeta(selectedWt()?.path ?? ""); return !!s; })()}>
-              <box height={1} flexDirection="row">
-                <box width={LABEL_W} height={1}>
-                  <text fg={theme.text.secondary}>Session</text>
-                </box>
-                <text fg={theme.text.accent}>
-                  {(() => {
-                    const s = readSessionMeta(selectedWt()?.path ?? "");
-                    if (!s) return "";
-                    return s.layout ? `${s.name} [${s.layout}]` : s.name;
-                  })()}
-                </text>
-              </box>
-            </Show>
-
-            <Show when={selectedWt()?.isMain}>
-              <box height={1} flexDirection="row">
-                <box width={LABEL_W} height={1}>
-                  <text fg={theme.text.secondary}>Type</text>
-                </box>
-                <text fg={theme.text.accent}>main worktree</text>
-              </box>
-            </Show>
-
-            <box height={1}>
-              <text fg={theme.border.subtle}>
-                {"\u2500".repeat(Math.max(w() - 38, 10))}
-              </text>
-            </box>
-
-            <box height={1} flexDirection="row" gap={2}>
-              <text fg={theme.text.secondary}>{"Enter:detail"}</text>
-              <text fg={theme.text.secondary}>{"d:delete"}</text>
-              <text fg={theme.text.secondary}>{"a:add"}</text>
-              <text fg={theme.text.secondary}>{"o:folder"}</text>
-              <text fg={theme.text.secondary}>{"t:terminal"}</text>
-              <text fg={theme.text.secondary}>{"r:refresh"}</text>
-              <text fg={theme.text.secondary}>{"^P:commands"}</text>
-            </box>
-          </box>
+        <Show when={!git.loading() && !git.error() && selectedWt()}>
+          {(worktree) => (
+            <WorktreeDetailsPanel
+              worktree={worktree()}
+              isMultiRepo={git.isMultiRepo()}
+              width={w()}
+              extra={extra()}
+              extraLoading={extraLoading()}
+              extraError={extraError()}
+              selectedMetadata={selectedMetadata()}
+              statusLabel={statusLabel()}
+              syncLabel={syncLabel()}
+            />
+          )}
         </Show>
 
         <Show when={!git.loading() && !git.error() && !selectedWt()}>

@@ -38,6 +38,11 @@ interface WorktreeBaseMatcher {
   matches(name: string): boolean;
 }
 
+interface WorktreeBaseScan {
+  configured: WorktreeBaseMatcher[];
+  tracked: string[];
+}
+
 function getConfiguredWorktreeBases(worktrees: Worktree[]): WorktreeBaseMatcher[] {
   if (!existsSync(getConfigPath())) {
     return [];
@@ -84,6 +89,13 @@ function getTrackedWorktreeBaseDirs(worktrees: Worktree[]): string[] {
   return [...bases];
 }
 
+function getWorktreeBaseScan(worktrees: Worktree[]): WorktreeBaseScan {
+  return {
+    configured: getConfiguredWorktreeBases(worktrees),
+    tracked: getTrackedWorktreeBaseDirs(worktrees),
+  };
+}
+
 function collectOrphansFromDir(
   basePath: string,
   trackedPaths: Set<string>,
@@ -103,17 +115,20 @@ function collectOrphansFromDir(
   }
 }
 
-function findOrphanedDirectories(worktrees: Worktree[]): string[] {
+function findOrphanedDirectories(
+  worktrees: Worktree[],
+  baseScan = getWorktreeBaseScan(worktrees),
+): string[] {
   const trackedPaths = new Set(worktrees.map((wt) => resolve(wt.path)));
   const orphaned = new Set<string>();
   const scannedBases = new Set<string>();
 
-  for (const worktreeBase of getConfiguredWorktreeBases(worktrees)) {
+  for (const worktreeBase of baseScan.configured) {
     scannedBases.add(worktreeBase.path);
     collectOrphansFromDir(worktreeBase.path, trackedPaths, orphaned, worktreeBase.matches);
   }
 
-  for (const worktreeBase of getTrackedWorktreeBaseDirs(worktrees)) {
+  for (const worktreeBase of baseScan.tracked) {
     if (scannedBases.has(worktreeBase)) continue;
     collectOrphansFromDir(worktreeBase, trackedPaths, orphaned);
   }
@@ -121,9 +136,9 @@ function findOrphanedDirectories(worktrees: Worktree[]): string[] {
   return [...orphaned];
 }
 
-function hasAnyWorktreeBase(worktrees: Worktree[]): boolean {
-  return getConfiguredWorktreeBases(worktrees).some((worktreeBase) => existsSync(worktreeBase.path))
-    || getTrackedWorktreeBaseDirs(worktrees).some((worktreeBase) => existsSync(worktreeBase));
+function hasAnyWorktreeBase(baseScan: WorktreeBaseScan): boolean {
+  return baseScan.configured.some((worktreeBase) => existsSync(worktreeBase.path))
+    || baseScan.tracked.some((worktreeBase) => existsSync(worktreeBase));
 }
 
 async function getGitVersionString(): Promise<string | null> {
@@ -213,13 +228,14 @@ export function checkOrphanedDirectories(worktrees: Worktree[]): DoctorCheckResu
   const name = "Orphaned directories";
 
   try {
-    const orphaned = findOrphanedDirectories(worktrees);
+    const baseScan = getWorktreeBaseScan(worktrees);
+    const orphaned = findOrphanedDirectories(worktrees, baseScan);
 
     if (orphaned.length === 0) {
       return {
         name,
         status: "pass",
-        message: hasAnyWorktreeBase(worktrees) ? "none" : "no worktree directory",
+        message: hasAnyWorktreeBase(baseScan) ? "none" : "no worktree directory",
       };
     }
 

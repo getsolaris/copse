@@ -11,6 +11,7 @@ import {
   setNestedValue,
   type OmlConfig,
   validateConfig,
+  writeAtomically,
 } from "./config";
 import { cleanupTempDirs, createTempDir, runGit } from "./test-helpers";
 
@@ -808,6 +809,33 @@ describe("loadConfig - workspaces expansion", () => {
     expect(resolved.worktreeDir).toBe("~/.copse/global/{repo}-{branch}");
   });
 
+  it("does not repeat workspace discovery when the config file stat is unchanged", async () => {
+    const parent = createTempDir("copse-load-ws-cache-");
+    const repoA = join(parent, "project-a");
+    mkdirSync(repoA);
+    await initTempRepo(repoA);
+
+    const configDir = createTempDir("copse-load-ws-cache-config-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        workspaces: [{ path: parent }],
+      }),
+    );
+
+    const first = loadConfig(configPath);
+    expect(first.repos?.map((repo) => repo.path)).toEqual([resolve(repoA)]);
+
+    const repoB = join(parent, "project-b");
+    mkdirSync(repoB);
+    await initTempRepo(repoB);
+
+    const second = loadConfig(configPath);
+    expect(second.repos?.map((repo) => repo.path)).toEqual([resolve(repoA)]);
+  });
+
   it("loadConfig without workspaces behaves unchanged", async () => {
     const configDir = createTempDir("copse-load-ws-none-");
     const configPath = join(configDir, "config.json");
@@ -885,6 +913,43 @@ describe("loadRawConfig", () => {
     const expandedPaths = expanded.repos!.map((r) => r.path);
     expect(expandedPaths).toContain(resolve(repoA));
     expect(expandedPaths).toContain(resolve(repoB));
+  });
+
+  it("writeAtomically preserves raw workspace config and refreshes resolved loads", async () => {
+    const parent = createTempDir("copse-raw-write-refresh-");
+    const repoA = join(parent, "discovered-a");
+    mkdirSync(repoA);
+    await initTempRepo(repoA);
+
+    const configDir = createTempDir("copse-raw-write-refresh-config-");
+    const configPath = join(configDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        version: 1,
+        workspaces: [{ path: parent }],
+      }),
+    );
+
+    expect(loadConfig(configPath).repos?.map((repo) => repo.path)).toEqual([resolve(repoA)]);
+
+    writeAtomically(
+      configPath,
+      `${JSON.stringify(
+        {
+          version: 1,
+          workspaces: [{ path: parent, defaults: { copyFiles: [".env.local"] } }],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    const raw = loadRawConfig(configPath);
+    expect(raw.repos ?? []).toEqual([]);
+
+    const resolved = loadConfig(configPath);
+    expect(getRepoConfig(resolved, resolve(repoA)).copyFiles).toEqual([".env.local"]);
   });
 
   it("returns empty repos when only workspaces are configured", async () => {

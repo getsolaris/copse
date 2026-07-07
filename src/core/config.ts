@@ -11,6 +11,26 @@ interface FsSyncCompat {
 
 const fsSync = fs as unknown as FsSyncCompat;
 
+interface ConfigCacheEntry {
+  readonly statIdentity: string;
+  readonly config: OmlConfig;
+}
+
+const loadConfigCache = new Map<string, ConfigCacheEntry>();
+
+function configStatIdentity(configPath: string): string | undefined {
+  if (!fs.existsSync(configPath)) {
+    return undefined;
+  }
+
+  const stat = fs.statSync(configPath);
+  return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`;
+}
+
+function invalidateConfigCache(configPath: string): void {
+  loadConfigCache.delete(resolve(configPath));
+}
+
 export interface RepoDefaults {
   worktreeDir?: string;
   copyFiles?: string[];
@@ -787,7 +807,19 @@ function loadConfigCore(overridePath?: string): OmlConfig {
 }
 
 export function loadConfig(overridePath?: string): OmlConfig {
-  return expandWorkspaces(loadConfigCore(overridePath));
+  const configPath = resolve(overridePath ?? getConfigPath());
+  const statIdentity = configStatIdentity(configPath);
+  const cached = statIdentity === undefined ? undefined : loadConfigCache.get(configPath);
+
+  if (cached !== undefined && cached.statIdentity === statIdentity) {
+    return structuredClone(cached.config);
+  }
+
+  const config = expandWorkspaces(loadConfigCore(configPath));
+  if (statIdentity !== undefined) {
+    loadConfigCache.set(configPath, { statIdentity, config: structuredClone(config) });
+  }
+  return config;
 }
 
 export function loadRawConfig(overridePath?: string): OmlConfig {
@@ -831,6 +863,7 @@ export function expandTemplate(
 export function initConfig(overridePath?: string): string {
   const configPath = overridePath ?? getConfigPath();
   const configDir = overridePath ? resolve(configPath, "..") : getConfigDir();
+  invalidateConfigCache(configPath);
 
   if (!fs.existsSync(configDir)) {
     fsSync.mkdirSync(configDir, { recursive: true, mode: 0o700 });
@@ -940,6 +973,7 @@ export function writeAtomically(filePath: string, content: string): void {
     }
 
     fsSync.renameSync(tmpPath, filePath);
+    invalidateConfigCache(filePath);
   } catch (error) {
     if (fs.existsSync(tmpPath)) {
       fsSync.unlinkSync(tmpPath);

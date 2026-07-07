@@ -8,6 +8,11 @@ interface CacheEntry<T> {
   expires: number;
 }
 
+interface StatusSummary {
+  dirtyCount: number;
+  isDirty: boolean;
+}
+
 const DEFAULT_CACHE_TTL = 3_000;
 const gitCache = new Map<string, CacheEntry<unknown>>();
 
@@ -67,6 +72,16 @@ export class GitWorktree {
     return this.run(args, cwd);
   }
 
+  private static async getStatusSummary(cwd: string): Promise<StatusSummary> {
+    const cacheKey = `status-summary:${cwd}`;
+    const cached = getCached<StatusSummary>(cacheKey);
+    if (cached) return cached;
+
+    const status = await this.run(["status", "--porcelain"], cwd);
+    const dirtyCount = status ? status.split("\n").filter(Boolean).length : 0;
+    return setCache(cacheKey, { dirtyCount, isDirty: dirtyCount > 0 });
+  }
+
   static async checkVersion(): Promise<void> {
     if (this.gitVersionChecked) return;
 
@@ -101,7 +116,7 @@ export class GitWorktree {
 
     const withDirty = await mapWithLimit(worktrees, 10, async (wt) => ({
       ...wt,
-      isDirty: await this.isDirty(wt.path).catch(() => false),
+      isDirty: await this.getStatusSummary(wt.path).then((status) => status.isDirty).catch(() => false),
     }));
 
     return setCache(cacheKey, withDirty);
@@ -336,16 +351,11 @@ export class GitWorktree {
 
   static async getDirtyCount(cwd?: string): Promise<number> {
     const dir = cwd ?? (Bun as any).cwd;
-    const cacheKey = `dirty-count:${dir}`;
-    const cached = getCached<number>(cacheKey);
-    if (cached !== undefined) return cached;
 
     try {
-      const status = await this.run(["status", "--porcelain"], dir);
-      if (!status) return setCache(cacheKey, 0);
-      return setCache(cacheKey, status.split("\n").filter(Boolean).length);
+      return (await this.getStatusSummary(dir)).dirtyCount;
     } catch {
-      return setCache(cacheKey, 0);
+      return 0;
     }
   }
 
