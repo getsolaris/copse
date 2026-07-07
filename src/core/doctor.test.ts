@@ -18,6 +18,26 @@ import { invalidateGitCache } from "./git";
 const originalXdgConfigHome = Bun.env.XDG_CONFIG_HOME;
 const originalHome = Bun.env.HOME;
 
+async function runBunEval(script: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  const proc = (Bun as any).spawn(["bun", "-e", script], {
+    cwd: process.cwd(),
+    stdout: "pipe",
+    stderr: "pipe",
+    env: {
+      ...(Bun as any).env,
+      LC_ALL: "C",
+    },
+  });
+
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+
+  return { stdout, stderr, exitCode };
+}
+
 afterEach(() => {
   invalidateGitCache();
 
@@ -174,6 +194,53 @@ describe("checkOrphanedDirectories", () => {
 
     expect(result.status).toBe("warn");
     expect(result.detail).toContain(orphanPath);
+  });
+
+  it("derives configured worktree bases once when reporting an existing empty base", async () => {
+    const script = String.raw`
+      import { mock } from "bun:test";
+      import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+      import { join } from "node:path";
+      import { tmpdir } from "node:os";
+
+      const root = mkdtempSync(join(tmpdir(), "copse-doctor-once-"));
+      const repo = join(root, "repo");
+      const base = join(root, "worktrees");
+      const configPath = join(root, "config.json");
+
+      mkdirSync(repo, { recursive: true });
+      mkdirSync(base, { recursive: true });
+      writeFileSync(configPath, "{}");
+
+      let loadCalls = 0;
+      mock.module("./src/core/config", () => ({
+        getConfigPath: () => configPath,
+        loadConfig: () => {
+          loadCalls++;
+          return { version: 1, defaults: { worktreeDir: base + "/{repo}-{branch}" } };
+        },
+      }));
+
+      const { checkOrphanedDirectories } = await import("./src/core/doctor.ts");
+      const result = checkOrphanedDirectories([{
+        path: repo,
+        branch: "main",
+        head: "",
+        isMain: true,
+        isDirty: false,
+        isLocked: false,
+        repoName: "repo",
+        repoPath: repo,
+      }]);
+
+      console.error(JSON.stringify({ loadCalls, result }));
+      if (result.status !== "pass" || result.message !== "none" || loadCalls !== 1) {
+        process.exit(1);
+      }
+    `;
+
+    const result = await runBunEval(script);
+    expect(result.exitCode, result.stderr).toBe(0);
   });
 });
 

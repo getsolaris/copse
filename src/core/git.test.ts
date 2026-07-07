@@ -181,6 +181,27 @@ describe("GitWorktree integration", () => {
     expect(dirty).toBeTrue();
   });
 
+  it("reuses list status summary for dirty count", async () => {
+    const callsByCwd = new Map<string, number>();
+    const originalRun = (GitWorktree as any).run;
+    (GitWorktree as any).run = async (args: string[], cwd?: string): Promise<string> => {
+      if (args[0] === "status" && args[1] === "--porcelain" && cwd) {
+        callsByCwd.set(cwd, (callsByCwd.get(cwd) ?? 0) + 1);
+      }
+      return originalRun.call(GitWorktree, args, cwd);
+    };
+
+    try {
+      const worktrees = await GitWorktree.list(testDir);
+      const worktreePath = worktrees[0].path;
+      await GitWorktree.getDirtyCount(worktreePath);
+
+      expect(callsByCwd.get(worktreePath)).toBe(1);
+    } finally {
+      (GitWorktree as any).run = originalRun;
+    }
+  });
+
   it("list() from non-git directory throws GitError with not a git repository", async () => {
     const nonGitDir = createTempDir("copse-non-git-");
     try {

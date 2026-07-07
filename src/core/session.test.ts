@@ -10,6 +10,26 @@ import {
   removeSessionMeta,
 } from "./session";
 
+async function runBunEval(script: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  const proc = (Bun as any).spawn(["bun", "-e", script], {
+    cwd: process.cwd(),
+    stdout: "pipe",
+    stderr: "pipe",
+    env: {
+      ...(Bun as any).env,
+      LC_ALL: "C",
+    },
+  });
+
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+
+  return { stdout, stderr, exitCode };
+}
+
 afterEach(cleanupTempDirs);
 
 describe("toSessionName", () => {
@@ -118,5 +138,83 @@ describe("session metadata", () => {
     const repoPath = await createTempRepo();
     removeSessionMeta(repoPath);
     removeSessionMeta(repoPath);
+  });
+});
+
+describe("session command metadata lookup", () => {
+  it("indexes worktrees once for session --list --json", async () => {
+    const script = String.raw`
+      import { mock } from "bun:test";
+
+      let branchReads = 0;
+      let metaReads = 0;
+      const worktrees = ["a", "b", "c"].map((branch) => ({
+        path: "/tmp/" + branch,
+        get branch() {
+          branchReads++;
+          return branch;
+        },
+      }));
+
+      mock.module("./src/core/session.ts", () => ({
+        isTmuxAvailable: async () => true,
+        openSession: async () => "",
+        closeSession: async () => false,
+        killSession: async () => {},
+        listSessions: async () => [
+          { name: "copse_a", windows: 1, attached: false, created: "1" },
+          { name: "copse_b", windows: 1, attached: false, created: "1" },
+          { name: "copse_c", windows: 1, attached: false, created: "1" },
+        ],
+        readSessionMeta: (worktreePath) => {
+          metaReads++;
+          const branch = worktreePath.slice(-1);
+          return {
+            name: "copse_" + branch,
+            branch,
+            worktreePath,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            layout: "qa",
+          };
+        },
+        removeSessionMeta: () => {},
+        toSessionName: (branch, prefix) => (prefix ?? "copse") + "_" + branch,
+      }));
+      mock.module("./src/core/git.ts", () => ({
+        GitWorktree: { list: async () => worktrees },
+      }));
+      mock.module("./src/core/config.ts", () => ({
+        loadConfig: () => ({ version: 1 }),
+        getSessionConfig: () => ({ prefix: "copse" }),
+        resolveSessionLayout: () => undefined,
+      }));
+      mock.module("./src/cli/utils.ts", () => ({
+        resolveMainRepo: async () => "/repo",
+        findWorktreeOrExit: () => worktrees[0],
+        handleCliError: (err) => { throw err; },
+      }));
+
+      const { default: command } = await import("./src/cli/cmd/session.ts");
+      const originalExit = process.exit;
+      process.exit = (code = 0) => {
+        throw Object.assign(new Error("exit"), { code });
+      };
+
+      try {
+        await command.handler({ list: true, json: true, _: [], $0: "copse" });
+      } catch (err) {
+        if (err?.code !== 0) throw err;
+      } finally {
+        process.exit = originalExit;
+      }
+
+      console.error(JSON.stringify({ branchReads, metaReads }));
+      if (branchReads !== 3 || metaReads !== 3) {
+        process.exit(1);
+      }
+    `;
+
+    const result = await runBunEval(script);
+    expect(result.exitCode, result.stderr).toBe(0);
   });
 });

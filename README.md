@@ -790,7 +790,7 @@ Auto-discover git repositories under parent directories. Each discovered repo is
 - A directory is a repo only if it contains a `.git` **directory** (not a file). Linked worktrees (`.git` as file) and submodules are skipped.
 - Discovered repos do NOT have their children scanned (no recursion into repos).
 - Symbolic links are not followed.
-- Discovery runs on every `loadConfig()` call. There is no caching.
+- Resolved config is cached per process by config file stat. Writes and `copse init` invalidate it; restart the process or touch the config file to pick up newly added workspace repos in an already-running process.
 
 **Precedence (highest → lowest):**
 
